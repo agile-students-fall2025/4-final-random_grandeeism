@@ -18,8 +18,20 @@
 
 ## Coding Standards
 
-- The standardized IDE that our team members use collectively is **Visual Studio Code**. 
-- The standardized linter is 
+- The standardized IDE that our team members use collectively is **Visual Studio Code**
+- The standardized linters for our team are:
+    - ESLint
+    - Stylelint, JSON Validation (built in to VS Code)MarkdownLinter
+
+### Practical coding rules
+
+- Write the smallest working solution first, then improve it. Don’t over-engineer.
+- All code for features and spikes must be peer-reviewed and pass tests before merging into `main`.
+- Always push working code; if you break the build or CI pipeline, fix it quickly.
+- Make small, focused commits (one feature or bug per commit) with descriptive commit messages.
+- Use clear, self-documenting names for variables and functions—avoid cryptic abbreviations.
+- Remove dead or commented-out code; delete it rather than leaving it behind.
+- Add automated tests for important integrations and functionality as you learn to write tests.
 
 
 ## Git Workflow
@@ -34,3 +46,5 @@ Our team follows the **feature-branch workflow** to keep `main` always deployabl
 - Merge only after PR approval and green CI. Delete the feature branch after merging. For urgent hotfixes, branch from `main`, fix, and merge back immediately.
 
 ## Contributing Rules
+
+## Build and Test Rules
