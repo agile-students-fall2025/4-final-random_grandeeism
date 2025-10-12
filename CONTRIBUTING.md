@@ -19,9 +19,7 @@
 ## Coding Standards
 
 - The standardized IDE that our team members use collectively is **Visual Studio Code**
-- The standardized linters for our team are:
-    - ESLint
-    - Stylelint, JSON Validation (built in to VS Code)MarkdownLinter
+- The standardized linters for our team are:ESLint,Stylelint, JSON Validation (built in to VS Code)MarkdownLinter
 
 ### Practical coding rules
 
@@ -47,4 +45,7 @@ Our team follows the **feature-branch workflow** to keep `main` always deployabl
 
 ## Contributing Rules
 
-## Build and Test Rules
+## Instructions for Setting up the Local Environment
+
+## Build and Test Instructions
+

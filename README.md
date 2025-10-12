@@ -6,15 +6,17 @@ In the current internet age there is a incomprehensible and immense amount of in
 
 ## Team Members
 
-Our [team norms](CONTRIBUTING.md)
-
 - [Zeba Shafi](https://github.com/Zeba-Shafi)
 - [Anas Ozeer](https://github.com/anas-ozeer)
 - [Alexander](https://github.com/EscoAl516)
 - [Saad](https://github.com/one-loop)
 
-## Instructions for Building and Testing
+Our [team norms and values](CONTRIBUTING.md#team-norms)
 
-## Taskboard
+## How this project came to be
 
-[Project Taskboard](https://github.com/orgs/agile-students-fall2025/projects/6)
+After the shutdown of the FOSS project Omnivore, we found ourselves searching for a tool that could truly respect both our reading habits and our data. That search quickly turned into a desire to build our own **FOSS “read it later” app**—not just as a replacement, but as a way to preserve the philosophy behind these tools: empowering readers to **capture, curate, and revisit** meaningful content on their own terms. Read-it-later apps have always existed at the intersection of **attention, agency, and knowledge management**, helping people reclaim the web from the endless scroll.
+
+## Want to contribute?
+
+ Read our rules about [contributing](CONTRIBUTING.md#contributing-rules) as well as instructions on [setting up the local development environment](CONTRIBUTING.md#instructions-for-setting-up-the-local-environment) and [building and testing](CONTRIBUTING.md#build-and-test-instructions)
