@@ -6,13 +6,19 @@
 
 ### Team Values
 
+Our team will decide together how to split the work for each user story selected for a sprint. For every story we tackle, each team member will first act as a Developer to implement their assigned work and then act as a Code Reviewer for a teammate's work. We will not add new features on the fly unless everyone agrees during a daily standup.
+
+Daily standups are for discussing development problems and for a quick secondary review of current Sprint work. If we disagree about how to proceed on an issue, we will resolve it by popular vote.
+
+We follow Agile development and the SCRUM framework. At each Sprint Planning Standup the team will choose, by agreement, who will be the **Product Owner** and who will be the **Scrum Master** for that sprint; these roles rotate each sprint. All team members will serve as **Developers**. The **Stakeholder** role is held by the course admin, tutors, and professor.
+
 ### Sprint Cadence
 
 - Our sprints will be approximately **2 weeks**
 
 ### Daily Standups
 
-- Our standups will take place on (days) at (times)
+- Our standups will take place on (days) at (times) and last for a minimum of 30 minutes
 - Our members have agreed to not cover for team members that are not present
 - A member that doesn't make progress on a task will be reported to management
 
@@ -31,7 +37,6 @@
 - Remove dead or commented-out code; delete it rather than leaving it behind.
 - Add automated tests for important integrations and functionality as you learn to write tests.
 
-
 ## Git Workflow
 
 Our team follows the **feature-branch workflow** to keep `main` always deployable and to make collaboration predictable:
@@ -45,7 +50,19 @@ Our team follows the **feature-branch workflow** to keep `main` always deployabl
 
 ## Contributing Rules
 
+If you want to contribute to **ToBeRead** , please follow these simple rules:
+
+- Check existing Issues first — someone may already be working on the same idea.
+- Pick an issue labeled `good first issue` or `help wanted` if you are new.
+- Start from the latest `main` and create a branch named like `feature/short-desc` or `fix/issue-123`.
+- Make small, focused changes. Run the app and tests locally before pushing.
+- Write or update tests for any important behavior you change.
+- Open a Pull Request against `main` and describe what you changed and how to test it.
+- Link the PR to the related issue and add screenshots or short videos for UI changes.
+- Be responsive to review feedback; update your branch and push changes to the same PR.
+- Keep sensitive data out of the repo (no passwords, API keys, or personal data).
+- Respect the project's Code of Conduct and be courteous in all discussions.
+
 ## Instructions for Setting up the Local Environment
 
 ## Build and Test Instructions
-
