@@ -18,7 +18,7 @@ We follow Agile development and the SCRUM framework. At each Sprint Planning Sta
 
 ### Daily Standups
 
-- Our standups will take place on (days) at (times) and last for a minimum of 30 minutes
+- Our standups will take place on Monday, Wednesday and Fridays at 6:30 pm and last for a minimum of 30 minutes
 - Our members have agreed to not cover for team members that are not present
 - A member that doesn't make progress on a task will be reported to management
 
