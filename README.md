@@ -6,6 +6,8 @@ In the current internet age there is a incomprehensible and immense amount of in
 
 ## Team Members
 
+Our [team norms](CONTRIBUTING.md)
+
 - [Zeba Shafi](https://github.com/Zeba-Shafi)
 - [Anas Ozeer](https://github.com/anas-ozeer)
 - [Alexander](https://github.com/EscoAl516)
@@ -13,3 +15,6 @@ In the current internet age there is a incomprehensible and immense amount of in
 
 ## Instructions for Building and Testing
 
+## Taskboard
+
+[Project Taskboard](https://github.com/orgs/agile-students-fall2025/projects/6)
