@@ -10,6 +10,7 @@ In the current internet age there is a incomprehensible and immense amount of in
 - [Anas Ozeer](https://github.com/anas-ozeer)
 - [Alexander](https://github.com/EscoAl516)
 - [Saad](https://github.com/one-loop)
+- [Shaurya](https://github.com/shauryasr04)
 
 Our [team norms and values](CONTRIBUTING.md#team-norms)
 
