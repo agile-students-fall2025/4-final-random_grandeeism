@@ -65,4 +65,64 @@ If you want to contribute to **ToBeRead** , please follow these simple rules:
 
 ## Instructions for Setting up the Local Environment
 
+### Setting up the Local Environment
+
+Follow these steps to set up the project on your local machine:
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/4-final-random_grandeeism.git
+   cd 4-final-random_grandeeism
+   ```
+
+2. **Install dependencies**
+   Make sure you have Node.js (>= 18) and npm installed.
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   - Copy the example environment file:
+     ```bash
+     cp .env.example .env
+     ```
+   - Update `.env` with your local configuration values (e.g., MongoDB URI, JWT secret, API keys).
+
+4. **Set up the front-end**
+   - Navigate to the front-end directory:
+     ```bash
+     cd front-end
+     npm install
+     npm run dev
+     ```
+   - The React app will run on `http://localhost:3000`.
+   - All components must be functional and written using **React.js** and **JSX**.
+   - Styling should be clean and modern; you may use **Tailwind CSS**, but **Material UI** and **Bootstrap** are not allowed.
+   - If applicable, mock images can be fetched from [Picsum](https://picsum.photos/).
+   - All user registration/login screens should exist (can be non-functional for now).
+
+5. **Set up the back-end**
+   - Navigate to the back-end directory:
+     ```bash
+     cd ../back-end
+     npm install
+     npm start
+     ```
+   - The back-end must be built with **Express.js**.
+   - Dynamic routes must return mock JSON data or use a mocking API such as [Mockaroo](https://mockaroo.com/).
+   - All static routes must return the correct files.
+   - Front-end and back-end must be **fully integrated** — forms should `POST` to back-end routes.
+
+6. **Set up the database**
+   - The project uses **MongoDB Atlas** as the database.
+   - Connect using **Mongoose** in the back-end.
+   - Add your MongoDB connection string to `.env` (do not commit this file):
+     ```bash
+     MONGO_URI=your_mongodb_atlas_connection_string
+     JWT_SECRET=your_jwt_secret
+     ```
+   - Ensure that data validation is implemented using **express-validator** before saving data.
+   - User authentication must be handled with **JSON Web Tokens (JWT)**.
+
+
 ## Build and Test Instructions
