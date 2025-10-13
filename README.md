@@ -7,7 +7,7 @@ In the current internet age there is a incomprehensible and immense amount of in
 ## Team Members
 
 - [Zeba Shafi](https://github.com/Zeba-Shafi)
-- [Anas Ozeer](https://github.com/anas-ozeer)
+- [Sheik Anas Ally Ozeer](https://github.com/anas-ozeer)
 - [Alexander](https://github.com/EscoAl516)
 - [Saad](https://github.com/one-loop)
 - [Shaurya](https://github.com/shauryasr04)
