@@ -62,64 +62,161 @@ If you want to contribute to **ToBeRead** , please follow these simple rules:
 
 ## Instructions for Setting up the Local Environment
 
-### Setting up the Local Environment
+This guide provides step-by-step instructions to get the full MERN-stack application running on your local machine for development.
 
-Follow these steps to set up the project on your local machine:
+---
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/4-final-random_grandeeism.git
-   cd 4-final-random_grandeeism
-   ```
+### **Prerequisites**
 
-2. **Install dependencies**
-   Make sure you have Node.js (>= 18) and npm installed.
-   ```bash
-   npm install
-   ```
+Before you begin, ensure you have the following software installed on your computer:
 
-3. **Set up environment variables**
-   - Copy the example environment file:
-     ```bash
-     cp .env.example .env
-     ```
-   - Update `.env` with your local configuration values (e.g., MongoDB URI, JWT secret, API keys).
+* **Git** – For version control and cloning the repository.  
+* **Node.js and npm** – To run the JavaScript-based front-end and back-end.  
+  * This project was built and tested using **Node.js v18.x**.  
+  * If you use **Node Version Manager (nvm)**, you can switch to the correct version by running:
+    ```bash
+    nvm use
+    ```
+    (An `.nvmrc` file should be included in the project root to simplify this.)
+* **Docker Desktop (Optional)** – Required if you choose to run a local MongoDB instance. Download it [here](https://www.docker.com/get-started).  
+* **Visual Studio Code** – The recommended IDE for this project.  
 
-4. **Set up the front-end**
-   - Navigate to the front-end directory:
-     ```bash
-     cd front-end
-     npm install
-     npm run dev
-     ```
-   - The React app will run on `http://localhost:3000`.
-   - All components must be functional and written using **React.js** and **JSX**.
-   - Styling should be clean and modern; you may use **Tailwind CSS**, but **Material UI** and **Bootstrap** are not allowed.
-   - If applicable, mock images can be fetched from [Picsum](https://picsum.photos/).
-   - All user registration/login screens should exist (can be non-functional for now).
+---
 
-5. **Set up the back-end**
-   - Navigate to the back-end directory:
-     ```bash
-     cd ../back-end
-     npm install
-     npm start
-     ```
-   - The back-end must be built with **Express.js**.
-   - Dynamic routes must return mock JSON data or use a mocking API such as [Mockaroo](https://mockaroo.com/).
-   - All static routes must return the correct files.
-   - Front-end and back-end must be **fully integrated** — forms should `POST` to back-end routes.
+### **Step 1: Get the Project Code**
 
-6. **Set up the database**
-   - The project uses **MongoDB Atlas** as the database.
-   - Connect using **Mongoose** in the back-end.
-   - Add your MongoDB connection string to `.env` (do not commit this file):
-     ```bash
-     MONGO_URI=your_mongodb_atlas_connection_string
-     JWT_SECRET=your_jwt_secret
-     ```
-   - Ensure that data validation is implemented using **express-validator** before saving data.
-   - User authentication must be handled with **JSON Web Tokens (JWT)**.
+1. **Fork** this repository to your personal GitHub account.  
+2. **Clone** your forked repository to your local machine:
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
+    ```
+3. Navigate into the newly created project directory:
+    ```bash
+    cd YOUR_REPOSITORY_NAME
+    ```
 
+---
+
+### **Step 2: Set Up the Database**
+
+All application data is stored in a MongoDB database.  
+You can use either a **cloud-hosted MongoDB Atlas instance (recommended)** or a **local instance via Docker**.  
+
+#### **Option A: MongoDB Atlas (Recommended)**
+
+This is the required method for the final deployed version of the app.
+
+1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) and create a free account.  
+2. Create a **new project** and then a **free-tier cluster**.  
+3. Create a **database user** with a secure username and password — save these credentials for later.  
+4. Whitelist your current IP address:  
+   Go to **Network Access → Add IP Address → Allow Access From My Current IP**.  
+5. Click **Connect → Drivers** and copy the **Connection String** (you’ll need it for your `.env` file).
+
+#### **Option B: Local MongoDB via Docker**
+
+1. Ensure Docker Desktop is installed and running.  
+2. Run this command in your terminal:
+    ```bash
+    docker run --name mongodb_dockerhub -p 27017:27017 \
+    -e MONGO_INITDB_ROOT_USERNAME=admin \
+    -e MONGO_INITDB_ROOT_PASSWORD=secret \
+    -d mongo:latest
+    ```
+    This creates a MongoDB instance accessible on `mongodb://localhost:27017`.
+
+---
+
+### **Step 3: Configure and Run the Back-End**
+
+The back-end is built with **Express.js** and connects to MongoDB.  
+
+1. Navigate to the back-end directory:
+    ```bash
+    cd back-end
+    ```
+2. Create a `.env` file in this directory (`back-end/.env`).  
+3. Add your environment variables inside:
+    ```
+    DB_CONNECTION_STRING="<your_connection_string>"
+    PORT=7001
+    JWT_SECRET="your-super-secret-and-long-string-for-signing-tokens"
+    ```
+    - **For MongoDB Atlas:**
+      ```
+      DB_CONNECTION_STRING="mongodb+srv://<username>:<password>@cluster0.mongodb.net/example-mern-stack-app"
+      ```
+    - **For Local Docker:**
+      ```
+      DB_CONNECTION_STRING="mongodb://admin:secret@localhost:27017/example-mern-stack-app?authSource=admin"
+      ```
+4. Install dependencies:
+    ```bash
+    npm install
+    ```
+5. Run automated tests to ensure the back-end is functioning correctly:
+    ```bash
+    # Run tests with Mocha and Chai
+    npm test
+
+    # Check code coverage using c8
+    npm run coverage
+    ```
+6. Start the server:
+    ```bash
+    npm start
+    ```
+    The back-end should now run on **http://localhost:7001**
+
+---
+
+### **Step 4: Configure and Run the Front-End**
+
+The front-end is a **React.js** application.  
+
+1. In a **new terminal window**, navigate to the front-end folder:
+    ```bash
+    cd front-end
+    ```
+2. Create a `.env` file in this directory (`front-end/.env`) with:
+    ```
+    REACT_APP_API_URL=http://localhost:7001
+    PORT=7002
+    ```
+    This ensures the React app communicates with the back-end API.  
+3. Install dependencies:
+    ```bash
+    npm install
+    ```
+4. Start the React development server:
+    ```bash
+    npm start
+    ```
+    The app will automatically open in your browser.
+
+---
+
+### **Step 5: View the Application**
+
+With both servers running:
+
+* **Back-End:** http://localhost:7001  
+* **Front-End:** http://localhost:7002  
+
+Visit the front-end URL in your browser.  
+For an enhanced development experience, install the [React Developer Tools](https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi).
+
+---
+
+### **Step 6: Troubleshooting**
+
+* If the front-end can’t connect to the back-end, check that:
+  - Both servers are running.
+  - The `.env` values are correct.
+  - Ports `7001` and `7002` aren’t blocked by another process.
+* If Docker MongoDB doesn’t start, try:
+  ```bash
+  docker ps -a
+  docker start mongodb_dockerhub
 
 ## Build and Test Instructions
