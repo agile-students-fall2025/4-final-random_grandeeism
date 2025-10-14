@@ -10,3 +10,153 @@ Replace the contents of this file with the completed assignments, as described i
 
 ### Prototype Link
 - [figma prototype](https://www.figma.com/design/ihHn6AFIxVXQi9kkNGrXmT/To-Be-Read?node-id=0-1&t=Z1aHvfXFpuuim5Q9-1)
+
+## 📱 App Screens
+
+Below are the main app screens and design components that showcase the user experience and interface flow.
+
+---
+
+### 🧩 Add Link Overlay
+![Add Link Overlay](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Add%20Link%20Overlay.png)
+*Overlay screen for adding external article or media links.*
+
+---
+
+### 🗃️ Archive
+![Archive](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Archive.png)
+*Displays saved or previously accessed items for later reference.*
+
+---
+
+### 📖 Article Reader (Dark)
+![Article Reader Dark](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Article%20Reader%20Dark.png)
+*Dark mode interface for reading articles comfortably in low light.*
+
+---
+
+### 📖 Article Reader (Light)
+![Article Reader Light](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Article%20Reader%20Light.png)
+*Light mode interface for reading articles during the day.*
+
+---
+
+### 📚 Continue Reading
+![Continue Reading](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Continue%20Reading.png)
+*Section showing partially read or in-progress content.*
+
+---
+
+### 🌅 Daily Reading
+![Daily Reading](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Daily%20Reading.png)
+*Curated daily reading list or personalized recommendations.*
+
+---
+
+### ⭐ Favorites
+![Favorites](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Favorites.png)
+*Collection of bookmarked or favorited articles.*
+
+---
+
+### 📰 Front Page
+![Front Page](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Front%20Page.png)
+*Main landing screen showing top stories or featured items.*
+
+---
+
+### 🏠 Home Screen
+![Home Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Home%20Screen.png)
+*Primary dashboard view of the app.*
+
+---
+
+### 📥 Inbox
+![Inbox](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Inbox.png)
+*User inbox for received articles, messages, or recommendations.*
+
+---
+
+### 🏷️ Individual Tag
+![Individual Tag](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Individual%20Tag.png)
+*Screen for viewing articles filtered by a specific tag.*
+
+---
+
+### 🔐 Login Screen
+![Login Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Login%20Screen.png)
+*User authentication and sign-in interface.*
+
+---
+
+### 📝 Note Overlay (Dark)
+![Note Overlay Dark](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Note%20Overlay%20Dark.png)
+*Dark mode overlay for adding personal notes or highlights.*
+
+---
+
+### 📝 Note Overlay (Light)
+![Note Overlay](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Note%20Overlay.png)
+*Light mode overlay for adding personal notes or highlights.*
+
+---
+
+### 🎧 Podcast Viewer (Dark)
+![Podcast Viewer Dark](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Podcast%20Viewer%20Dark.png)
+*Dark theme interface for listening to and managing podcasts.*
+
+---
+
+### 🎧 Podcast Viewer (Light)
+![Podcast Viewer Light](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Podcast%20Viewer%20Light.png)
+*Light theme interface for listening to and managing podcasts.*
+
+---
+
+### 🔁 Rediscovery
+![Rediscovery](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Rediscovery.png)
+*Feature encouraging users to revisit old favorites or unread content.*
+
+---
+
+### ⚙️ Settings
+![Settings](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Settings.png)
+*App configuration and preferences screen.*
+
+---
+
+### 📂 Sidebar
+![Sidebar](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Sidebar.png)
+*Navigation drawer or quick access sidebar.*
+
+---
+
+### 🚪 Sign Out
+![Sign Out](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Sign%20Out.png)
+*Screen confirming user sign-out or account switch.*
+
+---
+
+### ✍️ Sign Up Screen
+![Sign Up Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Sign%20Up%20Screen.png)
+*Registration and onboarding screen for new users.*
+
+---
+
+### 🏷️ Tags
+![Tags](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Tags.png)
+*List of available content tags or categories.*
+
+---
+
+### 🎥 Video Viewer (Dark)
+![Video Viewer Dark](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Video%20Viewer%20Dark.png)
+*Dark mode video player screen.*
+
+---
+
+### 🎥 Video Viewer (Light)
+![Video Viewer Light](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Video%20Viewer%20Light.png)
+*Light mode video player screen.*
+
+---
