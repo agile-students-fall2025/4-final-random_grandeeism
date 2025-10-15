@@ -9,7 +9,7 @@ Replace the contents of this file with the completed assignments, as described i
 
 
 ### Prototype Link
-- [figma prototype](https://www.figma.com/design/ihHn6AFIxVXQi9kkNGrXmT/To-Be-Read?node-id=0-1&t=Z1aHvfXFpuuim5Q9-1)
+- [figma prototype](https://www.figma.com/design/ihHn6AFIxVXQi9kkNGrXmT/To-Be-Read?node-id=118-198&t=FVxqD9wm1eRSPR98-1)
 
 ## 📱 App Screens
 
