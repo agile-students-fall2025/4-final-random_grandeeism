@@ -47,6 +47,30 @@ Below are the main app screens and design components that showcase the user expe
 
 ---
 
+### 📥 Inbox
+![Inbox](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Inbox.png)
+*User inbox for received articles, messages, or recommendations.*
+
+---
+
+### 🌅 Daily Reading
+![Daily Reading](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Daily%20Reading.png)
+*Curated daily reading list or personalized recommendations.*
+
+---
+
+### 📚 Continue Reading
+![Continue Reading](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Continue%20Reading.png)
+*Section showing partially read or in-progress content.*
+
+---
+
+### 🔁 Rediscovery
+![Rediscovery](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Rediscovery.png)
+*Feature encouraging users to revisit old favorites or unread content.*
+
+---
+
 ### 🗃️ Archive
 ![Archive](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Archive.png)
 *Displays saved or previously accessed items for later reference.*
@@ -65,27 +89,9 @@ Below are the main app screens and design components that showcase the user expe
 
 ---
 
-### 📚 Continue Reading
-![Continue Reading](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Continue%20Reading.png)
-*Section showing partially read or in-progress content.*
-
----
-
-### 🌅 Daily Reading
-![Daily Reading](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Daily%20Reading.png)
-*Curated daily reading list or personalized recommendations.*
-
----
-
 ### ⭐ Favorites
 ![Favorites](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Favorites.png)
 *Collection of bookmarked or favorited articles.*
-
----
-
-### 📥 Inbox
-![Inbox](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Inbox.png)
-*User inbox for received articles, messages, or recommendations.*
 
 ---
 
@@ -116,12 +122,6 @@ Below are the main app screens and design components that showcase the user expe
 ### 🎧 Podcast Viewer (Light)
 ![Podcast Viewer Light](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Podcast%20Viewer%20Light.png)
 *Light theme interface for listening to and managing podcasts.*
-
----
-
-### 🔁 Rediscovery
-![Rediscovery](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Rediscovery.png)
-*Feature encouraging users to revisit old favorites or unread content.*
 
 ---
 
