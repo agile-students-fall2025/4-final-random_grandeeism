@@ -2,7 +2,8 @@
 
 This repository contains instructions and files  that together comprise the user experience design phase of a web app.
 
-### App Mao
+### App Map
+- [App Map](https://www.figma.com/design/moer7FnY4gHEGUlUVAWcEj/To-Be-Read-App-Map?node-id=44-6&p=f&t=cqC0X0duqlUg0lQR-0)
 
 ![App Map](ux-design/To%20Be%20Read%20App%20Map.jpg)
 
