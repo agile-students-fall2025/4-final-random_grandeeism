@@ -1,16 +1,10 @@
 # User Experience Design
 
-This repository contains instructions and files for two assignments that together comprise the user experience design phase of a web app.
-
-Replace the contents of this file with the completed assignments, as described in:
-
-- [app map & wireframe instructions](instructions-0a-app-map-wireframes.md).
-- [prototype instructions](instructions-0b-prototyping.md)
-
+This repository contains instructions and files  that together comprise the user experience design phase of a web app.
 
 ### App Mao
 
-![[ux-design\To Be Read App Map.jpg]]
+![[ux-design/To Be Read App Map.jpg]]
 
 ### Prototype Link
 - [figma prototype](https://www.figma.com/design/ihHn6AFIxVXQi9kkNGrXmT/To-Be-Read?node-id=118-198&t=FVxqD9wm1eRSPR98-1)
