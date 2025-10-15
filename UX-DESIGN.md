@@ -17,6 +17,12 @@ Below are the main app screens and design components that showcase the user expe
 
 ---
 
+### 📰 Front Page
+![Front Page](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Front%20Page.png)
+*Main landing screen showing top stories or featured items.*
+
+---
+
 ### 🔐 Login Screen
 ![Login Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Login%20Screen.png)
 *User authentication and sign-in interface.*
@@ -26,12 +32,6 @@ Below are the main app screens and design components that showcase the user expe
 ### ✍️ Sign Up Screen
 ![Sign Up Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Sign%20Up%20Screen.png)
 *Registration and onboarding screen for new users.*
-
----
-
-### 📰 Front Page
-![Front Page](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Front%20Page.png)
-*Main landing screen showing top stories or featured items.*
 
 ---
 
