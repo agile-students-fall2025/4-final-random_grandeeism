@@ -113,6 +113,18 @@ Below are the main app screens and design components that showcase the user expe
 
 ---
 
+### 📝 Theme Settings Overlay (Light)
+![Theme Settings Overlay](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Theme%20Settings%20Panel.png)
+*Light mode overlay for adjusting reader theme settings.*
+
+---
+
+### 📝 Theme Settings Overlay (Dark)
+![Theme Settings Overlay](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Theme%20Settings%20Panel-1.png)
+*Dark mode overlay for adjusting reader theme settings.*
+
+---
+
 ### 🎧 Podcast Viewer (Dark)
 ![Podcast Viewer Dark](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Podcast%20Viewer%20Dark.png)
 *Dark theme interface for listening to and managing podcasts.*
