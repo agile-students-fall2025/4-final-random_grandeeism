@@ -17,6 +17,30 @@ Below are the main app screens and design components that showcase the user expe
 
 ---
 
+### 🔐 Login Screen
+![Login Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Login%20Screen.png)
+*User authentication and sign-in interface.*
+
+---
+
+### ✍️ Sign Up Screen
+![Sign Up Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Sign%20Up%20Screen.png)
+*Registration and onboarding screen for new users.*
+
+---
+
+### 📰 Front Page
+![Front Page](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Front%20Page.png)
+*Main landing screen showing top stories or featured items.*
+
+---
+
+### 🏠 Home Screen
+![Home Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Home%20Screen.png)
+*Primary dashboard view of the app.*
+
+---
+
 ### 🧩 Add Link Overlay
 ![Add Link Overlay](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Add%20Link%20Overlay.png)
 *Overlay screen for adding external article or media links.*
@@ -59,18 +83,6 @@ Below are the main app screens and design components that showcase the user expe
 
 ---
 
-### 📰 Front Page
-![Front Page](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Front%20Page.png)
-*Main landing screen showing top stories or featured items.*
-
----
-
-### 🏠 Home Screen
-![Home Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Home%20Screen.png)
-*Primary dashboard view of the app.*
-
----
-
 ### 📥 Inbox
 ![Inbox](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Inbox.png)
 *User inbox for received articles, messages, or recommendations.*
@@ -80,12 +92,6 @@ Below are the main app screens and design components that showcase the user expe
 ### 🏷️ Individual Tag
 ![Individual Tag](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Individual%20Tag.png)
 *Screen for viewing articles filtered by a specific tag.*
-
----
-
-### 🔐 Login Screen
-![Login Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Login%20Screen.png)
-*User authentication and sign-in interface.*
 
 ---
 
@@ -134,12 +140,6 @@ Below are the main app screens and design components that showcase the user expe
 ### 🚪 Sign Out
 ![Sign Out](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Sign%20Out.png)
 *Screen confirming user sign-out or account switch.*
-
----
-
-### ✍️ Sign Up Screen
-![Sign Up Screen](https://raw.githubusercontent.com/agile-students-fall2025/4-final-random_grandeeism/refs/heads/master/ux-design/app-screens/Sign%20Up%20Screen.png)
-*Registration and onboarding screen for new users.*
 
 ---
 
