@@ -4,7 +4,7 @@ This repository contains instructions and files  that together comprise the user
 
 ### App Mao
 
-![[ux-design/To Be Read App Map.jpg]]
+![App Map](ux-design/To%20Be%20Read%20App%20Map.jpg)
 
 ### Prototype Link
 - [figma prototype](https://www.figma.com/design/ihHn6AFIxVXQi9kkNGrXmT/To-Be-Read?node-id=118-198&t=FVxqD9wm1eRSPR98-1)
