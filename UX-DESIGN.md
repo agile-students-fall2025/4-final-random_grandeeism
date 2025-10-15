@@ -8,12 +8,16 @@ Replace the contents of this file with the completed assignments, as described i
 - [prototype instructions](instructions-0b-prototyping.md)
 
 
+### App Mao
+
+![[ux-design\To Be Read App Map.jpg]]
+
 ### Prototype Link
 - [figma prototype](https://www.figma.com/design/ihHn6AFIxVXQi9kkNGrXmT/To-Be-Read?node-id=118-198&t=FVxqD9wm1eRSPR98-1)
 
-## 📱 App Screens
+## 📱 Wireframe Diagrams
 
-Below are the main app screens and design components that showcase the user experience and interface flow.
+Below are the wireframe diagrams that showcase the user experience and interface flow.
 
 ---
 
