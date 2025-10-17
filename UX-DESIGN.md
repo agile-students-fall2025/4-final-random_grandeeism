@@ -9,6 +9,7 @@ This repository contains instructions and files  that together comprise the user
 
 ### Prototype Link
 - [figma prototype](https://www.figma.com/design/ihHn6AFIxVXQi9kkNGrXmT/To-Be-Read?node-id=118-198&t=FVxqD9wm1eRSPR98-1)
+- [figma file](https://github.com/agile-students-fall2025/4-final-random_grandeeism/blob/master/ux-design/prototype/To%20Be%20Read.fig)
 
 ## 📱 Wireframe Diagrams
 
