@@ -8,7 +8,7 @@ This repository contains instructions and files  that together comprise the user
 ![App Map](ux-design/To%20Be%20Read%20App%20Map.jpg)
 
 ### Prototype Link
-- [figma prototype](https://www.figma.com/design/ihHn6AFIxVXQi9kkNGrXmT/To-Be-Read?node-id=118-198&t=FVxqD9wm1eRSPR98-1)
+- [figma prototype](https://www.figma.com/proto/ihHn6AFIxVXQi9kkNGrXmT/To-Be-Read?node-id=118-198&p=f&t=zjNtYr9F88tXa7om-0&scaling=scale-down&content-scaling=fixed&page-id=118%3A198&starting-point-node-id=128%3A199)
 - [figma file](https://github.com/agile-students-fall2025/4-final-random_grandeeism/blob/master/ux-design/prototype/To%20Be%20Read.fig)
 
 ## 📱 Wireframe Diagrams
