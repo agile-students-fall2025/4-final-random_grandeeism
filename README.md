@@ -8,9 +8,10 @@ In the current internet age there is a incomprehensible and immense amount of in
 
 - [Zeba Shafi](https://github.com/Zeba-Shafi)
 - [Sheik Anas Ally Ozeer](https://github.com/anas-ozeer)
-- [Alexander](https://github.com/EscoAl516)
+- [Alexander Escobar](https://github.com/EscoAl516)
 - [Saad Sifar](https://github.com/one-loop)
-- [Shaurya](https://github.com/shauryasr04)
+- [Shaurya Srivastava](https://github.com/shauryasr04)
+- [Jeffrey Chen](https://github.com/shauryasr04)
 
 Our [team norms and values](CONTRIBUTING.md#team-norms)
 
