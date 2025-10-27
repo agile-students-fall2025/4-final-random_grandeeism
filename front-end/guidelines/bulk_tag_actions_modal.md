@@ -1,10 +1,10 @@
 # BulkTagModal Component Creation Prompt
 
 ## Overview
-Create a `BulkTagModal.tsx` component for the fieldnotes read-it-later app that allows users to add tags to multiple selected items simultaneously. This modal works in conjunction with the BulkActionsBar to provide efficient batch tag management.
+Create a `BulkTagModal.jsx` component for the fieldnotes read-it-later app that allows users to add tags to multiple selected items simultaneously. This modal works in conjunction with the BulkActionsBar to provide efficient batch tag management.
 
 ## Component Location
-`/components/BulkTagModal.tsx`
+`/components/BulkTagModal.jsx`
 
 ## Purpose
 This modal provides an interface for users to add tags to multiple selected articles, videos, or podcasts at once. It should handle:
@@ -200,27 +200,28 @@ This modal provides an interface for users to add tags to multiple selected arti
 
 ## Component Structure
 
-### Props Interface
-```typescript
-interface BulkTagModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  selectedCount: number;
-  allTags: string[];
-  onApplyTags: (tags: string[]) => void;
-}
+### Props (example)
+```jsx
+// Example props shape for BulkTagModal (JS/JSX)
+const BulkTagModalProps = {
+  isOpen: false,
+  onClose: () => {},
+  selectedCount: 0,
+  allTags: [],
+  onApplyTags: (tags) => {}
+};
 ```
 
 ### State Management
-```typescript
-const [selectedTags, setSelectedTags] = useState<string[]>([]);
+```jsx
+const [selectedTags, setSelectedTags] = useState([]);
 const [newTagInput, setNewTagInput] = useState("");
 ```
 
 ### Key Functions
 
 #### handleAddNewTag
-```typescript
+```jsx
 const handleAddNewTag = () => {
   const trimmedTag = newTagInput.trim();
   if (trimmedTag && !selectedTags.includes(trimmedTag)) {
@@ -231,8 +232,8 @@ const handleAddNewTag = () => {
 ```
 
 #### handleToggleTag
-```typescript
-const handleToggleTag = (tag: string) => {
+```jsx
+const handleToggleTag = (tag) => {
   if (selectedTags.includes(tag)) {
     setSelectedTags(selectedTags.filter(t => t !== tag));
   } else {
@@ -242,14 +243,14 @@ const handleToggleTag = (tag: string) => {
 ```
 
 #### handleRemoveTag
-```typescript
-const handleRemoveTag = (tag: string) => {
+```jsx
+const handleRemoveTag = (tag) => {
   setSelectedTags(selectedTags.filter(t => t !== tag));
 };
 ```
 
 #### handleApply
-```typescript
+```jsx
 const handleApply = () => {
   onApplyTags(selectedTags);
   setSelectedTags([]);
@@ -301,7 +302,7 @@ const handleApply = () => {
 ## Dependencies
 
 ### Required Imports
-```typescript
+```jsx
 import { useState } from "react";
 import { X, Tag, Plus } from "lucide-react";
 import { Button } from "./ui/button";
@@ -318,19 +319,19 @@ import { Badge } from "./ui/badge";
 The parent page must:
 
 1. **Maintain Modal State**
-```typescript
+```jsx
 const [showBulkTagModal, setShowBulkTagModal] = useState(false);
-const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+const [selectedItems, setSelectedItems] = useState(new Set());
 ```
 
 2. **Generate All Tags List**
-```typescript
+```jsx
 const allTags = Array.from(new Set(articles.flatMap(a => a.tags)));
 ```
 
 3. **Provide Apply Handler**
-```typescript
-const handleApplyBulkTags = (tags: string[]) => {
+```jsx
+const handleApplyBulkTags = (tags) => {
   const updatedArticles = articles.map(article => {
     if (selectedItems.has(article.id)) {
       // Merge new tags with existing, removing duplicates
@@ -347,7 +348,7 @@ const handleApplyBulkTags = (tags: string[]) => {
 ```
 
 4. **Render Modal**
-```typescript
+```jsx
 <BulkTagModal
   isOpen={showBulkTagModal}
   onClose={() => setShowBulkTagModal(false)}
@@ -358,7 +359,7 @@ const handleApplyBulkTags = (tags: string[]) => {
 ```
 
 ### Integration with BulkActionsBar
-```typescript
+```jsx
 // In BulkActionsBar
 <Button
   variant="outline"
@@ -401,7 +402,7 @@ const handleApplyBulkTags = (tags: string[]) => {
 ## Tag Deduplication Logic
 
 When applying tags:
-```typescript
+```jsx
 // In parent component
 const newTags = Array.from(new Set([...article.tags, ...tags]));
 ```
@@ -478,13 +479,13 @@ This ensures:
 
 ## Example Usage
 
-```typescript
-// In TextPage.tsx, VideosPage.tsx, or PodcastsPage.tsx
+```jsx
+// In TextPage.jsx, VideosPage.jsx, or PodcastsPage.jsx
 import BulkTagModal from "./BulkTagModal";
 import { toast } from "sonner@2.0.3";
 
 // Component state
-const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+const [selectedItems, setSelectedItems] = useState(new Set());
 const [showBulkTagModal, setShowBulkTagModal] = useState(false);
 
 // Get all unique tags from articles
@@ -494,7 +495,7 @@ const allTags = useMemo(() =>
 );
 
 // Handler
-const handleApplyBulkTags = (tags: string[]) => {
+const handleApplyBulkTags = (tags) => {
   const updated = articles.map(article => {
     if (selectedItems.has(article.id)) {
       const newTags = Array.from(new Set([...article.tags, ...tags]));
@@ -519,7 +520,7 @@ const handleApplyBulkTags = (tags: string[]) => {
 
 ## Related Components
 Reference these components for consistency:
-- `/components/BulkActionsBar.tsx` - Triggers this modal
-- `/components/TagManager.tsx` - Similar tag management for single items
-- `/components/ExportNotesModal.tsx` - Similar modal structure and styling
-- `/components/CompletionModal.tsx` - Modal interaction patterns
+- `/components/BulkActionsBar.jsx` - Triggers this modal
+- `/components/TagManager.jsx` - Similar tag management for single items
+- `/components/ExportNotesModal.jsx` - Similar modal structure and styling
+- `/components/CompletionModal.jsx` - Modal interaction patterns

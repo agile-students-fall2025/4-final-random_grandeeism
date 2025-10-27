@@ -1146,7 +1146,7 @@ const handleSearchWithFilters = (query, filters) => {
 ## Common Pitfalls to Avoid
 
 ### ❌ Don't:
-- Use TypeScript syntax (pure JSX only)
+- Use plain JSX only
 - Add colors (grayscale only)
 - Forget to close other dropdowns when opening one
 - Show locked filter in both locked and removable sections

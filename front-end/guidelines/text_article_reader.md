@@ -1,10 +1,10 @@
 # ArticleViewer Component Creation Prompt
 
 ## Overview
-Create an `ArticleViewer.tsx` component for the fieldnotes read-it-later app that provides a distraction-free, feature-rich reading experience for text articles. This component is the core reading interface with support for multi-color highlighting, annotations, reader customization, and workflow management.
+Create an `ArticleViewer.jsx` component for the fieldnotes read-it-later app that provides a distraction-free, feature-rich reading experience for text articles. This component is the core reading interface with support for multi-color highlighting, annotations, reader customization, and workflow management.
 
 ## Component Location
-`/components/ArticleViewer.tsx`
+`/components/ArticleViewer.jsx`
 
 ## Purpose
 This component serves as the primary text article reading interface with advanced annotation capabilities. It should:
@@ -23,7 +23,7 @@ This component serves as the primary text article reading interface with advance
 The ArticleViewer performs content type detection and routes accordingly:
 
 #### Video Detection
-```typescript
+```jsx
 const isVideo = article.mediaType === "video" || 
   article.url.includes("youtube.com") || 
   article.url.includes("youtu.be") ||
@@ -35,7 +35,7 @@ if (isVideo) {
 ```
 
 #### Podcast Detection
-```typescript
+```jsx
 const isPodcast = article.mediaType === "podcast" || article.podcastUrl;
 
 if (isPodcast) {
@@ -56,7 +56,7 @@ if (isPodcast) {
 #### 2. Multi-Color Text Highlighting
 
 **Color Palette** (Exception to grayscale theme):
-```typescript
+```jsx
 const HIGHLIGHT_COLORS = [
   { name: 'Yellow', value: 'yellow', light: '#fef08a', dark: '#854d0e' },
   { name: 'Green', value: 'green', light: '#86efac', dark: '#166534' },
@@ -75,7 +75,7 @@ const HIGHLIGHT_COLORS = [
 - Click highlighted text to view/edit note
 
 **Highlight Data Structure**:
-```typescript
+```jsx
 interface Highlight {
   id: string;
   text: string;
@@ -362,7 +362,7 @@ interface Highlight {
 ## Component Structure
 
 ### Props Interface
-```typescript
+```jsx
 interface ArticleViewerProps {
   article: Article;
   onClose: () => void;
@@ -373,7 +373,7 @@ interface ArticleViewerProps {
 ```
 
 ### State Management
-```typescript
+```jsx
 // Reader settings
 const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
 const [fontFamily, setFontFamily] = useState<'serif' | 'sans-serif' | 'mono'>('serif');
@@ -419,7 +419,7 @@ const contentRef = useRef<HTMLDivElement>(null);
 ### Key Functions
 
 #### Content Type Detection
-```typescript
+```jsx
 const isVideo = article.mediaType === "video" || 
   article.url.includes("youtube.com") || 
   article.url.includes("youtu.be") ||
@@ -432,7 +432,7 @@ if (isPodcast) return <PodcastViewer ... />;
 ```
 
 #### Scroll Detection for Completion
-```typescript
+```jsx
 useEffect(() => {
   const handleScroll = () => {
     if (hasShownCompletionModal) return;
@@ -461,7 +461,7 @@ useEffect(() => {
 ```
 
 #### Text Selection & Highlighting
-```typescript
+```jsx
 const handleTextSelection = () => {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) {
@@ -522,7 +522,7 @@ const applyHighlight = (color: string) => {
 ```
 
 #### Status Management
-```typescript
+```jsx
 const handleStatusChange = (newStatus: Article["status"]) => {
   if (onUpdateArticle) {
     const updates: Partial<Article> = { status: newStatus };
@@ -572,7 +572,7 @@ const getNextStatus = () => {
 ```
 
 #### Completion Handling
-```typescript
+```jsx
 const handleComplete = (reflection: string) => {
   if (onUpdateArticle) {
     onUpdateArticle({
@@ -701,7 +701,7 @@ const handleSkipCompletion = () => {
 ## Dependencies
 
 ### Required Imports
-```typescript
+```jsx
 import { useState, useRef, useEffect } from "react";
 import { 
   X, ExternalLink, Edit, Archive, Star, Home, Search, Tag, 
@@ -719,7 +719,7 @@ import ReaderSettingsModal from "./ReaderSettingsModal";
 ```
 
 ### Type Definitions
-```typescript
+```jsx
 interface Article {
   id: string;
   title: string;
@@ -762,7 +762,7 @@ interface Highlight {
 ## Integration Notes
 
 ### Parent Component (TextPage) Integration
-```typescript
+```jsx
 import ArticleViewer from "./ArticleViewer";
 
 const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -959,9 +959,9 @@ These colors are:
 
 ## Related Components
 Reference these components for consistency:
-- `/components/VideoViewer.tsx` - Similar viewer for videos
-- `/components/PodcastViewer.tsx` - Similar viewer for podcasts
-- `/components/TagManager.tsx` - Tag management integration
-- `/components/CompletionModal.tsx` - Completion flow
-- `/components/ReaderSettingsModal.tsx` - Reader customization
-- `/components/ContentCard.tsx` - Article preview in lists
+- `/components/VideoViewer.jsx` - Similar viewer for videos
+- `/components/PodcastViewer.jsx` - Similar viewer for podcasts
+- `/components/TagManager.jsx` - Tag management integration
+- `/components/CompletionModal.jsx` - Completion flow
+- `/components/ReaderSettingsModal.jsx` - Reader customization
+- `/components/ContentCard.jsx` - Article preview in lists

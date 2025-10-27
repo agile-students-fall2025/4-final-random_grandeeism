@@ -1,10 +1,10 @@
 # BulkFeedsModal Component Creation Prompt
 
 ## Overview
-Create a `BulkFeedsModal.tsx` component for the fieldnotes read-it-later app that allows users to manage multiple RSS/podcast feeds simultaneously. This modal enables batch operations like refreshing, organizing, or removing multiple feeds at once.
+Create a `BulkFeedsModal.jsx` component for the fieldnotes read-it-later app that allows users to manage multiple RSS/podcast feeds simultaneously. This modal enables batch operations like refreshing, organizing, or removing multiple feeds at once.
 
 ## Component Location
-`/components/BulkFeedsModal.tsx`
+`/components/BulkFeedsModal.jsx`
 
 ## Purpose
 This modal provides an interface for bulk feed management operations. It should handle:
@@ -260,45 +260,44 @@ This modal provides an interface for bulk feed management operations. It should 
 
 ## Component Structure
 
-### Props Interface
-```typescript
-interface BulkFeedsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  selectedFeeds: Feed[];
-  allFolders: string[];
-  onApplyActions: (actions: BulkFeedActions) => void;
-}
+### Props (example)
+```jsx
+// Example props shape for BulkFeedsModal (JS/JSX)
+const BulkFeedsModalProps = {
+  isOpen: false,
+  onClose: () => {},
+  selectedFeeds: [],
+  allFolders: [],
+  onApplyActions: (actions) => {}
+};
 
-interface BulkFeedActions {
-  refresh?: boolean;
-  folder?: string | null;
-  updateFrequency?: FeedUpdateFrequency;
-  pause?: boolean;
-  resume?: boolean;
-  markAllRead?: boolean;
-  delete?: {
-    deleteType: "keep" | "delete-read" | "delete-all";
-  };
-}
+const BulkFeedActions = {
+  refresh: false,
+  folder: null,
+  updateFrequency: null,
+  pause: false,
+  resume: false,
+  markAllRead: false,
+  delete: null
+};
 
-type FeedUpdateFrequency = "hourly" | "6hours" | "daily" | "weekly" | "manual";
+const FeedUpdateFrequency = ["hourly", "6hours", "daily", "weekly", "manual"];
 ```
 
 ### State Management
-```typescript
+```jsx
 const [refreshing, setRefreshing] = useState(false);
-const [selectedFolder, setSelectedFolder] = useState<string>("");
-const [selectedFrequency, setSelectedFrequency] = useState<FeedUpdateFrequency | "">("");
+const [selectedFolder, setSelectedFolder] = useState("");
+const [selectedFrequency, setSelectedFrequency] = useState("");
 const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-const [deleteOption, setDeleteOption] = useState<"keep" | "delete-read" | "delete-all">("delete-all");
-const [actionsToApply, setActionsToApply] = useState<Set<string>>(new Set());
+const [deleteOption, setDeleteOption] = useState("delete-all");
+const [actionsToApply, setActionsToApply] = useState(new Set());
 ```
 
 ### Key Functions
 
 #### handleRefreshAll
-```typescript
+```jsx
 const handleRefreshAll = async () => {
   setRefreshing(true);
   // Trigger refresh for all selected feeds
@@ -308,7 +307,7 @@ const handleRefreshAll = async () => {
 ```
 
 #### handleApplyActions
-```typescript
+```jsx
 const handleApplyActions = () => {
   const actions: BulkFeedActions = {};
   
@@ -324,7 +323,7 @@ const handleApplyActions = () => {
 ```
 
 #### handleDelete
-```typescript
+```jsx
 const handleDelete = () => {
   setShowDeleteConfirm(true);
 };
@@ -404,7 +403,7 @@ const confirmDelete = () => {
 ## Dependencies
 
 ### Required Imports
-```typescript
+```jsx
 import { useState } from "react";
 import { X, Rss, RefreshCw, Folder, Clock, Pause, Play, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "./ui/button";
@@ -430,12 +429,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 ### Parent Component (FeedsPage) Integration
 
-```typescript
+```jsx
 import BulkFeedsModal from "./BulkFeedsModal";
 import { toast } from "sonner@2.0.3";
 
 // State
-const [selectedFeeds, setSelectedFeeds] = useState<Set<string>>(new Set());
+const [selectedFeeds, setSelectedFeeds] = useState(new Set());
 const [showBulkFeedsModal, setShowBulkFeedsModal] = useState(false);
 
 // Get selected feed objects
@@ -445,7 +444,7 @@ const selectedFeedObjects = feeds.filter(f => selectedFeeds.has(f.id));
 const allFolders = Array.from(new Set(feeds.map(f => f.folder).filter(Boolean)));
 
 // Handler
-const handleBulkFeedActions = async (actions: BulkFeedActions) => {
+const handleBulkFeedActions = async (actions) => {
   let updatedFeeds = [...feeds];
   
   // Refresh
@@ -552,7 +551,7 @@ const handleBulkFeedActions = async (actions: BulkFeedActions) => {
 ## Feed Type Indicators
 
 Show feed type with badges:
-```typescript
+```jsx
 <Badge variant="outline" className="text-[10px]">
   {feed.type === "article" && <FileText size={10} className="mr-1" />}
   {feed.type === "video" && <Play size={10} className="mr-1" />}
@@ -612,11 +611,11 @@ Show feed type with badges:
 
 ## Example Usage
 
-```typescript
-// In FeedsPage.tsx
+```jsx
+// In FeedsPage.jsx
 import BulkFeedsModal from "./BulkFeedsModal";
 
-const [selectedFeeds, setSelectedFeeds] = useState<Set<string>>(new Set());
+const [selectedFeeds, setSelectedFeeds] = useState(new Set());
 const [showBulkModal, setShowBulkModal] = useState(false);
 
 const selectedFeedObjects = feeds.filter(f => selectedFeeds.has(f.id));
@@ -633,7 +632,7 @@ const allFolders = Array.from(new Set(feeds.map(f => f.folder).filter(Boolean)))
 
 ## Related Components
 Reference these components for consistency:
-- `/components/BulkActionsBar.tsx` - Similar bulk operation patterns
-- `/components/BulkTagModal.tsx` - Bulk modal structure
-- `/components/ExportNotesModal.tsx` - Modal styling and layout
-- `/components/pages/FeedsPage.tsx` - Integration context
+- `/components/BulkActionsBar.jsx` - Similar bulk operation patterns
+- `/components/BulkTagModal.jsx` - Bulk modal structure
+- `/components/ExportNotesModal.jsx` - Modal styling and layout
+- `/components/pages/FeedsPage.jsx` - Integration context

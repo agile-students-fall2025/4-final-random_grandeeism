@@ -544,7 +544,7 @@ This callback is passed down through props to any component that needs to trigge
 
 ## Notes
 
-1. **This is NOT a separate component** - The modal is inline in App.tsx for direct state access
+1. **This is NOT a separate component** - The modal is inline in App.jsx for direct state access
 2. **Article ID generation** uses `Date.now().toString()` - simple but effective for client-side
 3. **Default values** assume "new article" will be processed later (title, description, readingTime)
 4. **No media type selection** - Assumes "article" type by default

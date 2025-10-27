@@ -1,10 +1,10 @@
 # BulkActionsBar Component Creation Prompt
 
 ## Overview
-Create a `BulkActionsBar.tsx` component for the fieldnotes read-it-later app that provides bulk operations on selected articles, videos, and podcasts. This component appears as a fixed bottom toolbar when items are selected, allowing users to perform batch operations efficiently.
+Create a `BulkActionsBar.jsx` component for the fieldnotes read-it-later app that provides bulk operations on selected articles, videos, and podcasts. This component appears as a fixed bottom toolbar when items are selected, allowing users to perform batch operations efficiently.
 
 ## Component Location
-`/components/BulkActionsBar.tsx`
+`/components/BulkActionsBar.jsx`
 
 ## Purpose
 This component provides a context-sensitive action bar for performing bulk operations on multiple content items simultaneously. It should handle:
@@ -136,27 +136,27 @@ Mobile/Responsive Layout:
 ### Component Styling Details
 
 #### Container
-```typescript
+```jsx
 className="fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg z-40"
 ```
 
 #### Inner Container
-```typescript
+```jsx
 className="max-w-7xl mx-auto px-4 py-3"
 ```
 
 #### Main Flex Layout
-```typescript
+```jsx
 className="flex items-center justify-between gap-4"
 ```
 
 #### Left Section (Clear + Count)
-```typescript
+```jsx
 className="flex items-center gap-3"
 ```
 
 #### Right Section (Action Buttons)
-```typescript
+```jsx
 className="flex items-center gap-2 flex-wrap"
 ```
 
@@ -185,7 +185,7 @@ className="flex items-center gap-2 flex-wrap"
 ## Component Structure
 
 ### Props Interface
-```typescript
+```jsx
 interface BulkActionsBarProps {
   selectedCount: number;
   onClearSelection: () => void;
@@ -199,14 +199,14 @@ interface BulkActionsBarProps {
 ```
 
 ### State Management
-```typescript
+```jsx
 // No local state required - all state is managed by parent
 // Optional: const [showStatusMenu, setShowStatusMenu] = useState(false);
 // But DropdownMenu handles this internally
 ```
 
 ### ArticleStatus Type
-```typescript
+```jsx
 type ArticleStatus = "inbox" | "dailyReading" | "inProgress" | "rediscovery" | "archived";
 ```
 
@@ -260,7 +260,7 @@ type ArticleStatus = "inbox" | "dailyReading" | "inProgress" | "rediscovery" | "
 ## Dependencies
 
 ### Required Imports
-```typescript
+```jsx
 import { useState } from "react";
 import { X, Star, Tag, Archive, Trash2, Inbox, Calendar, BookOpen, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
@@ -286,13 +286,13 @@ import {
 The parent page (TextPage, VideosPage, PodcastsPage) must:
 
 1. **Maintain Selection State**
-```typescript
+```jsx
 const [selectionMode, setSelectionMode] = useState(false);
-const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+const [selectedItems, setSelectedItems] = useState(new Set());
 ```
 
 2. **Provide Handler Functions**
-```typescript
+```jsx
 const handleBulkFavorite = () => {
   const updated = articles.map(article => 
     selectedItems.has(article.id) ? { ...article, isFavorite: true } : article
@@ -389,7 +389,7 @@ const clearSelection = () => {
 ```
 
 3. **Conditional Rendering**
-```typescript
+```jsx
 {selectedItems.size > 0 && (
   <BulkActionsBar
     selectedCount={selectedItems.size}
@@ -406,7 +406,7 @@ const clearSelection = () => {
 
 ### Delete Confirmation Dialog
 Use ShadCN AlertDialog component:
-```typescript
+```jsx
 <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
   <AlertDialogContent>
     <AlertDialogHeader>
@@ -426,11 +426,11 @@ Use ShadCN AlertDialog component:
 ```
 
 ### BulkTagModal Integration
-```typescript
+```jsx
 const [showBulkTagModal, setShowBulkTagModal] = useState(false);
 const allTags = Array.from(new Set(articles.flatMap(a => a.tags)));
 
-const handleApplyBulkTags = (tags: string[]) => {
+const handleApplyBulkTags = (tags) => {
   const updated = articles.map(article => {
     if (selectedItems.has(article.id)) {
       const newTags = Array.from(new Set([...article.tags, ...tags]));
@@ -481,7 +481,7 @@ const handleApplyBulkTags = (tags: string[]) => {
 When changing status, update these fields:
 
 ### Moving to Archived
-```typescript
+```jsx
 {
   status: "archived",
   dateRead: new Date(),
@@ -490,7 +490,7 @@ When changing status, update these fields:
 ```
 
 ### Moving to Daily Reading
-```typescript
+```jsx
 {
   status: "dailyReading",
   scheduledDate: new Date() // Only if not already set
@@ -498,7 +498,7 @@ When changing status, update these fields:
 ```
 
 ### Moving to Rediscovery
-```typescript
+```jsx
 {
   status: "rediscovery",
   rediscoveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // +7 days
@@ -513,7 +513,7 @@ Apply same metadata logic based on target status
 
 Use toast from `sonner@2.0.3`:
 
-```typescript
+```jsx
 // Favorite
 toast.success(`Favorited ${count} items`);
 
@@ -588,14 +588,14 @@ toast.success(`Deleted ${count} items`);
 
 ## Example Usage
 
-```typescript
-// In TextPage.tsx, VideosPage.tsx, or PodcastsPage.tsx
+```jsx
+// In TextPage.jsx, VideosPage.jsx, or PodcastsPage.jsx
 import BulkActionsBar from "./BulkActionsBar";
 import BulkTagModal from "./BulkTagModal";
 import { AlertDialog, ... } from "./ui/alert-dialog";
 
 // Component state
-const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+const [selectedItems, setSelectedItems] = useState(new Set());
 const [showBulkTagModal, setShowBulkTagModal] = useState(false);
 const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -619,7 +619,7 @@ const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   selectedCount={selectedItems.size}
   allTags={allTags}
   onApplyTags={handleApplyBulkTags}
-/>
+/
 
 <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
   {/* Delete confirmation content */}
@@ -628,7 +628,7 @@ const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
 ## Related Components
 Reference these components for consistency:
-- `/components/BulkTagModal.tsx` - Works in tandem with bulk actions
-- `/components/TopBar.tsx` - Similar button styling patterns
-- `/components/ContentCard.tsx` - Selection state management
-- `/components/CompletionModal.tsx` - Modal patterns for confirmations
+- `/components/BulkTagModal.jsx` - Works in tandem with bulk actions
+- `/components/TopBar.jsx` - Similar button styling patterns
+- `/components/ContentCard.jsx` - Selection state management
+- `/components/CompletionModal.jsx` - Modal patterns for confirmations

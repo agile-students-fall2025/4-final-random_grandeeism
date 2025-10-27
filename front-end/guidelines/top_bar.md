@@ -926,10 +926,10 @@ onChange={(e) => onSearch(e.target.value)}
 
 ---
 
-## Common Pitfalls to Avoid
+### Common Pitfalls to Avoid
 
 ### ❌ Don't:
-- Use TypeScript syntax (this is pure JSX)
+- Use JSX syntax (this is pure JSX)
 - Add any colors (except grayscale and white)
 - Add drop shadows (except SearchFilter dropdowns)
 - Use large rounded corners (rounded-xl, rounded-2xl)
@@ -972,7 +972,7 @@ onChange={(e) => onSearch(e.target.value)}
 - `/components/SearchFilter.jsx` - Advanced filter component
 
 **Related:**
-- `/components/Sidebar.tsx` - Vertical navigation (toggled by menu button)
+- `/components/Sidebar.jsx` - Vertical navigation (toggled by menu button)
 - `/components/BulkActionsBar.jsx` - Appears when selectionMode active
 
 ---
@@ -1069,6 +1069,6 @@ You now have everything needed to create `/components/TopBar.jsx`:
 
 ---
 
-**Last Updated:** Based on actual TopBar.tsx implementation  
+**Last Updated:** Based on actual TopBar.jsx implementation  
 **Dependencies:** Button.jsx ✅ | SearchFilter.jsx ✅  
 **Status:** Ready to build! 🔨

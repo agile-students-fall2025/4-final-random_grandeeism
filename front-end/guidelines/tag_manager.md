@@ -1,15 +1,15 @@
 # TagManager Component Creation Prompt
 
 ## Overview
-Create a TagManager component that provides a popover-based interface for managing tags on individual articles. This component allows users to add new tags, remove existing tags, and quickly apply suggested tags from other articles in the library.
+-Create a TagManager component that provides a popover-based interface for managing tags on individual articles. This component allows users to add new tags, remove existing tags, and quickly apply suggested tags from other articles in the library.
 
 ## Component Location
-- **File**: `/components/TagManager.tsx`
+- **File**: `/components/TagManager.jsx`
 - **Type**: Reusable Component (used in ArticleViewer, ContentCard, and potentially other contexts)
 
 ## Props Interface
 
-```typescript
+```jsx
 interface TagManagerProps {
   articleId: string;           // Unique identifier for the article
   currentTags: string[];       // Array of tags currently applied to this article
@@ -137,14 +137,14 @@ interface TagManagerProps {
 ## State Management
 
 ### Local State
-```typescript
+```jsx
 const [isOpen, setIsOpen] = useState(false);           // Popover visibility
 const [newTag, setNewTag] = useState("");              // New tag input value
 const [localTags, setLocalTags] = useState<string[]>(currentTags); // Local copy of tags
 ```
 
 ### Refs
-```typescript
+```jsx
 const popoverRef = useRef<HTMLDivElement>(null);       // Popover element
 const buttonRef = useRef<HTMLButtonElement>(null);     // Trigger button
 ```
@@ -168,14 +168,14 @@ const buttonRef = useRef<HTMLButtonElement>(null);     // Trigger button
 - Calls addNewTag
 
 ### Suggested Tags Computation
-```typescript
+```jsx
 const suggestedTags = allTags.filter(tag => !localTags.includes(tag));
 ```
 
 ## Click-Outside Detection
 
 Use useEffect to add/remove mousedown event listener:
-```typescript
+```jsx
 useEffect(() => {
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -201,7 +201,7 @@ useEffect(() => {
 ## Dependencies
 
 ### Required Imports
-```typescript
+```jsx
 import { useState, useRef, useEffect } from "react";
 import { Tag, X, Plus, Check } from "lucide-react";
 ```

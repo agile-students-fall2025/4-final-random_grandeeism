@@ -1,10 +1,10 @@
 # ContentCard Component Creation Prompt
 
 ## Overview
-Create a `ContentCard.tsx` component for the fieldnotes read-it-later app. This is a fundamental reusable component that displays individual articles, videos, and podcasts throughout the application in various queue views (Inbox, Daily Reading, Continue Reading, Rediscovery Queue, and Archive).
+Create a `ContentCard.jsx` component for the fieldnotes read-it-later app. This is a fundamental reusable component that displays individual articles, videos, and podcasts throughout the application in various queue views (Inbox, Daily Reading, Continue Reading, Rediscovery Queue, and Archive).
 
 ## Component Location
-`/components/ContentCard.tsx`
+`/components/ContentCard.jsx`
 
 ## Purpose
 The ContentCard is the primary interface for interacting with saved content items. It must:
@@ -19,7 +19,7 @@ The ContentCard is the primary interface for interacting with saved content item
 ## Dependencies & Imports
 
 ### Required Imports
-```typescript
+```jsx
 import { useState } from "react";
 import { 
   Star, 
@@ -60,7 +60,7 @@ import Favicon from "./Favicon";
 
 ## Props Interface
 
-```typescript
+```jsx
 interface ContentCardProps {
   article: Article;
   allTags: string[];
@@ -144,7 +144,7 @@ Inbox → Daily Reading → Continue Reading → Rediscovery Queue → Archive
 ```
 
 #### Icon Mapping
-```typescript
+```jsx
 const getStatusIconInfo = (status?: ArticleStatus) => {
   switch (status) {
     case "inbox":
@@ -188,7 +188,7 @@ const getStatusIconInfo = (status?: ArticleStatus) => {
 
 #### Animation Implementation
 Use Motion/React (formerly Framer Motion) for smooth icon transitions:
-```typescript
+```jsx
 <AnimatePresence mode="wait">
   {!isStatusHovered ? (
     <motion.div
@@ -227,7 +227,7 @@ When `selectionMode={true}`:
 - Selected cards show `border-primary ring-2 ring-primary/20`
 - Checkbox should be clickable independently
 
-```typescript
+```jsx
 const handleCardClick = () => {
   if (selectionMode && onToggleSelect) {
     onToggleSelect(article.id);
@@ -246,7 +246,7 @@ const handleCardClick = () => {
 - Opens in new tab with `target="_blank" rel="noopener noreferrer"`
 - Click should NOT propagate to card click
 
-```typescript
+```jsx
 const getShortenedUrl = () => {
   try {
     const urlObj = new URL(article.url);
@@ -280,7 +280,7 @@ For articles with `status === "inProgress"` and `readProgress` defined:
 - Fill: `bg-foreground/70 h-2 rounded-full`
 - Smooth transitions: `transition-all duration-300`
 
-```tsx
+```jsx
 {article.status === "inProgress" && article.readProgress !== undefined && (
   <div className="mt-2">
     <div className="flex items-center justify-between mb-1">
@@ -336,7 +336,7 @@ The bottom section contains two rows of actions:
 **Archived Status:**
 - "Unarchive" button → Returns to Inbox
 
-```typescript
+```jsx
 const renderStatusButtons = () => {
   switch (article.status) {
     case "dailyReading":
@@ -387,7 +387,7 @@ The card should integrate with the ExportNotesModal:
 - Opens ExportNotesModal component
 - Passes article data to modal
 
-```typescript
+```jsx
 const [showExportModal, setShowExportModal] = useState(false);
 
 // In dropdown menu:
@@ -428,13 +428,13 @@ Reference the `article.mediaType` property and pass it to the Favicon component.
 ## State Management
 
 ### Local State
-```typescript
+```jsx
 const [showExportModal, setShowExportModal] = useState(false);
 const [isStatusHovered, setIsStatusHovered] = useState(false);
 ```
 
 ### Derived State
-```typescript
+```jsx
 const statusIconInfo = getStatusIconInfo();
 const StatusIcon = statusIconInfo.icon;
 const nextStatus = getNextStatus();
@@ -482,7 +482,7 @@ const NextStatusIcon = nextStatusIconInfo?.icon;
 
 ## Usage Example
 
-```typescript
+```jsx
 <ContentCard
   article={article}
   allTags={allTags}
@@ -501,7 +501,7 @@ const NextStatusIcon = nextStatusIconInfo?.icon;
 
 ### Click Event Handling
 All action buttons MUST stop propagation:
-```typescript
+```jsx
 onClick={(e) => {
   e.stopPropagation();
   // action handler
@@ -510,8 +510,8 @@ onClick={(e) => {
 
 ### Status Advancement Logic
 The status icon should intelligently determine the next status in workflow:
-```typescript
-const getNextStatus = (): ArticleStatus | null => {
+```jsx
+const getNextStatus = () => {
   switch (article.status) {
     case "inbox": return "dailyReading";
     case "dailyReading": return "inProgress";
@@ -542,14 +542,14 @@ The card provides these visual indicators:
 ## Reference Files
 
 Study these files for implementation details:
-- `/types/article.ts` - Article type definition
-- `/components/TagManager.tsx` - Tag management integration
-- `/components/ExportNotesModal.tsx` - Export modal integration
-- `/components/Favicon.tsx` - Favicon display
-- `/components/ui/badge.tsx` - Badge component
-- `/components/ui/checkbox.tsx` - Checkbox component
-- `/components/ui/dropdown-menu.tsx` - Dropdown menu
-- `/components/ui/tooltip.tsx` - Tooltip component
+- `/types/article` - Article type definition
+- `/components/TagManager.jsx` - Tag management integration
+- `/components/ExportNotesModal.jsx` - Export modal integration
+- `/components/Favicon.jsx` - Favicon display
+- `/components/ui/badge.jsx` - Badge component
+- `/components/ui/checkbox.jsx` - Checkbox component
+- `/components/ui/dropdown-menu.jsx` - Dropdown menu
+- `/components/ui/tooltip.jsx` - Tooltip component
 - `/styles/globals.css` - Typography and color tokens
 
 ## Testing Checklist

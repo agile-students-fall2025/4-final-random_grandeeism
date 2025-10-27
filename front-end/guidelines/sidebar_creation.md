@@ -489,7 +489,7 @@ const renderNavItem = (item) => {
 
 ### ⚠️ Key Implementation Details
 
-1. **NO TypeScript:** Pure JSX component
+1. **JSX only:** Pure JSX component
 2. **NO Custom Imports:** Only React and lucide-react icons
 3. **Font Syntax:** Use exact syntax `font-['Inter:Bold',_sans-serif]` for Inter font weights
 4. **Flex-shrink:** Add `flex-shrink-0` to icons and badges

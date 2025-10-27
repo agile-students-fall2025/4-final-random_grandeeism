@@ -209,13 +209,13 @@ totalCount                 // Count of total
 ```javascript
 import { useState } from "react";
 import TopBar from "./TopBar.jsx";
-import Sidebar from "./Sidebar.jsx";  // NOTE: Currently imports .tsx - fix when Sidebar.jsx exists
+import Sidebar from "./Sidebar.jsx";  // NOTE: ensure Sidebar.jsx exists
 ```
 
 ### Required Files
 ✅ **Custom Components:**
 - `/components/TopBar.jsx` - Header component ✅ EXISTS
-- `/components/Sidebar.jsx` - Navigation sidebar ❌ CURRENTLY .tsx (will be converted)
+- `/components/Sidebar.jsx` - Navigation sidebar (ensure Sidebar.jsx exists)
 
 ✅ **NO OTHER DEPENDENCIES!**
 
@@ -1104,7 +1104,7 @@ const counts = useMemo(() => ({
 
 **Uses:**
 - `/components/TopBar.jsx` - Header ✅ EXISTS
-- `/components/Sidebar.jsx` - Navigation (currently .tsx)
+- `/components/Sidebar.jsx` - Navigation
 
 **Used By:**
 - All main app pages (Dashboard, Articles, Search, etc.)
@@ -1171,7 +1171,7 @@ MainLayout is the **central structural component** of the fieldnotes app. It pro
 
 **Build Priority:** HIGH - Required for all pages
 
-**Current Status:** Already exists at `/components/MainLayout.jsx` but imports `Sidebar.tsx`. Update import to `Sidebar.jsx` once Sidebar is converted.
+**Current Status:** Already exists at `/components/MainLayout.jsx` and should import `Sidebar.jsx` (ensure Sidebar.jsx exists).
 
 ---
 
@@ -1191,6 +1191,6 @@ You now have everything needed to understand and use `/components/MainLayout.jsx
 
 ---
 
-**Dependencies:** TopBar.jsx ✅ | Sidebar.jsx ⏳ (currently .tsx)  
+**Dependencies:** TopBar.jsx ✅ | Sidebar.jsx ⏳ (ensure Sidebar.jsx exists)  
 **Status:** Exists, ready to use! 🔨  
-**Note:** Update Sidebar import when Sidebar.jsx is created ✅
+**Note:** Ensure Sidebar.jsx exists and is used for imports ✅

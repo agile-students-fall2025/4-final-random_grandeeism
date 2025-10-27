@@ -1,10 +1,10 @@
 # PodcastViewer (AudioPlayer) Component Creation Prompt
 
 ## Overview
-Create a `PodcastViewer.tsx` component for the fieldnotes read-it-later app that provides a comprehensive podcast/audio listening and annotation experience. This component uses the HTML5 Audio API to play audio content with timestamped notes, transcript navigation, and workflow management.
+Create a `PodcastViewer.jsx` component for the fieldnotes read-it-later app that provides a comprehensive podcast/audio listening and annotation experience. This component uses the HTML5 Audio API to play audio content with timestamped notes, transcript navigation, and workflow management.
 
 ## Component Location
-`/components/PodcastViewer.tsx`
+`/components/PodcastViewer.jsx`
 
 ## Purpose
 This component serves as the primary podcast/audio listening interface with advanced annotation capabilities. It should:
@@ -68,13 +68,14 @@ This component serves as the primary podcast/audio listening interface with adva
 #### 3. Timestamped Notes
 
 **Note Structure**:
-```typescript
-interface VideoAnnotation { // Reused from VideoViewer
-  id: string;
-  timestamp: number; // seconds
-  note: string;
-  createdAt: Date;
-}
+```jsx
+// Example VideoAnnotation shape (JS)
+// {
+//   id: 'annotation-1',
+//   timestamp: 45, // seconds
+//   note: 'Key point about topic',
+//   createdAt: '2024-03-15T12:00:00Z'
+// }
 ```
 
 **Note Features**:
@@ -100,13 +101,14 @@ interface VideoAnnotation { // Reused from VideoViewer
 #### 4. Interactive Transcript
 
 **Transcript Structure**:
-```typescript
-interface TranscriptSegment {
-  id: string;
-  timestamp: number;
-  text: string;
-  duration?: number;
-}
+```jsx
+// Example TranscriptSegment shape (JS)
+// {
+//   id: 'seg-1',
+//   timestamp: 0,
+//   text: 'Welcome to the show...',
+//   duration: 15
+// }
 ```
 
 **Transcript Features**:
@@ -221,7 +223,7 @@ Same as ArticleViewer and VideoViewer:
 - Resume from last position on reopen (optional)
 
 **Progress Calculation**:
-```typescript
+```jsx
 const progress = (currentTime / duration) * 100;
 ```
 
@@ -463,16 +465,17 @@ Same as ArticleViewer:
 ## Component Structure
 
 ### Props Interface
-```typescript
-interface PodcastViewerProps {
-  article: Article; // Article with podcast metadata
-  onUpdateArticle: (article: Article) => void;
-  onClose?: () => void;
-}
+```jsx
+// Props shape (JS)
+// {
+//   article: { /* article with podcast metadata */ },
+//   onUpdateArticle: (article) => void,
+//   onClose?: () => void
+// }
 ```
 
 ### State Management
-```typescript
+```jsx
 // Playback
 const [isPlaying, setIsPlaying] = useState(false);
 const [currentTime, setCurrentTime] = useState(0);
@@ -484,7 +487,7 @@ const [playbackRate, setPlaybackRate] = useState(1.0);
 // Notes
 const [showAddNote, setShowAddNote] = useState(false);
 const [noteText, setNoteText] = useState("");
-const [selectedAnnotation, setSelectedAnnotation] = useState<VideoAnnotation | null>(null);
+const [selectedAnnotation, setSelectedAnnotation] = useState(null);
 
 // UI
 const [showTranscript, setShowTranscript] = useState(true);
@@ -496,10 +499,10 @@ const [isHoveringAdvance, setIsHoveringAdvance] = useState(false);
 const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
 // Refs
-const audioRef = useRef<HTMLAudioElement>(null);
+const audioRef = useRef(null);
 
 // Data
-const videoAnnotations = article.videoAnnotations || []; // Reuse VideoAnnotation type
+const videoAnnotations = article.videoAnnotations || [];
 const transcript = article.transcript || [];
 const audioUrl = article.podcastUrl || "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 ```
@@ -507,7 +510,7 @@ const audioUrl = article.podcastUrl || "https://www.soundhelix.com/examples/mp3/
 ### Key Functions
 
 #### Audio Element Setup
-```typescript
+```jsx
 useEffect(() => {
   const audio = audioRef.current;
   if (!audio) return;
@@ -547,7 +550,7 @@ useEffect(() => {
 ```
 
 #### Playback Controls
-```typescript
+```jsx
 const togglePlayPause = () => {
   const audio = audioRef.current;
   if (!audio) return;
@@ -559,7 +562,7 @@ const togglePlayPause = () => {
   }
 };
 
-const handleSeek = (time: number) => {
+const handleSeek = (time) => {
   const audio = audioRef.current;
   if (audio) {
     audio.currentTime = time;
@@ -567,7 +570,7 @@ const handleSeek = (time: number) => {
   }
 };
 
-const handleSkip = (seconds: number) => {
+const handleSkip = (seconds) => {
   const audio = audioRef.current;
   if (audio) {
     const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
@@ -576,7 +579,7 @@ const handleSkip = (seconds: number) => {
   }
 };
 
-const handleVolumeChange = (newVolume: number) => {
+const handleVolumeChange = (newVolume) => {
   const audio = audioRef.current;
   if (audio) {
     audio.volume = newVolume / 100;
@@ -598,7 +601,7 @@ const toggleMute = () => {
   }
 };
 
-const handleSpeedChange = (speed: number) => {
+const handleSpeedChange = (speed) => {
   const audio = audioRef.current;
   if (audio) {
     audio.playbackRate = speed;
@@ -612,7 +615,7 @@ const handleSpeedChange = (speed: number) => {
 Same as VideoViewer - see VideoViewer prompt for details.
 
 #### Time Formatting
-```typescript
+```jsx
 const formatTime = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
@@ -686,7 +689,7 @@ Same as VideoViewer:
 ## Dependencies
 
 ### Required Imports
-```typescript
+```jsx
 import { useState, useEffect, useRef } from "react";
 import { 
   Play, Pause, Volume2, VolumeX, StickyNote, X, Clock, 
@@ -694,7 +697,6 @@ import {
   Check, BookmarkPlus, BookOpen, RotateCcw, Inbox, PanelBottomClose 
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { Article, VideoAnnotation, TranscriptSegment } from "../types/article";
 import TagManager from "./TagManager";
 import CompletionModal from "./CompletionModal";
 ```
@@ -707,7 +709,7 @@ import CompletionModal from "./CompletionModal";
 ## Integration Notes
 
 ### Parent Component Integration
-```typescript
+```jsx
 import PodcastViewer from "./PodcastViewer";
 
 {selectedArticle && selectedArticle.mediaType === "podcast" && (
@@ -820,7 +822,7 @@ The ArticleViewer automatically routes to PodcastViewer when it detects podcast 
 
 ## Related Components
 Reference these components for consistency:
-- `/components/ArticleViewer.tsx` - Routes to PodcastViewer
-- `/components/VideoViewer.tsx` - Similar video interface
-- `/components/CompletionModal.tsx` - Completion flow
-- `/components/TagManager.tsx` - Tag management
+- `/components/ArticleViewer.jsx` - Routes to PodcastViewer
+- `/components/VideoViewer.jsx` - Similar video interface
+- `/components/CompletionModal.jsx` - Completion flow
+- `/components/TagManager.jsx` - Tag management

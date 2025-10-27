@@ -47,7 +47,7 @@ Our team follows the **feature-branch workflow** to keep `main` always deployabl
 
 ## Contributing Rules
 
-If you want to contribute to **ToBeRead** , please follow these simple rules:
+If you want to contribute to **fieldnotes.** , please follow these simple rules:
 
 - Check existing Issues first — someone may already be working on the same idea.
 - Pick an issue labeled `good first issue` or `help wanted` if you are new.

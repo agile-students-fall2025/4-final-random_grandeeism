@@ -184,7 +184,7 @@ Two action buttons appear on hover in the top-right:
 
 The card uses CSS group hover pattern:
 
-```tsx
+```jsx
 <div className="... group">
   {/* Main content with hover effects */}
   <h3 className="... group-hover:text-primary transition-colors">
@@ -497,7 +497,7 @@ const maxCount = Math.max(...tagStats.map(t => t.articleCount), 1);
 
 The TagCard itself doesn't handle empty states. These are handled by the parent Tags view:
 
-```tsx
+```jsx
 {tagStats.length === 0 ? (
   <div className="text-center py-12">
     <Tag size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
@@ -521,7 +521,7 @@ The parent component should provide sorting options:
 - **Alphabetical**: A-Z
 - **Recent**: Recently added/modified tags first
 
-```typescript
+```jsx
 const sortedTags = useMemo(() => {
   const sorted = [...tagStats];
   
@@ -546,13 +546,13 @@ Use proper singular form: "1 item" not "1 items"
 
 ### Zero Items (Orphaned Tag)
 Should not happen in practice, but handle gracefully:
-```tsx
+```jsx
 {articleCount} {articleCount === 1 ? 'item' : 'items'}
 ```
 
 ### Empty Tag Name
 Prevent empty tags during rename:
-```typescript
+```jsx
 if (newTag && newTag.trim() !== '' && newTag !== tag) {
   onRename?.(tag, newTag.trim());
 }
@@ -560,7 +560,7 @@ if (newTag && newTag.trim() !== '' && newTag !== tag) {
 
 ### Duplicate Tag on Rename
 Parent component should check for duplicates:
-```typescript
+```jsx
 onRename={(oldTag, newTag) => {
   if (tagStats.some(t => t.tag === newTag)) {
     alert('A tag with that name already exists');
@@ -575,7 +575,7 @@ Component handles this gracefully - mediaBreakdown is optional
 
 ### maxCount = 0
 Prevent division by zero:
-```typescript
+```jsx
 const maxCount = Math.max(...tagStats.map(t => t.articleCount), 1);
 ```
 
@@ -646,31 +646,31 @@ The card provides these visual indicators:
 After creation, the file structure should be:
 ```
 /components
-  ├── TagCard.tsx           ← New component
-  ├── ContentCard.tsx       ← Existing (articles)
-  ├── FeedCard.tsx          ← Existing (feeds)
+  ├── TagCard.jsx           ← New component
+  ├── ContentCard.jsx       ← Existing (articles)
+  ├── FeedCard.jsx          ← Existing (feeds)
   ├── pages
-  │   ├── TagsPage.tsx      ← New page (if creating dedicated tags page)
+  │   ├── TagsPage.jsx      ← New page (if creating dedicated tags page)
   │   └── ...
 ```
 
 ## Related Components
 
 Study these components for consistency:
-- `/components/ContentCard.tsx` - Similar card pattern
-- `/components/FeedCard.tsx` - Similar card pattern
-- `/components/TagManager.tsx` - Tag editing interface
-- `/types/article.ts` - Article and tag types
+- `/components/ContentCard.jsx` - Similar card pattern
+- `/components/FeedCard.jsx` - Similar card pattern
+- `/components/TagManager.jsx` - Tag editing interface
+/types/article.js` - Article and tag shape (JS)
 
 ## Alternative: Inline Rename with Input
 
 Instead of browser prompt, use inline editing:
 
-```typescript
+```jsx
 const [isEditing, setIsEditing] = useState(false);
 const [editValue, setEditValue] = useState(tag);
 
-const handleRename = (e: React.MouseEvent) => {
+const handleRename = (e) => {
   e.stopPropagation();
   setIsEditing(true);
 };

@@ -1,10 +1,10 @@
 # VideoViewer Component Creation Prompt
 
 ## Overview
-Create a `VideoViewer.tsx` component for the fieldnotes read-it-later app that provides a comprehensive video watching and annotation experience. This component integrates YouTube videos with timestamped notes, transcript navigation, and workflow management.
+Create a `VideoViewer.jsx` component for the fieldnotes read-it-later app that provides a comprehensive video watching and annotation experience. This component integrates YouTube videos with timestamped notes, transcript navigation, and workflow management.
 
 ## Component Location
-`/components/VideoViewer.tsx`
+`/components/VideoViewer.jsx`
 
 ## Purpose
 This component serves as the primary video viewing interface with advanced annotation capabilities. It should:
@@ -29,7 +29,7 @@ This component serves as the primary video viewing interface with advanced annot
 - Track playback state and time
 
 **Video ID Extraction**:
-```typescript
+```jsx
 const getVideoId = (url: string): string | null => {
   const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
   const match = url.match(regex);
@@ -71,7 +71,7 @@ const getVideoId = (url: string): string | null => {
 #### 3. Timestamped Notes
 
 **Note Structure**:
-```typescript
+```jsx
 interface VideoAnnotation {
   id: string;
   timestamp: number; // seconds
@@ -103,7 +103,7 @@ interface VideoAnnotation {
 #### 4. Interactive Transcript
 
 **Transcript Structure**:
-```typescript
+```jsx
 interface TranscriptSegment {
   id: string;
   timestamp: number;
@@ -171,7 +171,7 @@ Same as ArticleViewer:
 - Resume from last position on reopen (optional)
 
 **Progress Calculation**:
-```typescript
+```jsx
 const progress = (currentTime / duration) * 100;
 ```
 
@@ -377,7 +377,7 @@ Same as ArticleViewer:
 ## Component Structure
 
 ### Props Interface
-```typescript
+```jsx
 interface VideoViewerProps {
   article: Article; // Article with video metadata
   onUpdateArticle: (article: Article) => void;
@@ -386,7 +386,7 @@ interface VideoViewerProps {
 ```
 
 ### State Management
-```typescript
+```jsx
 // Playback
 const [isPlaying, setIsPlaying] = useState(false);
 const [currentTime, setCurrentTime] = useState(0);
@@ -419,7 +419,7 @@ const transcript = article.transcript || [];
 ### Key Functions
 
 #### YouTube Player Initialization
-```typescript
+```jsx
 useEffect(() => {
   if (!videoId) return;
 
@@ -461,7 +461,7 @@ useEffect(() => {
 ```
 
 #### Time Tracking
-```typescript
+```jsx
 const startTimeTracking = () => {
   intervalRef.current = setInterval(() => {
     if (playerRef.current && playerRef.current.getCurrentTime) {
@@ -479,7 +479,7 @@ const stopTimeTracking = () => {
 ```
 
 #### Playback Controls
-```typescript
+```jsx
 const togglePlayPause = () => {
   if (!playerRef.current) return;
   
@@ -517,7 +517,7 @@ const toggleMute = () => {
 ```
 
 #### Note Management
-```typescript
+```jsx
 const handleAddNote = () => {
   if (!noteText.trim()) return;
   
@@ -566,7 +566,7 @@ const jumpToTimestamp = (timestamp: number) => {
 ```
 
 #### Transcript Interaction
-```typescript
+```jsx
 const handleTranscriptClick = (segment: TranscriptSegment) => {
   handleSeek(segment.timestamp);
 };
@@ -581,7 +581,7 @@ const getActiveTranscriptSegment = () => {
 ```
 
 #### Time Formatting
-```typescript
+```jsx
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
@@ -650,7 +650,7 @@ Same as ArticleViewer:
 ## Dependencies
 
 ### Required Imports
-```typescript
+```jsx
 import { useState, useEffect, useRef } from "react";
 import { 
   Play, Pause, Volume2, VolumeX, Maximize, StickyNote, X, 
@@ -668,7 +668,7 @@ import CompletionModal from "./CompletionModal";
 - YouTube IFrame API: `https://www.youtube.com/iframe_api`
 
 ### Type Definitions
-```typescript
+```jsx
 interface VideoAnnotation {
   id: string;
   timestamp: number;
@@ -687,7 +687,7 @@ interface TranscriptSegment {
 ## Integration Notes
 
 ### Parent Component Integration
-```typescript
+```jsx
 import VideoViewer from "./VideoViewer";
 
 const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -811,7 +811,7 @@ The ArticleViewer automatically routes to VideoViewer when it detects video cont
 
 ## Related Components
 Reference these components for consistency:
-- `/components/ArticleViewer.tsx` - Routes to VideoViewer
-- `/components/PodcastViewer.tsx` - Similar audio interface
-- `/components/CompletionModal.tsx` - Completion flow
-- `/components/TagManager.tsx` - Tag management
+- `/components/ArticleViewer.jsx` - Routes to VideoViewer
+- `/components/PodcastViewer.jsx` - Similar audio interface
+- `/components/CompletionModal.jsx` - Completion flow
+- `/components/TagManager.jsx` - Tag management
