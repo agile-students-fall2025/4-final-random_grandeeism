@@ -8,7 +8,7 @@ In the current internet age there is a incomprehensible and immense amount of in
 - [Saad Sifar](https://github.com/one-loop)
 - [Shaurya Srivastava](https://github.com/shauryasr04)
 - [Jeffrey Chen](https://github.com/shauryasr04)
-Our [team norms and values](CONTRIBUTING.md#team-norms)
+- Our [team norms and values](CONTRIBUTING.md#team-norms)
 ## How this project came to be
 After the shutdown of the FOSS project Omnivore, we found ourselves searching for a tool that could truly respect both our reading habits and our data. That search quickly turned into a desire to build our own **FOSS “read it later” app**—not just as a replacement, but as a way to preserve the philosophy behind these tools: empowering readers to **capture, curate, and revisit** meaningful content on their own terms. Read-it-later apps have always existed at the intersection of **attention, agency, and knowledge management**, helping people reclaim the web from the endless scroll. For more reading on the power of the read-it-later app, check out [this article](https://medium.com/praxis-blog/the-secret-power-of-read-it-later-apps-6c75cc37ef42) by Tiago Forte, one of the most prominent experts on productivity in our highly distractable and overwhelming digital age.
 Therefore for our  
