@@ -14,23 +14,75 @@ import { useState, useEffect, useMemo } from "react";
 import { Inbox, Calendar, BookOpen, RotateCcw } from "lucide-react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/customUI/SaveStackModal.jsx";
+import ArticleCard from "../components/ArticleCard.jsx";
+import { mockArticles, getArticlesByStatus, getArticleCounts } from "../data/mockArticles.js";
 
 // Tab configuration with icons and status mapping
 const tabs = [
   { name: "Inbox", icon: Inbox, status: "inbox" },
-  { name: "Daily Reading", icon: Calendar, status: "daily" },
-  { name: "Continue Reading", icon: BookOpen, status: "continue" },
-  { name: "Rediscovery", icon: RotateCcw, status: "completed" }
+  { name: "Daily Reading", icon: Calendar, status: "dailyReading" },
+  { name: "Continue Reading", icon: BookOpen, status: "inProgress" },
+  { name: "Rediscovery", icon: RotateCcw, status: "rediscovery" }
 ];
 
 const HomePage = ({ onNavigate }) => {
-  const mockArticles = [];
+  const [articles, setArticles] = useState(mockArticles);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [activeTab, setActiveTab] = useState("Inbox");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Get current tab's status value
   const currentStatus = tabs.find(t => t.name === activeTab)?.status || "inbox";
+
+  // Get articles for current tab with search filtering
+  const currentTabArticles = useMemo(() => {
+    let filteredArticles = getArticlesByStatus(articles, currentStatus);
+    
+    // Apply search filter if there's a search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filteredArticles = filteredArticles.filter(article => 
+        article.title.toLowerCase().includes(query) ||
+        article.author?.toLowerCase().includes(query) ||
+        article.tags?.some(tag => tag.toLowerCase().includes(query)) ||
+        article.url.toLowerCase().includes(query)
+      );
+    }
+    
+    return filteredArticles;
+  }, [articles, currentStatus, searchQuery]);
+
+  // Get article counts for display
+  const articleCounts = useMemo(() => {
+    return getArticleCounts(articles);
+  }, [articles]);
+
+  // Article management functions
+  const handleArticleClick = (article) => {
+    console.log('Article clicked:', article.title);
+    // TODO: Navigate to article reader
+  };
+
+  const handleToggleFavorite = (articleId) => {
+    setArticles(prev => prev.map(article => 
+      article.id === articleId 
+        ? { ...article, isFavorite: !article.isFavorite }
+        : article
+    ));
+  };
+
+  const handleStatusChange = (articleId, newStatus) => {
+    setArticles(prev => prev.map(article => 
+      article.id === articleId 
+        ? { ...article, status: newStatus }
+        : article
+    ));
+  };
+
+  const handleDeleteArticle = (articleId) => {
+    setArticles(prev => prev.filter(article => article.id !== articleId));
+  };
 
   // Get pre-applied filters based on active tab (memoized to prevent re-creation)
   const preAppliedFilters = useMemo(() => ({
@@ -53,9 +105,17 @@ const HomePage = ({ onNavigate }) => {
 
   const handleSearchWithFilters = (query, filters) => {
     console.log('Search from home - Tab:', activeTab, 'Query:', query, 'Filters:', filters);
+    setSearchQuery(query);
     setCurrentFilters(filters);
-    // TODO: Filter mockArticles based on filters and query
-    // The filtered results will be displayed in the active tab content
+  };
+
+  const handleSimpleSearch = (query) => {
+    console.log('Simple search:', query);
+    setSearchQuery(query);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
   };
 
   const handleSaveSearch = () => {
@@ -80,21 +140,12 @@ const HomePage = ({ onNavigate }) => {
       currentPage="home"
       currentView={activeTab}
       onNavigate={onNavigate}
-      articles={mockArticles}
+      articles={currentTabArticles}
       pageTitle="Home"
-      useAdvancedSearch={true}
-      onSearchWithFilters={handleSearchWithFilters}
-      onSaveSearch={handleSaveSearch}
-      availableTags={["Development", "Design", "AI", "Technology"]}
-      showTimeFilter={true}
-      showMediaFilter={true}
-      showTagFilter={true}
-      showStatusFilter={true}
-      showFavoritesFilter={true}
-      showSortOptions={true}
-      preAppliedFilters={preAppliedFilters}
-      lockedFilters={lockedFilters}
-      onFilterChipRemoved={handleFilterChipRemoved}
+      showSearch={true}
+      searchPlaceholder="Search articles..."
+      onSearch={handleSimpleSearch}
+      initialSearchQuery={searchQuery}
     >
       <div className="p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
@@ -123,46 +174,71 @@ const HomePage = ({ onNavigate }) => {
                      tab.name === "Continue Reading" ? "Continue" : 
                      tab.name}
                   </span>
+                  {articleCounts[tab.status] > 0 && (
+                    <span className="bg-foreground text-background text-[10px] px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                      {articleCounts[tab.status]}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
           </div>
 
+          {/* Search Results Indicator */}
+          {searchQuery.trim() && (
+            <div className="mb-4 p-3 bg-accent/50 border border-border rounded-lg">
+              <p className="text-sm text-foreground">
+                <span className="font-medium">{currentTabArticles.length}</span> result{currentTabArticles.length !== 1 ? 's' : ''} found for "<span className="font-medium">{searchQuery}</span>" in {activeTab}
+              </p>
+              <button 
+                onClick={clearSearch}
+                className="text-xs text-muted-foreground hover:text-foreground underline mt-1"
+              >
+                Clear search
+              </button>
+            </div>
+          )}
+
           {/* Tab Content */}
           <div className="min-h-[400px]">
-            {activeTab === "Inbox" && (
-              <div className="bg-card border border-border rounded-lg p-8 text-center">
-                <p className="text-lg font-medium mb-2">Inbox</p>
-                <p className="text-sm text-muted-foreground">
-                  New articles waiting to be triaged will appear here
-                </p>
+            {currentTabArticles.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {currentTabArticles.map((article) => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                    onArticleClick={handleArticleClick}
+                    onToggleFavorite={handleToggleFavorite}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteArticle}
+                  />
+                ))}
               </div>
-            )}
-
-            {activeTab === "Daily Reading" && (
+            ) : (
               <div className="bg-card border border-border rounded-lg p-8 text-center">
-                <p className="text-lg font-medium mb-2">Daily Reading</p>
-                <p className="text-sm text-muted-foreground">
-                  Articles scheduled for today's reading session will appear here
+                <p className="text-lg font-medium mb-2">
+                  {searchQuery.trim() ? 'No results found' : activeTab}
                 </p>
-              </div>
-            )}
-
-            {activeTab === "Continue Reading" && (
-              <div className="bg-card border border-border rounded-lg p-8 text-center">
-                <p className="text-lg font-medium mb-2">Continue Reading</p>
                 <p className="text-sm text-muted-foreground">
-                  Articles you've started but haven't finished will appear here
+                  {searchQuery.trim() ? (
+                    `No articles found matching "${searchQuery}" in ${activeTab}`
+                  ) : (
+                    <>
+                      {activeTab === "Inbox" && "No new articles waiting to be triaged"}
+                      {activeTab === "Daily Reading" && "No articles scheduled for today's reading session"}
+                      {activeTab === "Continue Reading" && "No articles in progress"}
+                      {activeTab === "Rediscovery" && "No articles scheduled for rediscovery"}
+                    </>
+                  )}
                 </p>
-              </div>
-            )}
-
-            {activeTab === "Rediscovery" && (
-              <div className="bg-card border border-border rounded-lg p-8 text-center">
-                <p className="text-lg font-medium mb-2">Rediscovery</p>
-                <p className="text-sm text-muted-foreground">
-                  Completed articles scheduled to be re-read will appear here
-                </p>
+                {searchQuery.trim() && (
+                  <button 
+                    onClick={clearSearch}
+                    className="mt-3 text-sm text-primary hover:underline"
+                  >
+                    Clear search
+                  </button>
+                )}
               </div>
             )}
           </div>
