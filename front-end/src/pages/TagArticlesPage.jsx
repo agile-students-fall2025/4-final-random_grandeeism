@@ -3,67 +3,13 @@ import { Globe, ExternalLink, Star, Archive, RefreshCw, FileDown, Trash2 } from 
 import TagManager from "../components/TagManager";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/customUI/SaveStackModal";
+import { mockArticles } from "../data/mockArticles";
 
-// Sample article data
-const sampleArticles = [
-  {
-    id: "1",
-    title: "The Future of Web Development",
-    url: "examplelink.com",
-    readTime: "6 min",
-    tags: ["web-development", "technology"],
-    mediaType: "article"
-  },
-  {
-    id: "2", 
-    title: "The Future of JavaScript - Tech Podcast",
-    url: "example.com",
-    readTime: "52 min",
-    tags: ["javascript", "podcast", "web-development", "technology"],
-    mediaType: "podcast"
-  },
-  {
-    id: "3",
-    title: "React Best Practices",
-    url: "react.dev",
-    readTime: "8 min", 
-    tags: ["javascript", "web-development", "programming"],
-    mediaType: "article"
-  },
-  {
-    id: "4",
-    title: "Design Systems Guide",
-    url: "design.com",
-    readTime: "12 min",
-    tags: ["design", "productivity"],
-    mediaType: "article"
-  },
-  {
-    id: "5",
-    title: "Mindfulness Techniques",
-    url: "mindful.com", 
-    readTime: "15 min",
-    tags: ["psychology", "self-improvement", "mindfulness"],
-    mediaType: "article"
-  },
-  {
-    id: "6",
-    title: "Tutorial: Advanced CSS",
-    url: "css-tricks.com",
-    readTime: "20 min",
-    tags: ["tutorial", "web-development", "design"],
-    mediaType: "article"
-  }
-];
-
-const allAvailableTags = [
-  "web-development", "technology", "javascript", "programming", 
-  "design", "productivity", "psychology", "self-improvement", 
-  "mindfulness", "tutorial", "podcast", "video", "article"
-];
+// Get all available tags from mockArticles
+const allAvailableTags = Array.from(new Set(mockArticles.flatMap(article => article.tags)));
 
 export default function TagArticlesPage({ onNavigate, tag }) {
-  const [articles, setArticles] = useState(sampleArticles);
+  const [articles, setArticles] = useState(mockArticles);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
 
@@ -160,7 +106,7 @@ export default function TagArticlesPage({ onNavigate, tag }) {
                       <Globe size={14} />
                       <span>{article.url}</span>
                       <ExternalLink size={14} />
-                      <span>| {article.readTime}</span>
+                      <span>| {article.readingTime}</span>
                     </div>
                     <div className="flex flex-wrap gap-2 mb-4">
                       {article.tags.map((tag) => (
@@ -172,14 +118,14 @@ export default function TagArticlesPage({ onNavigate, tag }) {
                         </span>
                       ))}
                     </div>
-                    {article.mediaType === 'podcast' && (
+                    {article.tags.includes('podcast') && (
                       <div className="text-sm text-muted-foreground">
-                        35% Complete
+                        {article.readProgress || 0}% Complete
                       </div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {article.mediaType === 'podcast' ? (
+                    {article.tags.includes('podcast') ? (
                       <Star size={16} className="text-muted-foreground" />
                     ) : (
                       <Archive size={16} className="text-muted-foreground" />
