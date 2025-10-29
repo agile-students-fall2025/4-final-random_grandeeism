@@ -8,7 +8,7 @@
 
 import { useState, useEffect } from "react";
 import { Pin, X } from "lucide-react";
-import { Button } from "../ui/button.jsx";
+import { Button } from "./ui/button.jsx";
 import {
   Dialog,
   DialogContent,
@@ -16,9 +16,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog.jsx";
-import { Input } from "../ui/input.jsx";
-import { Label } from "../ui/label.jsx";
+} from "./ui/dialog.jsx";
+import { Input } from "./ui/input.jsx";
+import { Label } from "./ui/label.jsx";
 
 export default function SaveStackModal({ 
   isOpen, 
