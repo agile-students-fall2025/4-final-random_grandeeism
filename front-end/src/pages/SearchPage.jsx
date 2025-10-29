@@ -9,10 +9,10 @@ import { useState } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/customUI/SaveStackModal.jsx";
 
-const SearchPage = ({ onNavigate }) => {
+const SearchPage = ({ onNavigate, initialTag }) => {
   const mockArticles = [];
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
-  const [currentFilters, setCurrentFilters] = useState(null);
+  const [currentFilters, setCurrentFilters] = useState(initialTag ? { tags: [initialTag] } : null);
 
   const handleSearchWithFilters = (query, filters) => {
     console.log('Search query:', query);

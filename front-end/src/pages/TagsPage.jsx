@@ -1,78 +1,164 @@
-/**
- * TagsPage.jsx
- * 
- * Description: Tags management and browsing page
- * Purpose: Allows users to manage tags and browse content by tags
- * 
- * DEVELOPER IMPLEMENTATION NOTES:
- * ================================
- * 
- * 1. CUSTOM TAG SEARCH BAR
- *    - Add a dedicated search bar at the top of the page (below the title)
- *    - This search bar should filter TAGS, NOT articles
- *    - Should NOT use the global MainLayout search
- *    - Implement local state for tag search query
- *    - Filter tags in real-time as user types
- *    - Example: <input type="text" placeholder="Search tags..." />
- * 
- * 2. TAG CARDS DISPLAY
- *    - Fetch all tags from backend/state (with article counts)
- *    - Create a TagCard component or inline card display
- *    - Each tag card should show:
- *      * Tag name
- *      * Number of articles with this tag
- *      * Optional: Tag color/icon
- *      * Optional: Last used date
- *    - Display tags in a responsive grid layout
- *    - Example: grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4
- * 
- * 3. TAG CARD CLICK BEHAVIOR
- *    - When a tag card is clicked:
- *      a) Call onNavigate('search') to navigate to SearchPage
- *      b) Pass the selected tag as a pre-applied filter
- *      c) SearchPage should auto-apply this tag filter
- *    - Implementation approach:
- *      * Option 1: Pass tag via URL params/state
- *      * Option 2: Use a global state manager (Context API, Zustand, etc.)
- *      * Option 3: Pass through onNavigate callback with additional params
- *    - Example:
- *      onClick={() => onNavigate('search', null, { tagFilter: tagName })}
- * 
- * 4. TAG MANAGEMENT FEATURES (Future)
- *    - Add ability to rename tags
- *    - Add ability to merge tags
- *    - Add ability to delete tags (with confirmation)
- *    - Add ability to change tag colors
- *    - Show tag usage analytics (most used, trending, etc.)
- * 
- * 5. DATA STRUCTURE
- *    - Tag object should include:
- *      {
- *        id: string,
- *        name: string,
- *        count: number,          // Number of articles
- *        color: string,          // Optional hex color
- *        lastUsed: Date,         // Optional last usage
- *        createdAt: Date         // Optional creation date
- *      }
- * 
- * 6. RESPONSIVE DESIGN
- *    - Mobile: 1-2 columns
- *    - Tablet: 3 columns
- *    - Desktop: 4+ columns
- *    - Cards should have hover states
- *    - Cards should be clickable/tappable
- */
+import { useState, useMemo } from "react";
+import { Search, Plus, X } from "lucide-react";
+import TagCard from "../components/TagCard";
+import MainLayout from "../components/MainLayout";
+import SaveStackModal from "../components/customUI/SaveStackModal";
 
-import { useState } from "react";
-import MainLayout from "../components/MainLayout.jsx";
-import SaveStackModal from "../components/customUI/SaveStackModal.jsx";
+// Sample data based on the images
+const sampleArticles = [
+  {
+    id: "1",
+    title: "The Future of Web Development",
+    url: "examplelink.com",
+    readTime: "6 min",
+    tags: ["web-development", "technology"],
+    mediaType: "article"
+  },
+  {
+    id: "2", 
+    title: "The Future of JavaScript - Tech Podcast",
+    url: "example.com",
+    readTime: "52 min",
+    tags: ["javascript", "podcast", "web-development", "technology"],
+    mediaType: "podcast"
+  },
+  {
+    id: "3",
+    title: "React Best Practices",
+    url: "react.dev",
+    readTime: "8 min", 
+    tags: ["javascript", "web-development", "programming"],
+    mediaType: "article"
+  },
+  {
+    id: "4",
+    title: "Design Systems Guide",
+    url: "design.com",
+    readTime: "12 min",
+    tags: ["design", "productivity"],
+    mediaType: "article"
+  },
+  {
+    id: "5",
+    title: "Mindfulness Techniques",
+    url: "mindful.com", 
+    readTime: "15 min",
+    tags: ["psychology", "self-improvement", "mindfulness"],
+    mediaType: "article"
+  },
+  {
+    id: "6",
+    title: "Tutorial: Advanced CSS",
+    url: "css-tricks.com",
+    readTime: "20 min",
+    tags: ["tutorial", "web-development", "design"],
+    mediaType: "article"
+  }
+];
 
-const TagsPage = ({ onNavigate }) => {
-  const mockArticles = [];
+export default function TagsPage({ onNavigate }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("usage");
+  const [isCreateTagModalOpen, setIsCreateTagModalOpen] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
+  const [articles, setArticles] = useState(sampleArticles);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  
+
+  // Calculate tag statistics
+  const tagStats = useMemo(() => {
+    const stats = new Map();
+    
+    articles.forEach(article => {
+      article.tags.forEach(tag => {
+        const existing = stats.get(tag) || { count: 0, articles: 0, videos: 0, podcasts: 0 };
+        existing.count++;
+        if (article.mediaType === 'article') existing.articles++;
+        if (article.mediaType === 'video') existing.videos++;
+        if (article.mediaType === 'podcast') existing.podcasts++;
+        stats.set(tag, existing);
+      });
+    });
+    
+    return Array.from(stats.entries())
+      .map(([tag, data]) => ({
+        tag,
+        articleCount: data.count,
+        mediaBreakdown: {
+          articles: data.articles,
+          videos: data.videos,
+          podcasts: data.podcasts,
+        },
+      }))
+      .sort((a, b) => b.articleCount - a.articleCount);
+  }, [articles]);
+
+  // Filter and sort tags
+  const filteredAndSortedTags = useMemo(() => {
+    let filtered = tagStats.filter(tagData => 
+      tagData.tag.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    switch (sortBy) {
+      case 'usage':
+        return filtered.sort((a, b) => b.articleCount - a.articleCount);
+      case 'alphabetical':
+        return filtered.sort((a, b) => a.tag.localeCompare(b.tag));
+      default:
+        return filtered;
+    }
+  }, [tagStats, searchQuery, sortBy]);
+
+  const maxCount = Math.max(...tagStats.map(t => t.articleCount), 1);
+
+  const handleTagClick = (tag) => {
+    // Navigate to search results filtered by this tag
+    onNavigate('search', { tag: tag });
+  };
+
+  const handleRename = (oldTag, newTag) => {
+    console.log(`Renaming tag "${oldTag}" to "${newTag}"`);
+    // Update all articles with the renamed tag
+    setArticles(articles.map(article => ({
+      ...article,
+      tags: article.tags.map(tag => tag === oldTag ? newTag : tag)
+    })));
+  };
+
+  const handleDelete = (tag) => {
+    console.log(`Deleting tag: ${tag}`);
+    // Remove tag from all articles
+    setArticles(articles.map(article => ({
+      ...article,
+      tags: article.tags.filter(t => t !== tag)
+    })));
+  };
+
+  const handleCreateTag = () => {
+    const trimmedTag = newTagName.trim();
+    if (trimmedTag && !tagStats.some(t => t.tag === trimmedTag)) {
+      // Create a new article with this tag to demonstrate the functionality
+      const newArticle = {
+        id: `new-${Date.now()}`,
+        title: `Sample Article with ${trimmedTag}`,
+        url: "example.com",
+        readTime: "5 min",
+        tags: [trimmedTag],
+        mediaType: "article"
+      };
+      
+      setArticles([...articles, newArticle]);
+      setNewTagName("");
+      setIsCreateTagModalOpen(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCreateTag();
+    }
+  };
 
   const handleSearchWithFilters = (query, filters) => {
     console.log('Search tags:', query, filters);
@@ -91,15 +177,15 @@ const TagsPage = ({ onNavigate }) => {
 
   return (
     <MainLayout
-      currentPage="tags"
+      currentPage="articles"
       currentView="Tags"
       onNavigate={onNavigate}
-      articles={mockArticles}
+      articles={articles}
       pageTitle="Tags"
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
-      availableTags={["Development", "Design", "AI", "Technology"]}
+      availableTags={Array.from(new Set(articles.flatMap(article => article.tags)))}
       showTimeFilter={true}
       showMediaFilter={true}
       showTagFilter={true}
@@ -110,31 +196,143 @@ const TagsPage = ({ onNavigate }) => {
       <div className="p-6">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">Tags</h1>
-            <p className="text-muted-foreground">
-              Browse and manage your content tags
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-2xl font-bold mb-2">Tags</h1>
+                <p className="text-muted-foreground">
+                  Organize and manage your content with tags
+                </p>
+              </div>
+              <button
+                onClick={() => setIsCreateTagModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <Plus size={16} />
+                Create Tag
+              </button>
+            </div>
+            
+            {/* Search and Sort */}
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search tags..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background focus:border-primary focus:outline-none"
+                />
+              </div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 border border-border rounded-lg bg-background focus:border-primary focus:outline-none"
+              >
+                <option value="usage">Sort by Usage</option>
+                <option value="alphabetical">Sort Alphabetically</option>
+              </select>
+            </div>
           </div>
-          
-          <div className="bg-card border border-border rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Tag Management</h2>
-            <p className="text-muted-foreground mb-6">
-              This page will display:
-            </p>
-            <ul className="space-y-2 text-left max-w-md mx-auto">
-              <li>• All tags used across your articles</li>
-              <li>• Tag cloud visualization</li>
-              <li>• Article count per tag</li>
-              <li>• Create and edit tags</li>
-              <li>• Merge duplicate or similar tags</li>
-              <li>• Delete unused tags</li>
-              <li>• Browse articles by selecting tags</li>
-              <li>• Search for specific tags</li>
-              <li>• Tag usage analytics and trends</li>
-            </ul>
-          </div>
+
+          {filteredAndSortedTags.length === 0 ? (
+            <div className="bg-card border border-border rounded-lg p-8 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                <Search size={24} className="text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No tags found</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchQuery ? 'Try adjusting your search terms' : 'Create your first tag to get started'}
+              </p>
+              {!searchQuery && (
+                <button
+                  onClick={() => setIsCreateTagModalOpen(true)}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  Create Tag
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredAndSortedTags.map(({ tag, articleCount, mediaBreakdown }) => (
+                <TagCard
+                  key={tag}
+                  tag={tag}
+                  articleCount={articleCount}
+                  maxCount={maxCount}
+                  mediaBreakdown={mediaBreakdown}
+                  onTagClick={handleTagClick}
+                  onRename={handleRename}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Create Tag Modal */}
+      {isCreateTagModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">Create New Tag</h2>
+              <button
+                onClick={() => {
+                  setIsCreateTagModalOpen(false);
+                  setNewTagName("");
+                }}
+                className="p-1 hover:bg-accent rounded transition-colors"
+              >
+                <X size={16} className="text-muted-foreground" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Tag Name
+                </label>
+                <input
+                  type="text"
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Enter tag name..."
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:border-primary focus:outline-none"
+                  autoFocus
+                />
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleCreateTag}
+                  disabled={!newTagName.trim() || tagStats.some(t => t.tag === newTagName.trim())}
+                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Create Tag
+                </button>
+                <button
+                  onClick={() => {
+                    setIsCreateTagModalOpen(false);
+                    setNewTagName("");
+                  }}
+                  className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+              
+              {newTagName.trim() && tagStats.some(t => t.tag === newTagName.trim()) && (
+                <p className="text-sm text-destructive">
+                  A tag with this name already exists.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Save Stack Modal */}
       <SaveStackModal
@@ -145,6 +343,4 @@ const TagsPage = ({ onNavigate }) => {
       />
     </MainLayout>
   );
-};
-
-export default TagsPage;
+}

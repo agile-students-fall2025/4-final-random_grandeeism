@@ -1,12 +1,19 @@
-/**
- * TagCard.jsx
- * 
- * Description: Reusable card component for displaying tags in the Tags view
- * Purpose: Primary interface for browsing and managing tags with click-to-filter functionality
- */
-
 import { Tag, Edit2, Trash2, FileText, Video, Headphones } from "lucide-react";
 
+/**
+ * TagCard component for displaying individual tags in the Tags view
+ * @param {Object} props
+ * @param {string} props.tag - The tag name/label
+ * @param {number} props.articleCount - Total number of items with this tag
+ * @param {number} props.maxCount - Maximum count across all tags (for usage bar calculation)
+ * @param {Object} [props.mediaBreakdown] - Optional breakdown by media type
+ * @param {number} [props.mediaBreakdown.articles] - Number of articles
+ * @param {number} [props.mediaBreakdown.videos] - Number of videos
+ * @param {number} [props.mediaBreakdown.podcasts] - Number of podcasts
+ * @param {Function} props.onTagClick - Handler when card is clicked (filters content by this tag)
+ * @param {Function} [props.onRename] - Optional handler to rename the tag
+ * @param {Function} [props.onDelete] - Optional handler to delete the tag from all items
+ */
 export default function TagCard({
   tag,
   articleCount,
@@ -33,7 +40,7 @@ export default function TagCard({
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 hover:border-primary/50 transition-all group">
+    <div className="bg-card border border-border rounded-[8px] p-4 hover:border-primary/50 transition-all group">
       <div className="flex items-start justify-between gap-3">
         {/* Main clickable area */}
         <div 
@@ -43,14 +50,14 @@ export default function TagCard({
           {/* Tag Icon & Name */}
           <div className="flex items-center gap-2 mb-3">
             <Tag size={20} className="text-muted-foreground" />
-            <h3 className="font-medium text-[18px] text-foreground group-hover:text-primary transition-colors">
+            <h3 className="font-['Inter:Medium', sans-serif] text-[18px] text-foreground group-hover:text-primary transition-colors">
               {tag}
             </h3>
           </div>
           
           {/* Article Count */}
           <div className="mb-3">
-            <div className="text-[24px] font-semibold text-foreground">
+            <div className="text-[24px] font-['Inter:SemiBold', sans-serif] text-foreground">
               {articleCount} {articleCount === 1 ? 'item' : 'items'}
             </div>
           </div>

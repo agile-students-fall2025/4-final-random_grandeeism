@@ -22,6 +22,7 @@ import StatisticsPage from './pages/StatisticsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import FeedsPage from './pages/FeedsPage.jsx';
 import TagsPage from './pages/TagsPage.jsx';
+import TagArticlesPage from './pages/TagArticlesPage.jsx';
 import FavoritesPage from './pages/FavoritesPage.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import AuthPage from './pages/AuthPage.jsx';
@@ -41,6 +42,7 @@ function App() {
   const [navPosition, setNavPosition] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
   const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
+  const [currentTag, setCurrentTag] = useState(null);
   const dragOffset = useRef({ x: 0, y: 0 });
 
   // Drag handlers for movable navigation
@@ -67,7 +69,12 @@ function App() {
 
   // Global navigation handler
   const handleNavigate = (page, view) => {
-    console.log('Navigate to:', page, view);
+    // Handle tag filtering
+    if (view && view.tag) {
+      setCurrentTag(view.tag);
+    } else {
+      setCurrentTag(null);
+    }
     
     // Map page/view combinations to route names
     if (page === 'landing') {
@@ -77,6 +84,8 @@ function App() {
     } else if (page === 'home') {
       setCurrentPage('home');
     } else if (page === 'search' || (page === 'articles' && view === 'Search')) {
+      console.log('Setting current page to search');
+      console.log('currentTag at search navigation:', currentTag);
       setCurrentPage('search');
     } else if (page === 'articles' && view === 'Inbox') {
       setCurrentPage('inbox');
@@ -117,7 +126,11 @@ function App() {
       case 'home':
         return <HomePage onNavigate={handleNavigate} />;
       case 'search':
-        return <SearchPage onNavigate={handleNavigate} />;
+        if (currentTag) {
+          return <TagArticlesPage onNavigate={handleNavigate} tag={currentTag} />;
+        } else {
+          return <SearchPage onNavigate={handleNavigate} initialTag={currentTag} />;
+        }
       case 'inbox':
         return <InboxPage onNavigate={handleNavigate} />;
       case 'daily-reading':
