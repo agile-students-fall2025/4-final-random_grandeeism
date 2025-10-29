@@ -226,7 +226,7 @@ export const getArticleCounts = (articles) => {
   };
   
   articles.forEach(article => {
-    if (counts.hasOwnProperty(article.status)) {
+    if (Object.prototype.hasOwnProperty.call(counts, article.status)) {
       counts[article.status]++;
     }
   });
