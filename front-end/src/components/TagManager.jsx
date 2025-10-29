@@ -1,17 +1,18 @@
-/**
- * TagManager.jsx
- * 
- * Description: Popover-based interface for managing tags on individual articles
- * Purpose: Allows users to add new tags, remove existing tags, and apply suggested tags
- */
-
 import { useState, useRef, useEffect } from "react";
 import { Tag, X, Plus } from "lucide-react";
 
+/**
+ * TagManager component for managing tags on individual articles
+ * @param {Object} props
+ * @param {string} props.articleId - Unique identifier for the article
+ * @param {string[]} props.currentTags - Array of tags currently applied to this article
+ * @param {string[]} props.allTags - Array of all tags available in the system
+ * @param {Function} props.onUpdateTags - Callback when tags change
+ */
 export default function TagManager({
   articleId,
-  currentTags = [],
-  allTags = [],
+  currentTags,
+  allTags,
   onUpdateTags,
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,12 +22,12 @@ export default function TagManager({
   const popoverRef = useRef(null);
   const buttonRef = useRef(null);
 
-  // Sync local tags with prop changes
+  // Update local tags when currentTags prop changes
   useEffect(() => {
     setLocalTags(currentTags);
   }, [currentTags]);
 
-  // Click-outside detection
+  // Click outside detection
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -48,35 +49,29 @@ export default function TagManager({
     };
   }, [isOpen]);
 
-  // Add new tag
+  // Calculate suggested tags (all tags not currently applied)
+  const suggestedTags = allTags.filter(tag => !localTags.includes(tag));
+
+  const toggleTag = (tag) => {
+    const newTags = localTags.includes(tag)
+      ? localTags.filter(t => t !== tag)
+      : [...localTags, tag];
+    
+    setLocalTags(newTags);
+    onUpdateTags(articleId, newTags);
+  };
+
   const addNewTag = () => {
     const trimmedTag = newTag.trim();
     
     if (trimmedTag && !localTags.includes(trimmedTag)) {
-      const updatedTags = [...localTags, trimmedTag];
-      setLocalTags(updatedTags);
-      onUpdateTags(articleId, updatedTags);
+      const newTags = [...localTags, trimmedTag];
+      setLocalTags(newTags);
+      onUpdateTags(articleId, newTags);
       setNewTag("");
     }
   };
 
-  // Remove tag
-  const removeTag = (tagToRemove) => {
-    const updatedTags = localTags.filter(tag => tag !== tagToRemove);
-    setLocalTags(updatedTags);
-    onUpdateTags(articleId, updatedTags);
-  };
-
-  // Add suggested tag
-  const addSuggestedTag = (tagToAdd) => {
-    if (!localTags.includes(tagToAdd)) {
-      const updatedTags = [...localTags, tagToAdd];
-      setLocalTags(updatedTags);
-      onUpdateTags(articleId, updatedTags);
-    }
-  };
-
-  // Handle Enter key in input
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -84,19 +79,26 @@ export default function TagManager({
     }
   };
 
-  // Calculate suggested tags
-  const suggestedTags = allTags.filter(tag => !localTags.includes(tag));
+  const handleInputChange = (e) => {
+    setNewTag(e.target.value);
+  };
+
+  const handleToggleOpen = (e) => {
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  };
+
+  const handlePopoverClick = (e) => {
+    e.stopPropagation();
+  };
 
   return (
     <div className="relative">
       {/* Trigger Button */}
       <button
         ref={buttonRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
+        onClick={handleToggleOpen}
+        className="flex items-center gap-1 px-3 py-1 text-[12px] text-muted-foreground hover:bg-accent rounded transition-colors"
       >
         <Tag size={14} />
         Manage Tags
@@ -106,35 +108,35 @@ export default function TagManager({
       {isOpen && (
         <div
           ref={popoverRef}
-          onClick={(e) => e.stopPropagation()}
+          onClick={handlePopoverClick}
           className="absolute left-0 top-full mt-1 w-[280px] bg-card border border-border rounded-lg shadow-lg z-50 p-3"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium text-[14px] text-foreground">
+            <h3 className="font-['Inter:Medium', sans-serif] text-[14px] text-foreground">
               Manage Tags
-            </h4>
+            </h3>
             <button
               onClick={() => setIsOpen(false)}
               className="p-1 hover:bg-accent rounded transition-colors"
             >
-              <X size={14} />
+              <X size={14} className="text-muted-foreground" />
             </button>
           </div>
 
-          {/* Add New Tag Input */}
-          <div className="flex items-center gap-1 mb-3">
+          {/* Add New Tag Section */}
+          <div className="flex gap-1 mb-4">
             <input
               type="text"
               value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
+              onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Add new tag..."
-              className="flex-1 px-2 py-1.5 text-[13px] bg-background border border-border rounded focus:border-primary focus:outline-none"
+              className="flex-1 px-2 py-1.5 text-[13px] border border-border bg-background focus:border-primary rounded transition-colors outline-none"
             />
             <button
               onClick={addNewTag}
-              disabled={!newTag.trim()}
+              disabled={!newTag.trim() || localTags.includes(newTag.trim())}
               className="px-2 py-1.5 bg-primary text-primary-foreground rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Plus size={14} />
@@ -143,22 +145,19 @@ export default function TagManager({
 
           {/* Current Tags Section */}
           {localTags.length > 0 && (
-            <div className="mb-3">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+            <div className="mb-4">
+              <h4 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
                 CURRENT TAGS
-              </div>
+              </h4>
               <div className="flex flex-wrap gap-1.5">
                 {localTags.map((tag) => (
                   <button
                     key={tag}
-                    onClick={() => removeTag(tag)}
-                    className="group relative px-2 py-1 text-[12px] bg-primary/10 text-primary rounded hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    onClick={() => toggleTag(tag)}
+                    className="group flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-[12px] rounded hover:bg-destructive/10 hover:text-destructive transition-colors"
                   >
-                    {tag}
-                    <X 
-                      size={12} 
-                      className="inline-block ml-1 opacity-0 group-hover:opacity-100 transition-opacity" 
-                    />
+                    <span>{tag}</span>
+                    <X size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 ))}
               </div>
@@ -167,19 +166,19 @@ export default function TagManager({
 
           {/* Suggested Tags Section */}
           {suggestedTags.length > 0 && (
-            <div className="mb-2">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+            <div className="mb-4">
+              <h4 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
                 SUGGESTED TAGS
-              </div>
+              </h4>
               <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
                 {suggestedTags.map((tag) => (
                   <button
                     key={tag}
-                    onClick={() => addSuggestedTag(tag)}
-                    className="flex items-center gap-1 px-2 py-1 text-[12px] bg-accent text-foreground rounded hover:bg-primary/10 hover:text-primary transition-colors"
+                    onClick={() => toggleTag(tag)}
+                    className="flex items-center gap-1 px-2 py-1 bg-accent text-foreground text-[12px] rounded hover:bg-primary/10 hover:text-primary transition-colors"
                   >
                     <Plus size={12} />
-                    {tag}
+                    <span>{tag}</span>
                   </button>
                 ))}
               </div>
@@ -188,8 +187,10 @@ export default function TagManager({
 
           {/* Empty State */}
           {localTags.length === 0 && suggestedTags.length === 0 && (
-            <div className="text-center py-2 text-[13px] text-muted-foreground">
-              No tags yet. Add your first tag above.
+            <div className="text-center py-2">
+              <p className="text-[13px] text-muted-foreground">
+                No tags yet. Add your first tag above.
+              </p>
             </div>
           )}
         </div>

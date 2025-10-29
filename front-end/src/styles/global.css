@@ -192,12 +192,12 @@ html {
 
 html, body {
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
 }
 
 #root {
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* Custom Scrollbar Styles - Minimalist */
