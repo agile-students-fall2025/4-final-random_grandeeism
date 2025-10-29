@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import MainLayout from "../components/MainLayout.jsx";
-import SaveStackModal from "../components/customUI/SaveStackModal.jsx";
+import SaveStackModal from "../components/SaveStackModal.jsx";
 
 const AudioPage = ({ onNavigate }) => {
   const mockArticles = [];

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Search, Plus, X } from "lucide-react";
 import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
-import SaveStackModal from "../components/customUI/SaveStackModal";
+import SaveStackModal from "../components/SaveStackModal.jsx";
 import { mockArticles } from "../data/mockArticles";
 
 

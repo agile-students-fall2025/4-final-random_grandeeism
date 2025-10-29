@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Archive } from "lucide-react";
 import ArticleCard from "../components/ArticleCard";
 import MainLayout from "../components/MainLayout";
-import SaveStackModal from "../components/customUI/SaveStackModal";
+import SaveStackModal from "../components/SaveStackModal.jsx";
 import { mockArticles } from "../data/mockArticles";
 
 // Get all available tags from mockArticles

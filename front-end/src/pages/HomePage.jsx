@@ -13,7 +13,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Inbox, Calendar, BookOpen, RotateCcw } from "lucide-react";
 import MainLayout from "../components/MainLayout.jsx";
-import SaveStackModal from "../components/customUI/SaveStackModal.jsx";
+import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { mockArticles, getArticlesByStatus, getArticleCounts } from "../data/mockArticles.js";
 
@@ -94,20 +94,12 @@ const HomePage = ({ onNavigate }) => {
     favoritesFilter: "all"
   }), [currentStatus]);
 
-  const lockedFilters = useMemo(() => ({
-    status: currentStatus
-  }), [currentStatus]);
 
   // Update filters when tab changes
   useEffect(() => {
     setCurrentFilters(preAppliedFilters);
   }, [preAppliedFilters]);
 
-  const handleSearchWithFilters = (query, filters) => {
-    console.log('Search from home - Tab:', activeTab, 'Query:', query, 'Filters:', filters);
-    setSearchQuery(query);
-    setCurrentFilters(filters);
-  };
 
   const handleSimpleSearch = (query) => {
     console.log('Simple search:', query);
@@ -118,10 +110,6 @@ const HomePage = ({ onNavigate }) => {
     setSearchQuery("");
   };
 
-  const handleSaveSearch = () => {
-    console.log('Save current search as a Stack');
-    setShowSaveStackModal(true);
-  };
 
   const handleSaveStack = (stackData) => {
     console.log('Saving stack:', stackData);
@@ -130,10 +118,10 @@ const HomePage = ({ onNavigate }) => {
     setShowSaveStackModal(false);
   };
 
-  const handleFilterChipRemoved = () => {
-    // Navigate to search page when pre-applied filter is removed
-    onNavigate('search');
-  };
+  // Note: preAppliedFilters is used to seed filter UI when tabs change.
+  // The following helper functions were intentionally removed because
+  // they were previously unused; re-add them later when wiring advanced
+  // search and filter flows across pages.
 
   return (
     <MainLayout
