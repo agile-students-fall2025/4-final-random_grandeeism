@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { Globe, ExternalLink, Star, Archive, RefreshCw, FileDown, Trash2 } from "lucide-react";
-import TagManager from "../components/TagManager";
+import { Archive } from "lucide-react";
+import ArticleCard from "../components/ArticleCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/customUI/SaveStackModal";
 import { mockArticles } from "../data/mockArticles";
@@ -19,13 +19,6 @@ export default function TagArticlesPage({ onNavigate, tag }) {
     return articles.filter(article => article.tags.includes(tag));
   }, [articles, tag]);
 
-  const handleUpdateTags = (articleId, newTags) => {
-    setArticles(prev => prev.map(article => 
-      article.id === articleId 
-        ? { ...article, tags: newTags }
-        : article
-    ));
-  };
 
   const handleSearchWithFilters = (query, filters) => {
     console.log('Search tag articles:', query, filters);
@@ -40,6 +33,34 @@ export default function TagArticlesPage({ onNavigate, tag }) {
   const handleSaveStack = (stackData) => {
     console.log('Saving stack:', stackData);
     alert(`Stack "${stackData.name}" saved successfully!`);
+  };
+
+  // ArticleCard handlers
+  const handleArticleClick = (article) => {
+    console.log('Article clicked:', article);
+    // TODO: Navigate to article reader/viewer
+  };
+
+  const handleToggleFavorite = (articleId) => {
+    setArticles(prev => prev.map(article => 
+      article.id === articleId 
+        ? { ...article, isFavorite: !article.isFavorite }
+        : article
+    ));
+  };
+
+  const handleStatusChange = (articleId, newStatus) => {
+    setArticles(prev => prev.map(article => 
+      article.id === articleId 
+        ? { ...article, status: newStatus }
+        : article
+    ));
+  };
+
+  const handleDelete = (articleId) => {
+    if (confirm('Are you sure you want to delete this article?')) {
+      setArticles(prev => prev.filter(article => article.id !== articleId));
+    }
   };
 
   return (
@@ -94,71 +115,16 @@ export default function TagArticlesPage({ onNavigate, tag }) {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredArticles.map((article) => (
-              <div key={article.id} className="bg-card border border-border rounded-lg p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold text-foreground mb-2">
-                      {article.title}
-                    </h2>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                      <Globe size={14} />
-                      <span>{article.url}</span>
-                      <ExternalLink size={14} />
-                      <span>| {article.readingTime}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {article.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-2 py-1 bg-primary/10 text-primary text-xs rounded"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    {article.tags.includes('podcast') && (
-                      <div className="text-sm text-muted-foreground">
-                        {article.readProgress || 0}% Complete
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {article.tags.includes('podcast') ? (
-                      <Star size={16} className="text-muted-foreground" />
-                    ) : (
-                      <Archive size={16} className="text-muted-foreground" />
-                    )}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-4 text-sm">
-                  <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                    <Star size={14} />
-                    Favorite
-                  </button>
-                  <TagManager
-                    articleId={article.id}
-                    currentTags={article.tags}
-                    allTags={allAvailableTags}
-                    onUpdateTags={handleUpdateTags}
-                  />
-                  <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                    <RefreshCw size={14} />
-                    Change Status
-                  </button>
-                  <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                    <FileDown size={14} />
-                    Export Notes
-                  </button>
-                  <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                    <Trash2 size={14} />
-                    Delete
-                  </button>
-                </div>
-              </div>
+              <ArticleCard
+                key={article.id}
+                article={article}
+                onArticleClick={handleArticleClick}
+                onToggleFavorite={handleToggleFavorite}
+                onStatusChange={handleStatusChange}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         )}
