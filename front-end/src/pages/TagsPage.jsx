@@ -3,65 +3,15 @@ import { Search, Plus, X } from "lucide-react";
 import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/customUI/SaveStackModal";
+import { mockArticles } from "../data/mockArticles";
 
-// Sample data based on the images
-const sampleArticles = [
-  {
-    id: "1",
-    title: "The Future of Web Development",
-    url: "examplelink.com",
-    readTime: "6 min",
-    tags: ["web-development", "technology"],
-    mediaType: "article"
-  },
-  {
-    id: "2", 
-    title: "The Future of JavaScript - Tech Podcast",
-    url: "example.com",
-    readTime: "52 min",
-    tags: ["javascript", "podcast", "web-development", "technology"],
-    mediaType: "podcast"
-  },
-  {
-    id: "3",
-    title: "React Best Practices",
-    url: "react.dev",
-    readTime: "8 min", 
-    tags: ["javascript", "web-development", "programming"],
-    mediaType: "article"
-  },
-  {
-    id: "4",
-    title: "Design Systems Guide",
-    url: "design.com",
-    readTime: "12 min",
-    tags: ["design", "productivity"],
-    mediaType: "article"
-  },
-  {
-    id: "5",
-    title: "Mindfulness Techniques",
-    url: "mindful.com", 
-    readTime: "15 min",
-    tags: ["psychology", "self-improvement", "mindfulness"],
-    mediaType: "article"
-  },
-  {
-    id: "6",
-    title: "Tutorial: Advanced CSS",
-    url: "css-tricks.com",
-    readTime: "20 min",
-    tags: ["tutorial", "web-development", "design"],
-    mediaType: "article"
-  }
-];
 
 export default function TagsPage({ onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("usage");
   const [isCreateTagModalOpen, setIsCreateTagModalOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
-  const [articles, setArticles] = useState(sampleArticles);
+  const [articles, setArticles] = useState(mockArticles);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
 
@@ -73,9 +23,16 @@ export default function TagsPage({ onNavigate }) {
       article.tags.forEach(tag => {
         const existing = stats.get(tag) || { count: 0, articles: 0, videos: 0, podcasts: 0 };
         existing.count++;
-        if (article.mediaType === 'article') existing.articles++;
-        if (article.mediaType === 'video') existing.videos++;
-        if (article.mediaType === 'podcast') existing.podcasts++;
+        
+        // Infer media type from tags
+        if (article.tags.includes('podcast')) {
+          existing.podcasts++;
+        } else if (article.tags.includes('video')) {
+          existing.videos++;
+        } else {
+          existing.articles++;
+        }
+        
         stats.set(tag, existing);
       });
     });
@@ -141,10 +98,15 @@ export default function TagsPage({ onNavigate }) {
       const newArticle = {
         id: `new-${Date.now()}`,
         title: `Sample Article with ${trimmedTag}`,
-        url: "example.com",
-        readTime: "5 min",
+        url: "https://example.com",
+        author: "User",
+        readingTime: "5 min",
+        status: "inbox",
+        isFavorite: false,
         tags: [trimmedTag],
-        mediaType: "article"
+        dateAdded: new Date(),
+        hasAnnotations: false,
+        readProgress: 0
       };
       
       setArticles([...articles, newArticle]);
