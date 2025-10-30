@@ -71,6 +71,12 @@ const StatisticsPage = ({ onNavigate }) => {
       currentStreak = 0;
     }
   }
+  // Current streak up to today (walk from end backward)
+  let ongoingStreak = 0;
+  for (let i = realDays.length - 1; i >= 0; i -= 1) {
+    if ((realDays[i].minutes || 0) > 0) ongoingStreak += 1;
+    else break;
+  }
   // Approximate number of articles read assuming ~20 minutes per article
   const articlesRead = Math.max(0, Math.round(totalMinutes / 20));
   const totalArticles = Math.max(articlesRead, Math.round(articlesRead * 1.3));
@@ -94,7 +100,7 @@ const StatisticsPage = ({ onNavigate }) => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             {/* Quick Stats Cards */}
             <div className="bg-card border border-border rounded-lg p-6">
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Articles</h3>
@@ -111,6 +117,10 @@ const StatisticsPage = ({ onNavigate }) => {
             <div className="bg-card border border-border rounded-lg p-6">
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Days Read</h3>
               <p className="text-3xl font-bold">{percentDaysRead}%</p>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-6">
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Current Streak</h3>
+              <p className="text-3xl font-bold">{ongoingStreak} days</p>
             </div>
           </div>
 
