@@ -1,4 +1,8 @@
-// Mock article data for development and testing
+/**
+ * @file /src/data/mockArticles.js
+ * @description Mock article data for development and testing
+ */
+
 export const mockArticles = [
   {
     id: '1',
@@ -11,7 +15,20 @@ export const mockArticles = [
     tags: ['welcome', 'test'],
     dateAdded: new Date('2024-01-15'),
     hasAnnotations: false,
-    readProgress: 0
+    readProgress: 0,
+    // --- ADDED THIS 'content' FIELD FOR TESTING ---
+    content: `This is the first paragraph. You can select this text to test highlighting.
+This is the second paragraph. The component logic splits text based on newlines, so this will appear as a separate paragraph.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Here is some more text.
+And more.
+And more.
+And more.
+And more.
+You can scroll down to test the completion modal.
+This is the very last line of the article.`
+    // --- END OF ADDED CONTENT ---
   },
   {
     id: '2',
@@ -24,7 +41,9 @@ export const mockArticles = [
     tags: ['web-development', 'technology'],
     dateAdded: new Date('2024-01-14'),
     hasAnnotations: false,
-    readProgress: 0
+    readProgress: 0,
+    // Add content here if you want to test this article
+    content: 'The future of web development looks bright, with new technologies emerging...'
   },
   {
     id: '3',
@@ -37,7 +56,8 @@ export const mockArticles = [
     tags: ['ui', 'design', 'ux'],
     dateAdded: new Date('2024-01-13'),
     hasAnnotations: true,
-    readProgress: 0
+    readProgress: 0,
+    content: 'Building better user interfaces requires a deep understanding of user needs.'
   },
   {
     id: '4',
@@ -50,7 +70,9 @@ export const mockArticles = [
     tags: ['javascript', 'podcast', 'web-development', 'technology'],
     dateAdded: new Date('2024-01-12'),
     hasAnnotations: true,
-    readProgress: 35
+    readProgress: 35,
+    mediaType: 'podcast', // Mark as podcast
+    podcastUrl: 'https://example.com/podcast.mp3' // Add podcast URL
   },
   {
     id: '5',
@@ -63,7 +85,8 @@ export const mockArticles = [
     tags: ['css', 'layout', 'frontend'],
     dateAdded: new Date('2024-01-11'),
     hasAnnotations: false,
-    readProgress: 0
+    readProgress: 0,
+    content: 'CSS Grid and Flexbox are powerful tools, but they solve different problems.'
   },
   {
     id: '6',
@@ -76,7 +99,8 @@ export const mockArticles = [
     tags: ['typescript', 'programming'],
     dateAdded: new Date('2024-01-10'),
     hasAnnotations: true,
-    readProgress: 65
+    readProgress: 65,
+    content: 'Advanced patterns in TypeScript can significantly improve code quality.'
   },
   {
     id: '7',
@@ -89,7 +113,8 @@ export const mockArticles = [
     tags: ['css', 'modern', 'techniques'],
     dateAdded: new Date('2024-01-09'),
     hasAnnotations: false,
-    readProgress: 100
+    readProgress: 100,
+    content: 'Modern CSS offers amazing possibilities for styling websites.'
   },
   {
     id: '8',
@@ -102,7 +127,8 @@ export const mockArticles = [
     tags: ['typescript', 'best-practices', 'development'],
     dateAdded: new Date('2024-01-08'),
     hasAnnotations: false,
-    readProgress: 0
+    readProgress: 0,
+    content: 'Following best practices in TypeScript leads to maintainable code.'
   },
   {
     id: '9',
@@ -115,7 +141,8 @@ export const mockArticles = [
     tags: ['api', 'design', 'backend'],
     dateAdded: new Date('2024-01-07'),
     hasAnnotations: false,
-    readProgress: 0
+    readProgress: 0,
+    content: 'Good API design is crucial for a successful software product.'
   },
   {
     id: '10',
@@ -128,7 +155,8 @@ export const mockArticles = [
     tags: ['database', 'optimization', 'performance'],
     dateAdded: new Date('2024-01-06'),
     hasAnnotations: true,
-    readProgress: 0
+    readProgress: 0,
+    content: 'Database optimization can drastically improve application speed.'
   },
   {
     id: '11',
@@ -141,7 +169,8 @@ export const mockArticles = [
     tags: ['react', 'patterns', 'advanced', 'javascript'],
     dateAdded: new Date('2024-01-05'),
     hasAnnotations: true,
-    readProgress: 0
+    readProgress: 0,
+    content: 'Learn about render props, hooks, and other advanced React patterns.'
   },
   {
     id: '12',
@@ -154,7 +183,8 @@ export const mockArticles = [
     tags: ['microservices', 'architecture', 'backend', 'scalability'],
     dateAdded: new Date('2024-01-04'),
     hasAnnotations: true,
-    readProgress: 0
+    readProgress: 0,
+    content: 'Microservices can improve scalability and maintainability, but come with trade-offs.'
   },
   {
     id: '13',
@@ -167,7 +197,8 @@ export const mockArticles = [
     tags: ['docker', 'devops', 'containers', 'deployment'],
     dateAdded: new Date('2024-01-03'),
     hasAnnotations: true,
-    readProgress: 100
+    readProgress: 100,
+    content: 'Use multi-stage builds and keep your Docker images small.'
   },
   {
     id: '14',
@@ -180,7 +211,8 @@ export const mockArticles = [
     tags: ['graphql', 'rest', 'api', 'comparison'],
     dateAdded: new Date('2024-01-02'),
     hasAnnotations: true,
-    readProgress: 100
+    readProgress: 100,
+    content: 'GraphQL offers flexibility, while REST provides simplicity and caching.'
   },
   {
     id: '15',
@@ -193,12 +225,13 @@ export const mockArticles = [
     tags: ['machine-learning', 'ai', 'fundamentals', 'data-science'],
     dateAdded: new Date('2024-01-01'),
     hasAnnotations: true,
-    readProgress: 100
+    readProgress: 100,
+    content: 'Supervised, unsupervised, and reinforcement learning are the main types.'
   },
   {
     id: '16',
     title: 'Node.js Performance Optimization',
-    url: 'https://examplelink.com/nodejs-performance',
+    url: 'https(://examplelink.com/nodejs-performance',
     author: 'Alex Thompson',
     readingTime: '14 min',
     status: 'inProgress',
@@ -206,7 +239,23 @@ export const mockArticles = [
     tags: ['nodejs', 'performance', 'backend', 'optimization'],
     dateAdded: new Date('2024-01-15'),
     hasAnnotations: true,
-    readProgress: 50
+    readProgress: 50,
+    content: 'Profile your Node.js applications to find performance bottlenecks.'
+  },
+  {
+    id: '17',
+    title: 'Intro to React Native - Video',
+    url: 'https://youtube.com/watch?v=example',
+    author: 'React University',
+    readingTime: '35 min',
+    status: 'inbox',
+    isFavorite: false,
+    tags: ['react-native', 'mobile', 'video'],
+    dateAdded: new Date('2024-01-16'),
+    hasAnnotations: false,
+    readProgress: 0,
+    mediaType: 'video', // Mark as video
+    videoId: 'example' // Add video ID
   }
 ];
 

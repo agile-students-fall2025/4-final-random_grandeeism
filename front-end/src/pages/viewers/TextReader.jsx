@@ -1,86 +1,104 @@
-/**
- * TextReader.jsx
- * 
- * Description: Full-screen text article reader with enhanced reading experience
- * Purpose: Provides a distraction-free reading view for text-based articles
- * Features:
- *  - Clean, readable typography optimized for long-form content
- *  - Adjustable font size, line height, and column width
- *  - Progress tracking and reading time estimation
- *  - Highlighting and annotation tools
- *  - Text-to-speech capability
- *  - Dark/light mode for comfortable reading
- *  - Bookmark and note-taking functionality
- */
+import React, { useEffect, useState, useCallback } from 'react';
+import { mockArticles } from '../../data/mockArticles';
 
-const TextReader = ({ onNavigate }) => {
+/**
+ * TextReader
+ * Props:
+ *  - onNavigate(page, view) : function to navigate back to pages
+ *  - article: optional article object passed from parent navigation
+ *  - articleId: optional id string to look up article from mockArticles
+ */
+const TextReader = ({ onNavigate, article, articleId }) => {
+  const [current, setCurrent] = useState(article || null);
+
+  // If parent provided only an id, try to find the article locally
+  useEffect(() => {
+    if (article) {
+      setCurrent(article);
+      return;
+    }
+    if (articleId) {
+      const found = mockArticles.find(a => String(a.id) === String(articleId));
+      setCurrent(found || null);
+      return;
+    }
+    // no article provided
+    setCurrent(null);
+  }, [article, articleId]);
+
+  // split content into paragraphs
+  const paragraphs = (current && current.content)
+    ? String(current.content).split(/\n+/).map(p => p.trim()).filter(Boolean)
+    : [];
+
+  const goBack = useCallback(() => {
+    if (onNavigate) onNavigate('home');
+  }, [onNavigate]);
+
+  // allow Esc to go back
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') goBack(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [goBack]);
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <button 
-            onClick={() => onNavigate && onNavigate('home')}
+        <div className="mb-6">
+          <button
+            onClick={goBack}
             className="text-sm text-muted-foreground hover:text-foreground mb-4"
           >
-            ← Back to Home
+            ← Back
           </button>
-          <h1 className="text-3xl font-bold mb-4">Text Reader</h1>
-          <p className="text-muted-foreground">
-            Enhanced reading experience for text articles
-          </p>
+
+          {current ? (
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{current.title}</h1>
+              <p className="text-muted-foreground mb-4">
+                {current.author && <span className="mr-2">{current.author}</span>}
+                {current.readingTime && <span className="mr-2">• {current.readingTime}</span>}
+                {current.dateAdded && (
+                  <span className="mr-2">• {new Date(current.dateAdded).toLocaleDateString()}</span>
+                )}
+                {current.url && (
+                  <a href={current.url} target="_blank" rel="noreferrer" className="underline">
+                    Source
+                  </a>
+                )}
+              </p>
+
+              {current.tags && current.tags.length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {current.tags.map(t => (
+                    <span key={t} className="text-[12px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded">{t}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <h1 className="text-3xl font-bold mb-2">No article selected</h1>
+              <p className="text-muted-foreground mb-4">Open an article card to view it here.</p>
+            </div>
+          )}
         </div>
 
-        {/* Article Content Area */}
         <div className="bg-card border border-border rounded-lg p-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold mb-2">Sample Article Title</h2>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Author Name</span>
-              <span>•</span>
-              <span>10 min read</span>
-              <span>•</span>
-              <span>March 15, 2024</span>
+          {current ? (
+            <article className="prose prose-invert max-w-none">
+              {paragraphs.length > 0 ? (
+                paragraphs.map((p, i) => <p key={i}>{p}</p>)
+              ) : (
+                <p className="text-muted-foreground">No readable content available for this article.</p>
+              )}
+            </article>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No article data. Select an article from a list to read it.</p>
             </div>
-          </div>
-
-          <div className="prose prose-lg dark:prose-invert max-w-none">
-            <p className="text-muted-foreground mb-4">
-              This is the text reader view. Features will include:
-            </p>
-            <ul className="space-y-2 text-muted-foreground">
-              <li>• Clean, distraction-free reading interface</li>
-              <li>• Customizable font size and reading width</li>
-              <li>• Reading progress indicator</li>
-              <li>• Text highlighting and annotations</li>
-              <li>• Text-to-speech playback</li>
-              <li>• Estimated reading time</li>
-              <li>• Dark mode toggle for comfortable reading</li>
-              <li>• In-line dictionary and translation</li>
-              <li>• Bookmark positions within the article</li>
-              <li>• Export to various formats (PDF, EPUB)</li>
-            </ul>
-          </div>
-
-          {/* Reading Controls Placeholder */}
-          <div className="mt-8 pt-6 border-t border-border">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex gap-4">
-                <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80">
-                  Font Size
-                </button>
-                <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80">
-                  Highlight
-                </button>
-                <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80">
-                  Listen
-                </button>
-              </div>
-              <div className="text-muted-foreground">
-                Progress: 0%
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -88,3 +106,4 @@ const TextReader = ({ onNavigate }) => {
 };
 
 export default TextReader;
+

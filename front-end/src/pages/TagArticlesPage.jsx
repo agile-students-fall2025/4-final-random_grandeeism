@@ -37,8 +37,8 @@ export default function TagArticlesPage({ onNavigate, tag }) {
 
   // ArticleCard handlers
   const handleArticleClick = (article) => {
-    console.log('Article clicked:', article);
-    // TODO: Navigate to article reader/viewer
+    // Navigate to the text reader and provide the article object
+    onNavigate && onNavigate('text-reader', { article });
   };
 
   const handleToggleFavorite = (articleId) => {

@@ -60,8 +60,9 @@ const HomePage = ({ onNavigate }) => {
 
   // Article management functions
   const handleArticleClick = (article) => {
-    console.log('Article clicked:', article.title);
-    // TODO: Navigate to article reader
+    // Navigate to the text reader and pass the whole article object via the
+    // view payload so the App can render it in the reader.
+    onNavigate && onNavigate('text-reader', { article });
   };
 
   const handleToggleFavorite = (articleId) => {

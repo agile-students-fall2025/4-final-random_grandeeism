@@ -36,8 +36,12 @@ import VideoPlayer from './pages/viewers/VideoPlayer.jsx';
 import FloatingAddButton from './components/FloatingAddButton.jsx';
 import AddLinkModal from './components/AddLinkModal.jsx';
 
+// Import data
+// import { mockArticles } from './data/mockArticles'; // Adjust path if needed
+
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
+  const [selectedArticle, setSelectedArticle] = useState(null);
   const [isNavExpanded, setIsNavExpanded] = useState(true);
   const [navPosition, setNavPosition] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
@@ -101,6 +105,11 @@ function App() {
       setCurrentPage('favorites');
     } else if (page === 'text') {
       setCurrentPage('text');
+    } else if (page === 'text-reader') {
+      // Support navigating directly to the text reader. The caller may provide
+      // an `article` in the `view` object; store it so the reader can render it.
+      if (view && view.article) setSelectedArticle(view.article);
+      setCurrentPage('text-reader');
     } else if (page === 'videos') {
       setCurrentPage('videos');
     } else if (page === 'podcasts') {
@@ -115,6 +124,7 @@ function App() {
       setCurrentPage('settings');
     }
   };
+
 
   // Simple page router
   const renderPage = () => {
@@ -158,7 +168,7 @@ function App() {
       case 'favorites':
         return <FavoritesPage onNavigate={handleNavigate} />;
       case 'text-reader':
-        return <TextReader onNavigate={handleNavigate} />;
+        return <TextReader onNavigate={handleNavigate} article={selectedArticle} />;
       case 'audio-player':
         return <AudioPlayer onNavigate={handleNavigate} />;
       case 'video-player':
