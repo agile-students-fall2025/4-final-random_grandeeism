@@ -12,6 +12,7 @@
  */
 
 import { useState } from 'react';
+import { Button } from "../components/ui/button.jsx";
 
 const AuthPage = ({ onNavigate }) => {
   const [mode, setMode] = useState('login'); // 'login' or 'register'
@@ -94,6 +95,8 @@ const AuthPage = ({ onNavigate }) => {
                 >
                   {mode === 'login' ? "Sign up" : 'Sign in'}
                 </button>
+
+
               </div>
             </div>
 
@@ -104,6 +107,7 @@ const AuthPage = ({ onNavigate }) => {
         <p className="text-center text-sm text-muted-foreground mt-4">
           Protected by reCAPTCHA and subject to Privacy Policy
         </p>
+        {/* <Button variant="outline">Button</Button> */}
       </div>
     </div>
   );
