@@ -149,14 +149,14 @@ export default function TopBar({
 
           {/* Simple Search (Desktop) */}
           {showSearch && !useAdvancedSearch && currentPage !== "settings" && (
-            <div className="hidden md:flex items-center gap-2 bg-input-background border border-border rounded-lg px-3 py-2 w-[280px] lg:w-[320px]">
+            <div className="hidden md:flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2 w-[280px] lg:w-[320px]">
               <Search size={18} className="text-muted-foreground shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
                 placeholder={searchPlaceholder}
-                className="flex-1 bg-transparent text-foreground text-[14px] outline-none placeholder:text-muted-foreground"
+                className="flex-1 bg-card text-foreground text-[14px] outline-none placeholder:text-muted-foreground"
               />
               {searchQuery && (
                 <button onClick={clearSearch} className="p-1 hover:opacity-70 transition-opacity">
