@@ -234,14 +234,14 @@ export default function SearchFilter({
       {/* Row 1: Search Bar & Action Buttons */}
       <div className="flex items-center gap-2 mb-3">
         {/* Search Input */}
-        <div className="flex-1 min-w-0 flex items-center gap-2 bg-input-background border border-border rounded-lg px-3 py-2">
+        <div className="flex-1 min-w-0 flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">
           <Search size={18} className="text-muted-foreground shrink-0" />
           <input
             type="text"
             value={searchQuery}
             onChange={handleSearchChange}
             placeholder={placeholder}
-            className="flex-1 min-w-0 bg-transparent text-foreground text-[14px] outline-none placeholder:text-muted-foreground"
+            className="flex-1 min-w-0 bg-card text-foreground text-[14px] outline-none placeholder:text-muted-foreground"
           />
           {searchQuery && (
             <button onClick={clearSearch} className="p-1 hover:opacity-70 transition-opacity shrink-0">
