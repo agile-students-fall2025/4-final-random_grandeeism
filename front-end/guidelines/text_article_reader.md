@@ -1,10 +1,10 @@
-# ArticleViewer Component Creation Prompt
+# TextReader Component Creation Prompt
 
 ## Overview
-Create an `ArticleViewer.jsx` component for the fieldnotes read-it-later app that provides a distraction-free, feature-rich reading experience for text articles. This component is the core reading interface with support for multi-color highlighting, annotations, reader customization, and workflow management.
+Create an `TextReader.jsx` component for the fieldnotes read-it-later app that provides a distraction-free, feature-rich reading experience for text articles. This component is the core reading interface with support for multi-color highlighting, annotations, reader customization, and workflow management.
 
 ## Component Location
-`/components/ArticleViewer.jsx`
+`/src/frontend/pages/viewers/TextReader.jsx`
 
 ## Purpose
 This component serves as the primary text article reading interface with advanced annotation capabilities. It should:
@@ -14,34 +14,8 @@ This component serves as the primary text article reading interface with advance
 - Provide reader customization (font size, family, theme)
 - Integrate with workflow statuses (Inbox → Daily Reading → Continue Reading → Rediscovery → Archive)
 - Track reading progress and prompt for reflections on completion
-- Route to VideoViewer or PodcastViewer for non-text content
 
 ## Functional Requirements
-
-### Content Type Detection & Routing
-
-The ArticleViewer performs content type detection and routes accordingly:
-
-#### Video Detection
-```jsx
-const isVideo = article.mediaType === "video" || 
-  article.url.includes("youtube.com") || 
-  article.url.includes("youtu.be") ||
-  article.videoId;
-
-if (isVideo) {
-  return <VideoViewer article={article} onUpdateArticle={onUpdateArticle} onClose={onClose} />;
-}
-```
-
-#### Podcast Detection
-```jsx
-const isPodcast = article.mediaType === "podcast" || article.podcastUrl;
-
-if (isPodcast) {
-  return <PodcastViewer article={article} onUpdateArticle={onUpdateArticle} onClose={onClose} />;
-}
-```
 
 ### Main Features
 
@@ -85,6 +59,7 @@ interface Highlight {
   endOffset: number;
   note?: string;
   timestamp: Date;
+  // ref article in some way
 }
 ```
 
@@ -363,7 +338,7 @@ interface Highlight {
 
 ### Props Interface
 ```jsx
-interface ArticleViewerProps {
+interface TextReaderProps {
   article: Article;
   onClose: () => void;
   onNavigate: (page: string, view?: string) => void;
@@ -417,19 +392,6 @@ const contentRef = useRef<HTMLDivElement>(null);
 ```
 
 ### Key Functions
-
-#### Content Type Detection
-```jsx
-const isVideo = article.mediaType === "video" || 
-  article.url.includes("youtube.com") || 
-  article.url.includes("youtu.be") ||
-  article.videoId;
-
-const isPodcast = article.mediaType === "podcast" || article.podcastUrl;
-
-if (isVideo) return <VideoViewer ... />;
-if (isPodcast) return <PodcastViewer ... />;
-```
 
 #### Scroll Detection for Completion
 ```jsx
@@ -597,11 +559,10 @@ const handleSkipCompletion = () => {
 
 ### Opening Article
 1. Component receives article prop
-2. Detects content type (article/video/podcast)
-3. Routes to appropriate viewer if not text
-4. If text, displays article content
-5. Loads saved highlights and annotations
-6. Sets default reader settings (or loads from preferences)
+2. Routes to appropriate viewer if not text
+3. If text, displays article content
+4. Loads saved highlights and annotations
+5. Sets default reader settings (or loads from preferences)
 
 ### Text Selection & Highlighting
 1. User selects text with mouse/touch
@@ -702,17 +663,6 @@ const handleSkipCompletion = () => {
 
 ### Required Imports
 ```jsx
-import { useState, useRef, useEffect } from "react";
-import { 
-  X, ExternalLink, Edit, Archive, Star, Home, Search, Tag, 
-  BarChart3, Save, StickyNote, Highlighter, Trash2, BookmarkPlus, 
-  BookOpen, ChevronDown, Calendar, Clock, Check, NotebookPen, 
-  MoreVertical, Settings, Inbox, RotateCcw, PanelBottomClose 
-} from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
-import { Article, Highlight } from "../types/article";
-import VideoViewer from "./VideoViewer";
-import PodcastViewer from "./PodcastViewer";
 import TagManager from "./TagManager";
 import CompletionModal from "./CompletionModal";
 import ReaderSettingsModal from "./ReaderSettingsModal";
@@ -742,9 +692,6 @@ interface Article {
   scheduledDate?: Date;
   dateRead?: Date;
   rediscoveryDate?: Date;
-  mediaType?: "article" | "video" | "podcast";
-  videoId?: string;
-  podcastUrl?: string;
 }
 
 interface Highlight {
@@ -756,6 +703,7 @@ interface Highlight {
   endOffset: number;
   note?: string;
   timestamp: Date;
+  // ref article in some way
 }
 ```
 
@@ -763,7 +711,7 @@ interface Highlight {
 
 ### Parent Component (TextPage) Integration
 ```jsx
-import ArticleViewer from "./ArticleViewer";
+import TextReader from "./TextReader";
 
 const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
@@ -774,7 +722,7 @@ const handleUpdateArticle = (updatedArticle: Article) => {
 };
 
 {selectedArticle && (
-  <ArticleViewer
+  <TextReader
     article={selectedArticle}
     onClose={() => setSelectedArticle(null)}
     onNavigate={handleNavigate}
@@ -782,14 +730,6 @@ const handleUpdateArticle = (updatedArticle: Article) => {
   />
 )}
 ```
-
-### Routing to Video/Podcast Viewers
-The ArticleViewer automatically detects content type and routes:
-- If video: Renders `<VideoViewer />`
-- If podcast: Renders `<PodcastViewer />`
-- If article: Renders article reading interface
-
-This makes ArticleViewer the universal entry point for all content types.
 
 ## Accessibility Considerations
 
@@ -822,7 +762,7 @@ This makes ArticleViewer the universal entry point for all content types.
 ## Highlight Colors Justification
 
 **Exception to Grayscale Theme**:
-The ArticleViewer uses 5 distinct highlight colors (yellow, green, blue, pink, purple) intentionally:
+The TextReader uses 5 distinct highlight colors (yellow, green, blue, pink, purple) intentionally:
 
 1. **Cognitive Load**: Different colors help categorize information mentally
 2. **Visual Scanning**: Colors enable quick scanning for specific highlights
@@ -914,8 +854,6 @@ These colors are:
 - [ ] Back button returns to list
 - [ ] Close button works
 - [ ] External link opens in new tab
-- [ ] Routes to VideoViewer for videos
-- [ ] Routes to PodcastViewer for podcasts
 
 ### Mobile
 - [ ] Touch selection works
@@ -959,8 +897,6 @@ These colors are:
 
 ## Related Components
 Reference these components for consistency:
-- `/components/VideoViewer.jsx` - Similar viewer for videos
-- `/components/PodcastViewer.jsx` - Similar viewer for podcasts
 - `/components/TagManager.jsx` - Tag management integration
 - `/components/CompletionModal.jsx` - Completion flow
 - `/components/ReaderSettingsModal.jsx` - Reader customization
