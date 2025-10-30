@@ -1,4 +1,5 @@
 import React from "react";
+import { NotebookPen } from "lucide-react";
 
 // /front-end/src/pages/LandingPage.jsx
 // Purpose: Placeholder Landing Page component with implementation plan and TODOs.
@@ -99,25 +100,102 @@ TODO (short)
 
 */
 
-export default function LandingPage() {
+export default function LandingPage({ onNavigate }) {
     return (
-        <main style={{ padding: 32, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial" }}>
-            <h1 style={{ marginBottom: 8 }}>Landing Page — Coming Soon</h1>
-            <p style={{ marginTop: 0, color: "#555", maxWidth: 760 }}>
-                This page will be implemented following the plan outlined in the file comment.
-                For now it serves as a placeholder while UI components (Hero, Features, Header, Footer)
-                are developed and integrated.
-            </p>
+        <div className="min-h-screen bg-background text-foreground">
+            {/* Header */}
+            <header className="border-b border-border">
+                <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+                    <button
+                        className="flex items-center gap-2"
+                        onClick={() => onNavigate?.('landing')}
+                        aria-label="fieldnotes home"
+                    >
+                        <div className="flex items-center gap-2">
+                            <NotebookPen className="w-[24px] h-[24px] md:w-[30px] md:h-[30px] text-foreground" />
+                            <p className="font-['New_Spirit:SemiBold',sans-serif] leading-[normal] text-[22px] md:text-[26px] text-foreground">
+                            fieldnotes.
+                            </p>
+                        </div>
+                    </button>
+                    <nav className="hidden md:flex items-center gap-6 text-sm">
+                        <button className="text-muted-foreground hover:text-foreground" onClick={() => window.scrollTo({ top: document.getElementById('features')?.offsetTop || 0, behavior: 'smooth' })}>Features</button>
+                        <button className="text-muted-foreground hover:text-foreground" onClick={() => onNavigate?.('home')}>Demo</button>
+                        <button className="text-muted-foreground hover:text-foreground" onClick={() => onNavigate?.('auth')}>Sign in</button>
+                        <button className="px-3 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => onNavigate?.('auth')}>Get started</button>
+                    </nav>
+                </div>
+            </header>
 
-            <section aria-labelledby="plan" style={{ marginTop: 24 }}>
-                <h2 id="plan" style={{ fontSize: 18 }}>Implementation checklist</h2>
-                <ul style={{ color: "#333" }}>
-                    <li>Create Header, Footer, Hero components</li>
-                    <li>Make page responsive and accessible</li>
-                    <li>Add analytics and CTA tracking</li>
-                    <li>Write unit and visual regression tests</li>
-                </ul>
-            </section>
-        </main>
+            {/* Hero */}
+            <main>
+                <section className="mx-auto max-w-7xl px-6 py-20">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
+                                Save now. Read, watch, & listen later.
+                            </h1>
+                            <p className="text-muted-foreground text-lg mb-8">
+                                Fieldnotes is your focused inbox for articles, videos, and podcasts. Capture links in one place, organize with tags, and come back when you’re ready.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button
+                                    className="px-5 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+                                    onClick={() => onNavigate?.('auth')}
+                                >
+                                    Create free account
+                                </button>
+                                <button
+                                    className="px-5 py-3 rounded-lg border border-border hover:bg-accent"
+                                    onClick={() => onNavigate?.('home')}
+                                >
+                                    Log In
+                                </button>
+                            </div>
+                            <div className="mt-6 flex items-center gap-4 text-sm text-muted-foreground">
+                                <span>• No credit card required</span>
+                                <span>• Private by default</span>
+                                <span>• Works on any device</span>
+                            </div>
+                        </div>
+                        <div className="relative">
+                            <div className="aspect-[16/10] w-full rounded-xl border border-border bg-card shadow-sm" />
+                            <p className="mt-3 text-xs text-muted-foreground">Product preview — organize with tags, filter fast, and keep focus.</p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Features */}
+                <section id="features" className="mx-auto max-w-7xl px-6 pb-20">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="rounded-lg border border-border bg-card p-6">
+                            <h3 className="text-lg font-semibold mb-2">Capture everywhere</h3>
+                            <p className="text-sm text-muted-foreground">Add links from desktop or mobile. Save articles, videos, and podcasts with one click.</p>
+                        </div>
+                        <div className="rounded-lg border border-border bg-card p-6">
+                            <h3 className="text-lg font-semibold mb-2">Organize with tags</h3>
+                            <p className="text-sm text-muted-foreground">Create, rename, and manage tags. Find what matters wiht fast filters.</p>
+                        </div>
+                        <div className="rounded-lg border border-border bg-card p-6">
+                            <h3 className="text-lg font-semibold mb-2">Focus-friendly reading</h3>
+                            <p className="text-sm text-muted-foreground">A calm reader and simple queues help you actually finish your saved content.</p>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            {/* Footer */}
+            <footer className="border-t">
+                <div className="mx-auto max-w-7xl px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+                    <span>© {new Date().getFullYear()} FieldNotes.</span>
+                    <div className="flex items-center gap-4">
+                        <button className="hover:text-foreground" onClick={() => onNavigate?.('home')}>Demo</button>
+                        <button className="hover:text-foreground" onClick={() => onNavigate?.('auth')}>Sign in</button>
+                        <a className="hover:text-foreground" href="#" onClick={(e) => e.preventDefault()}>Privacy</a>
+                        <a className="hover:text-foreground" href="#" onClick={(e) => e.preventDefault()}>Terms</a>
+                    </div>
+                </div>
+            </footer>
+        </div>
     );
 }
