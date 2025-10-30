@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Plus, X } from "lucide-react";
 import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
@@ -64,6 +65,7 @@ export default function TagsPage({ onNavigate }) {
   const [articles, setArticles] = useState(sampleArticles);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
+  const navigate = useNavigate();
 
   // Calculate tag statistics
   const tagStats = useMemo(() => {
@@ -112,8 +114,7 @@ export default function TagsPage({ onNavigate }) {
   const maxCount = Math.max(...tagStats.map(t => t.articleCount), 1);
 
   const handleTagClick = (tag) => {
-    // Navigate to search results filtered by this tag
-    onNavigate('search', { tag: tag });
+    navigate(`/tags/${encodeURIComponent(tag)}`);
   };
 
   const handleRename = (oldTag, newTag) => {

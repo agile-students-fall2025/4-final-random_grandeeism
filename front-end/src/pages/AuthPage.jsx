@@ -12,6 +12,7 @@
  */
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const AuthPage = ({ onNavigate }) => {
   const [mode, setMode] = useState('login'); // 'login' or 'register'
@@ -82,9 +83,9 @@ const AuthPage = ({ onNavigate }) => {
                     </>
                   : <></>
                   }
-                  <button className="flex-1 text-[14px] border border-border rounded-md py-2 px-4 block w-full hover:cursor-pointer mt-8 bg-primary text-primary-foreground font-medium" onClick={() => onNavigate?.('home')}>
+                  <Link to="/home" className="text-center flex-1 text-[14px] border border-border rounded-md py-2 px-4 block w-full hover:cursor-pointer mt-8 bg-primary text-primary-foreground font-medium" onClick={() => onNavigate?.('home')}>
                     {mode === 'login' ? 'Log In' : 'Create Account'}
-                  </button>
+                  </Link>
                 </div>
               <div className="text-center w-full flex justify-center align-center mt-6">
                 <p className="text-center mr-2 text-sm text-muted-foreground">{mode === 'login' ? "Don't have an account?" : "Already have an account?"}</p>
@@ -101,8 +102,8 @@ const AuthPage = ({ onNavigate }) => {
           </div>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          Protected by reCAPTCHA and subject to Privacy Policy
+        <p className="text-center text-sm text-muted-foreground mt-4 w-[80%] mx-auto">
+          By clicking continue, you agree to our <Link className="hover:text-primary underline cursor-pointer" to="/terms">Terms of Service</Link> and <Link className="hover:text-primary underline cursor-pointer" to="/privacy">Privacy Policy</Link>
         </p>
       </div>
     </div>

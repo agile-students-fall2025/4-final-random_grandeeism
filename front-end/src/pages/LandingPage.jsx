@@ -1,5 +1,6 @@
 import React from "react";
 import { NotebookPen } from "lucide-react";
+import { Link } from "react-router-dom";
 
 // /front-end/src/pages/LandingPage.jsx
 // Purpose: Placeholder Landing Page component with implementation plan and TODOs.
@@ -102,7 +103,7 @@ TODO (short)
 
 export default function LandingPage({ onNavigate }) {
     return (
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen bg-background text-foreground scroll-smooth">
             {/* Header */}
             <header className="border-b border-border">
                 <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
@@ -119,10 +120,10 @@ export default function LandingPage({ onNavigate }) {
                         </div>
                     </button>
                     <nav className="hidden md:flex items-center gap-6 text-sm">
-                        <button className="text-muted-foreground hover:text-foreground" onClick={() => window.scrollTo({ top: document.getElementById('features')?.offsetTop || 0, behavior: 'smooth' })}>Features</button>
-                        <button className="text-muted-foreground hover:text-foreground" onClick={() => onNavigate?.('home')}>Demo</button>
-                        <button className="text-muted-foreground hover:text-foreground" onClick={() => onNavigate?.('auth')}>Sign in</button>
-                        <button className="px-3 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => onNavigate?.('auth')}>Get started</button>
+                        <a className="text-muted-foreground hover:text-foreground" href="#features">Features</a>
+                        <Link className="text-muted-foreground hover:text-foreground" to="/home">Demo</Link>
+                        <Link className="text-muted-foreground hover:text-foreground" to="/auth">Sign in</Link>
+                        <Link className="px-3 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90"  to="/auth">Get started</Link>
                     </nav>
                 </div>
             </header>
@@ -139,18 +140,18 @@ export default function LandingPage({ onNavigate }) {
                                 Fieldnotes is your focused inbox for articles, videos, and podcasts. Capture links in one place, organize with tags, and come back when you’re ready.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-3">
-                                <button
+                                <Link
                                     className="px-5 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
-                                    onClick={() => onNavigate?.('auth')}
+                                    to="/auth"
                                 >
                                     Create free account
-                                </button>
-                                <button
+                                </Link>
+                                <Link
                                     className="px-5 py-3 rounded-lg border border-border hover:bg-accent"
-                                    onClick={() => onNavigate?.('home')}
+                                    to="/auth"
                                 >
                                     Log In
-                                </button>
+                                </Link>
                             </div>
                             <div className="mt-6 flex items-center gap-4 text-sm text-muted-foreground">
                                 <span>• No credit card required</span>

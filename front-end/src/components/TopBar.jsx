@@ -40,6 +40,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu.jsx";
+import { Link } from "react-router-dom";
 
 export default function TopBar({
   // Navigation
@@ -213,7 +214,7 @@ export default function TopBar({
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onNavigate && onNavigate('settings')}>
                 <Settings size={16} className="mr-2" />
-                Settings
+                <Link to="/settings">Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
@@ -221,7 +222,7 @@ export default function TopBar({
                 className="text-destructive focus:text-destructive"
               >
                 <LogOut size={16} className="mr-2" />
-                Sign Out
+                <Link to="/auth">Sign Out</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -234,7 +234,7 @@ export default function SearchFilter({
       {/* Row 1: Search Bar & Action Buttons */}
       <div className="flex items-center gap-2 mb-3">
         {/* Search Input */}
-        <div className="flex-1 min-w-0 flex items-center gap-2 bg-input-background border border-border rounded-lg px-3 py-2">
+        <div className="flex-1 min-w-0 flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">
           <Search size={18} className="text-muted-foreground shrink-0" />
           <input
             type="text"
@@ -254,7 +254,7 @@ export default function SearchFilter({
         {hasActiveFilters && onSaveSearch && (
           <button
             onClick={onSaveSearch}
-            className="p-2 rounded-lg bg-accent text-accent-foreground hover:bg-accent/80 transition-colors shrink-0"
+            className="p-2 rounded-lg bg-accent text-accent-foreground hover:bg-accent/80 transition-colors shrink-0 hover:cursor-pointer"
             title="Pin as Stack"
             aria-label="Pin this search as a Stack"
           >
@@ -283,7 +283,7 @@ export default function SearchFilter({
         {/* Filter Toggle Button */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`p-2 rounded-lg transition-colors shrink-0 ${
+          className={`p-2 rounded-lg transition-colors shrink-0 hover:cursor-pointer ${
             hasActiveFilters ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground hover:bg-accent/80"
           }`}
           aria-label="Toggle filters"

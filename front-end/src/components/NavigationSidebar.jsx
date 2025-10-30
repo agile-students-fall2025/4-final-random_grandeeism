@@ -35,6 +35,9 @@ import {
   X 
 } from "lucide-react";
 
+import { Link, useLocation } from "react-router-dom";
+
+
 export default function NavigationSidebar({
   onNavigate,
   currentPage,
@@ -48,21 +51,12 @@ export default function NavigationSidebar({
   onDeleteSavedSearch
 }) {
   const [isStacksExpanded, setIsStacksExpanded] = useState(true);
+  const { pathname } = useLocation();
 
   // Active state logic
   const getIsActive = (item) => {
-    // Direct page matches (no view needed)
-    if (currentPage === 'home' && item.page === 'home') return true;
-    if (currentPage === 'statistics' && item.page === 'statistics') return true;
-    if (currentPage === 'feeds' && item.page === 'feeds') return true;
-    if (currentPage === 'videos' && item.page === 'videos') return true;
-    if (currentPage === 'podcasts' && item.page === 'podcasts') return true;
-    if (currentPage === 'text' && item.page === 'text') return true;
-    
-    // Page + view matches (for articles page with different views)
-    if (currentPage === 'articles' && item.view === currentView) return true;
-    
-    return false;
+    if (!item.route) return false;
+    return pathname === item.route;
   };
 
   // Navigation item renderer
@@ -70,14 +64,13 @@ export default function NavigationSidebar({
     const isActive = getIsActive(item);
     
     return (
-      <button
+      <Link
         key={item.name}
-        onClick={item.action}
+        to={item.route}
         className={`flex items-center justify-between gap-3 w-full px-3 py-2.5 rounded-lg transition-colors h-[44px] ${
-          isActive
-            ? 'bg-accent text-foreground'
-            : 'hover:bg-white/50 dark:hover:bg-white/10 text-foreground'
+          isActive ? 'bg-accent text-foreground' : 'hover:bg-white/50 dark:hover:bg-white/10 text-foreground'
         }`}
+        onClick={item.action}
       >
         <div className="flex items-center gap-3">
           <item.icon size={20} className="shrink-0" />
@@ -85,14 +78,12 @@ export default function NavigationSidebar({
             {item.name}
           </span>
         </div>
-        
-        {/* Count Badge - only show if count exists and > 0 */}
         {item.count !== undefined && item.count > 0 && (
           <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-[11px] min-w-[20px] text-center shrink-0">
             {item.count}
           </span>
         )}
-      </button>
+      </Link>
     );
   };
 
@@ -102,7 +93,8 @@ export default function NavigationSidebar({
     icon: Home,
     page: "home",
     view: null,
-    action: () => onNavigate('home')
+    route: "/home",
+    action: undefined
   };
 
   const searchItem = {
@@ -110,7 +102,8 @@ export default function NavigationSidebar({
     icon: Search,
     page: "articles",
     view: "Search",
-    action: () => onNavigate('articles', 'Search')
+    route: "/search",
+    action: undefined
   };
 
   const statusItems = [
@@ -119,7 +112,8 @@ export default function NavigationSidebar({
       icon: Inbox, 
       page: "articles", 
       view: "Inbox", 
-      action: () => onNavigate('articles', 'Inbox'), 
+      route: "/inbox",
+      action: undefined, 
       count: inboxCount 
     },
     { 
@@ -127,7 +121,8 @@ export default function NavigationSidebar({
       icon: Calendar, 
       page: "articles", 
       view: "Daily Reading", 
-      action: () => onNavigate('articles', 'Daily Reading'), 
+      route: "/daily-reading",
+      action: undefined, 
       count: dailyReadingCount 
     },
     { 
@@ -135,7 +130,8 @@ export default function NavigationSidebar({
       icon: BookOpen, 
       page: "articles", 
       view: "Continue Reading", 
-      action: () => onNavigate('articles', 'Continue Reading'), 
+      route: "/continue-reading",
+      action: undefined, 
       count: inProgressCount 
     },
     { 
@@ -143,7 +139,8 @@ export default function NavigationSidebar({
       icon: RotateCcw, 
       page: "articles", 
       view: "Rediscovery", 
-      action: () => onNavigate('articles', 'Rediscovery'), 
+      route: "/rediscovery",
+      action: undefined, 
       count: rediscoveryCount 
     },
     { 
@@ -151,7 +148,8 @@ export default function NavigationSidebar({
       icon: Archive, 
       page: "articles", 
       view: "Archive", 
-      action: () => onNavigate('articles', 'Archive') 
+      route: "/archive",
+      action: undefined 
     }
   ];
 
@@ -161,35 +159,40 @@ export default function NavigationSidebar({
       icon: Star, 
       page: "articles", 
       view: "Favorites", 
-      action: () => onNavigate('articles', 'Favorites') 
+      route: "/favorites",
+      action: undefined 
     },
     { 
       name: "Feeds", 
       icon: Rss, 
       page: "feeds", 
       view: null, 
-      action: () => onNavigate('feeds') 
+      route: "/feeds",
+      action: undefined 
     },
     { 
       name: "Videos", 
       icon: Video, 
       page: "videos", 
       view: null, 
-      action: () => onNavigate('videos') 
+      route: "/videos",
+      action: undefined 
     },
     { 
       name: "Audios", 
       icon: Headphones, 
       page: "podcasts", 
       view: null, 
-      action: () => onNavigate('podcasts') 
+      route: "/audio",
+      action: undefined 
     },
     { 
       name: "Text", 
       icon: FileText, 
       page: "text", 
       view: null, 
-      action: () => onNavigate('text') 
+      route: "/text",
+      action: undefined 
     }
   ];
 
@@ -199,14 +202,16 @@ export default function NavigationSidebar({
       icon: Tag, 
       page: "articles", 
       view: "Tags", 
-      action: () => onNavigate('articles', 'Tags') 
+      route: "/tags",
+      action: undefined 
     },
     { 
       name: "Statistics", 
       icon: BarChart3, 
       page: "statistics", 
       view: null, 
-      action: () => onNavigate('statistics') 
+      route: "/statistics",
+      action: undefined 
     }
   ];
 
@@ -308,15 +313,15 @@ export default function NavigationSidebar({
 
       {/* 6. Settings Button */}
       <div className="pt-4 mt-4 border-t border-border">
-        <button
-          onClick={() => onNavigate('settings')}
+        <Link
+          to="/settings"
           className={`flex items-center gap-3 hover:bg-white/50 dark:hover:bg-white/10 transition-colors w-full px-3 py-2.5 rounded-lg h-[44px] ${
-            currentPage === 'settings' ? 'bg-accent' : ''
+            pathname === '/settings' ? 'bg-accent' : ''
           }`}
         >
           <Settings size={20} className="shrink-0 text-foreground" />
           <p className="font-['Inter:Medium',sans-serif] text-[15px] text-foreground">Settings</p>
-        </button>
+        </Link>
       </div>
       </div>
     </nav>
