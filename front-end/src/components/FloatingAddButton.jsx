@@ -6,7 +6,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { Bookmark } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 export default function FloatingAddButton({ onClick }) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -130,7 +130,7 @@ export default function FloatingAddButton({ onClick }) {
         onClick={handleClick}
         aria-label="Add link"
       >
-        <Bookmark size={24} />
+        <Plus size={24} />
       </button>
     </>
   );

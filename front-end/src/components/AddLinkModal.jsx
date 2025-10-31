@@ -17,6 +17,18 @@ import {
   RotateCcw,
   CheckCircle
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from './ui/dialog.jsx';
+import { Button } from './ui/button.jsx';
+import { Input } from './ui/input.jsx';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem, SelectLabel } from './ui/select.jsx';
 
 export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink }) {
   const [newLinkUrl, setNewLinkUrl] = useState('');
@@ -88,29 +100,31 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-lg p-6 w-full max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <h3 className="text-foreground mb-4 text-lg font-semibold">Add New Link</h3>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        resetForm();
+      }
+    }}>
+      <DialogContent className="w-full max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Add New Link</DialogTitle>
+          <DialogDescription>
+            Save a link to your reading list and optionally add tags or status.
+          </DialogDescription>
+        </DialogHeader>
         
         {/* URL Input */}
-        <div className="mb-6">
-          <label className="block text-[14px] text-foreground mb-2">URL</label>
-          <input
-            type="url"
-            value={newLinkUrl}
-            onChange={(e) => setNewLinkUrl(e.target.value)}
-            placeholder="https://example.com/article"
-            className="w-full p-3 border border-border bg-background text-foreground rounded text-[16px] outline-none focus:border-primary"
-          />
+        <div className="mb-4">
+          <label className="block text-[14px] text-foreground mb-2" for="url-input">URL</label>
+          <Input id="url-input" onChange={(e) => setNewLinkUrl(e.target.value)} placeholder="https://example.com/article"></Input>
         </div>
 
         {/* Tags Section */}
         <div className="mb-6">
-          <label className="block text-[14px] text-foreground mb-2">Tags</label>
-          
+          <label className="block text-[14px] text-foreground mb-2" for="tags-input">Tags</label>
+          <Input className="mb-3" id="tags-input" type="text" value={newTagInput} onChange={(e) => setNewTagInput(e.target.value)} onKeyDown={handleTagInputKeyDown} placeholder="Add tags (press Enter)" />
+
           {/* Selected Tags Display */}
           {newLinkTags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
@@ -120,7 +134,7 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
                   {tag}
                   <button
                     onClick={() => handleRemoveTag(tag)}
-                    className="ml-1 hover:text-destructive"
+                    className="ml-1 hover:text-destructive hover:cursor-pointer"
                     type="button"
                   >
                     <X size={12} />
@@ -131,14 +145,15 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
           )}
           
           {/* Tag Input */}
-          <input
+          {/* <input
+            id="tags-input"
             type="text"
             value={newTagInput}
             onChange={(e) => setNewTagInput(e.target.value)}
             onKeyDown={handleTagInputKeyDown}
             placeholder="Add tags (press Enter)"
             className="w-full p-2 border border-border bg-background text-foreground rounded text-[14px] outline-none focus:border-primary"
-          />
+          /> */}
           
           {/* Existing Tags Suggestions */}
           {allExistingTags.length > 0 && (
@@ -190,12 +205,12 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
               onClick={() => setNewLinkStatus('dailyReading')}
               className={`p-3 rounded border-2 transition-all ${
                 newLinkStatus === 'dailyReading'
-                  ? 'border-blue-500 bg-blue-500/10'
-                  : 'border-border bg-background hover:border-blue-500/50'
+                  ? 'border-indigo-500 bg-indigo-500/10'
+                  : 'border-border bg-background hover:border-indigo-500/50'
               }`}
             >
-              <Calendar size={20} className={`mx-auto mb-1 ${newLinkStatus === 'dailyReading' ? 'text-blue-500' : 'text-muted-foreground'}`} />
-              <p className={`text-[12px] ${newLinkStatus === 'dailyReading' ? 'text-blue-500' : 'text-foreground'}`}>Daily Reading</p>
+              <Calendar size={20} className={`mx-auto mb-1 ${newLinkStatus === 'dailyReading' ? 'text-indigo-500' : 'text-muted-foreground'}`} />
+              <p className={`text-[12px] ${newLinkStatus === 'dailyReading' ? 'text-indigo-500' : 'text-foreground'}`}>Daily Reading</p>
             </button>
             
             {/* Continue Reading */}
@@ -204,12 +219,12 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
               onClick={() => setNewLinkStatus('inProgress')}
               className={`p-3 rounded border-2 transition-all ${
                 newLinkStatus === 'inProgress'
-                  ? 'border-purple-500 bg-purple-500/10'
-                  : 'border-border bg-background hover:border-purple-500/50'
+                  ? 'border-amber-500 bg-amber-500/10'
+                  : 'border-border bg-background hover:border-amber-500/50'
               }`}
             >
-              <BookOpen size={20} className={`mx-auto mb-1 ${newLinkStatus === 'inProgress' ? 'text-purple-500' : 'text-muted-foreground'}`} />
-              <p className={`text-[12px] ${newLinkStatus === 'inProgress' ? 'text-purple-500' : 'text-foreground'}`}>Continue Reading</p>
+              <BookOpen size={20} className={`mx-auto mb-1 ${newLinkStatus === 'inProgress' ? 'text-amber-500' : 'text-muted-foreground'}`} />
+              <p className={`text-[12px] ${newLinkStatus === 'inProgress' ? 'text-amber-500' : 'text-foreground'}`}>Continue Reading</p>
             </button>
           </div>
           
@@ -221,12 +236,12 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
               onClick={() => setNewLinkStatus('rediscovery')}
               className={`p-3 rounded border-2 transition-all ${
                 newLinkStatus === 'rediscovery'
-                  ? 'border-orange-500 bg-orange-500/10'
-                  : 'border-border bg-background hover:border-orange-500/50'
+                  ? 'border-green-500 bg-green-500/10'
+                  : 'border-border bg-background hover:border-green-500/50'
               }`}
             >
-              <RotateCcw size={20} className={`mx-auto mb-1 ${newLinkStatus === 'rediscovery' ? 'text-orange-500' : 'text-muted-foreground'}`} />
-              <p className={`text-[12px] ${newLinkStatus === 'rediscovery' ? 'text-orange-500' : 'text-foreground'}`}>Rediscovery Queue</p>
+              <RotateCcw size={20} className={`mx-auto mb-1 ${newLinkStatus === 'rediscovery' ? 'text-green-500' : 'text-muted-foreground'}`} />
+              <p className={`text-[12px] ${newLinkStatus === 'rediscovery' ? 'text-green-500' : 'text-foreground'}`}>Rediscovery Queue</p>
             </button>
             
             {/* Archive */}
@@ -235,15 +250,33 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
               onClick={() => setNewLinkStatus('archived')}
               className={`p-3 rounded border-2 transition-all ${
                 newLinkStatus === 'archived'
-                  ? 'border-gray-500 bg-gray-500/10'
-                  : 'border-border bg-background hover:border-gray-500/50'
+                  ? 'border-rose-500 bg-rose-500/10'
+                  : 'border-border bg-background hover:border-rose-500/50'
               }`}
             >
-              <Archive size={20} className={`mx-auto mb-1 ${newLinkStatus === 'archived' ? 'text-gray-500' : 'text-muted-foreground'}`} />
-              <p className={`text-[12px] ${newLinkStatus === 'archived' ? 'text-gray-500' : 'text-foreground'}`}>Archive</p>
+              <Archive size={20} className={`mx-auto mb-1 ${newLinkStatus === 'archived' ? 'text-rose-500' : 'text-muted-foreground'}`} />
+              <p className={`text-[12px] ${newLinkStatus === 'archived' ? 'text-rose-500' : 'text-foreground'}`}>Archive</p>
             </button>
           </div>
         </div>
+
+        {/* <div>
+          <Select>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Status</SelectLabel>
+                <SelectItem value="inbox">Inbox</SelectItem>
+                <SelectItem value="dailyReading">Daily Reading</SelectItem>
+                <SelectItem value="inProgress">Continue Reading</SelectItem>
+                <SelectItem value="rediscovery">Rediscovery Queue</SelectItem>
+                <SelectItem value="archived">Archive</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div> */}
 
         {/* Favorite Toggle */}
         <div className="mb-6">
@@ -264,27 +297,32 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 justify-end">
+        <DialogFooter className="mt-2">
           {/* Cancel Button */}
-          <button
+          {/* <button
             type="button"
             onClick={resetForm}
             className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:opacity-80 transition-opacity"
             disabled={showSuccessMessage}
           >
             Cancel
-          </button>
+          </button> */}
           
           {/* Add Link Button */}
-          <button
+          {/* <button
             type="button"
             onClick={handleAddLinkSubmit}
             disabled={!newLinkUrl.trim() || showSuccessMessage}
             className="px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Add Link
-          </button>
-        </div>
+          </button> */}
+
+            <DialogClose asChild>
+              <Button variant="outline" disabled={showSuccessMessage}>Cancel</Button>
+            </DialogClose>
+            <Button type="submit" onClick={handleAddLinkSubmit} disabled={!newLinkUrl.trim() || showSuccessMessage} className="cursor-pointer">Save changes</Button>
+        </DialogFooter>
 
         {/* Success Message */}
         {showSuccessMessage && (
@@ -293,7 +331,7 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
             <span className="text-sm font-medium">Link saved successfully!</span>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

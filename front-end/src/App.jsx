@@ -41,8 +41,7 @@ import AddLinkModal from './components/AddLinkModal.jsx';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
-  const [selectedArticle, setSelectedArticle] = useState(null);
-  const [isNavExpanded, setIsNavExpanded] = useState(true);
+  const [isNavExpanded, setIsNavExpanded] = useState(false);
   const [navPosition, setNavPosition] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
   const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
