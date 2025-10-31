@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } from 'react';
+import { ThemeContext } from '../../contexts/ThemeContext.jsx';
 import { mockArticles } from '../../data/mockArticles';
 import CompletionModal from '../../components/CompletionModal.jsx';
 import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
@@ -49,8 +50,9 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [showImages, setShowImages] = useState(() => {
     try { const v = JSON.parse(localStorage.getItem(SETTINGS_KEY))?.showImages; return typeof v === 'boolean' ? v : true; } catch { return true; }
   });
+  const { setTheme: setAppTheme, effectiveTheme } = useContext(ThemeContext);
   const [readerTheme, setReaderTheme] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.readerTheme || 'light'; } catch { return 'light'; }
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.readerTheme || effectiveTheme || 'light'; } catch { return effectiveTheme || 'light'; }
   });
 
   const persistReaderSettings = (next) => {
@@ -60,7 +62,12 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const onFontSizeChange = (size) => { setFontSize(size); persistReaderSettings({ fontSize: size, fontFamily, showImages, readerTheme }); };
   const onFontFamilyChange = (fam) => { setFontFamily(fam); persistReaderSettings({ fontSize, fontFamily: fam, showImages, readerTheme }); };
   const onShowImagesChange = (val) => { setShowImages(val); persistReaderSettings({ fontSize, fontFamily, showImages: val, readerTheme }); };
-  const onReaderThemeChange = (theme) => { setReaderTheme(theme); persistReaderSettings({ fontSize, fontFamily, showImages, readerTheme: theme }); };
+  const onReaderThemeChange = (theme) => {
+    setReaderTheme(theme);
+    persistReaderSettings({ fontSize, fontFamily, showImages, readerTheme: theme });
+    // update app-wide theme so Reader setting toggles the whole app like SettingsPage
+  try { if (setAppTheme) setAppTheme(theme); } catch { /* ignore */ }
+  };
 
   const contentRef = useRef(null);
   
@@ -385,7 +392,9 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 style={{
                   fontSize: `${fontSizePx}px`,
                   fontFamily: fontFamilyCss,
-                  backgroundColor: isDark ? '#0f1724' : 'transparent',
+                  // keep article background transparent so parent `.bg-card` controls the background color
+                  // this avoids a bluish panel in dark mode and uses the app's dark grey background instead
+                  backgroundColor: 'transparent',
                   color: isDark ? '#e6eef8' : undefined,
                   padding: '0',
                 }}
