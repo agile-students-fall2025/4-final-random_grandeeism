@@ -51,7 +51,9 @@
   --popover: #2a2a2a;
   --popover-foreground: #f5f5f5;
   --primary: #f5f5f5;
+  /* --primary: #5d6ad2; */
   --primary-foreground: #1a1a1a;
+  /* --primary-foreground: #ffffff; */
   --secondary: #3a3a3a;
   --secondary-foreground: #f5f5f5;
   --muted: #3a3a3a;
@@ -236,4 +238,14 @@ html, body {
 
 .dark *::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Sonner Toast Success Icon - Green Checkmark */
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: rgb(34, 197, 94) !important; /* green-500 */
+}
+
+[data-sonner-toast][data-type="success"] [data-icon] svg {
+  color: rgb(34, 197, 94) !important;
+  fill: rgb(34, 197, 94) !important;
 }

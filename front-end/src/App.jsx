@@ -35,6 +35,7 @@ import VideoPlayer from './pages/viewers/VideoPlayer.jsx';
 // Import components
 import FloatingAddButton from './components/FloatingAddButton.jsx';
 import AddLinkModal from './components/AddLinkModal.jsx';
+import { Toaster } from './components/ui/sonner.jsx';
 
 // Import data
 // import { mockArticles } from './data/mockArticles'; // Adjust path if needed
@@ -46,6 +47,7 @@ function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
   const [currentTag, setCurrentTag] = useState(null);
+  const [selectedArticle, setSelectedArticle] = useState(null);
   const dragOffset = useRef({ x: 0, y: 0 });
 
   // Drag handlers for movable navigation
@@ -394,6 +396,9 @@ function App() {
           setIsAddLinkModalOpen(false);
         }}
       />
+
+      {/* Toast Notifications */}
+      <Toaster />
     </div>
   );
 }

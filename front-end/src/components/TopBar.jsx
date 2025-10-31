@@ -217,7 +217,6 @@ export default function TopBar({
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={() => onNavigate && onNavigate('auth')}
-                className="text-destructive focus:text-destructive"
               >
                 <LogOut size={16} className="mr-2" />
                 Sign Out

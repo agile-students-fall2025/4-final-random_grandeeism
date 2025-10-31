@@ -1,15 +1,16 @@
 "use client";
 
-import { useTheme } from "next-themes@0.4.6";
-import { Toaster as Sonner } from "sonner@2.0.3";
+import { useTheme } from "../../hooks/useTheme.js";
+import { Toaster as Sonner } from "sonner";
 
 const Toaster = ({ ...props }) => {
-  const { theme = "system" } = useTheme();
+  const { effectiveTheme } = useTheme();
 
   return (
     <Sonner
-      theme={theme}
+      theme={effectiveTheme === "dark" ? "dark" : "light"}
       className="toaster group"
+      position="bottom-right"
       style={
         {
           "--normal-bg": "var(--popover)",
