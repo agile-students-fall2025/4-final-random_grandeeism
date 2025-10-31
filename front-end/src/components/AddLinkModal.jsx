@@ -321,7 +321,7 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
             <DialogClose asChild>
               <Button variant="outline" disabled={showSuccessMessage}>Cancel</Button>
             </DialogClose>
-            <Button type="submit" onClick={handleAddLinkSubmit} disabled={!newLinkUrl.trim() || showSuccessMessage} className="cursor-pointer">Save changes</Button>
+            <Button type="submit" onClick={handleAddLinkSubmit} disabled={!newLinkUrl.trim() || showSuccessMessage} className="cursor-pointer">Save link</Button>
         </DialogFooter>
 
         {/* Success Message */}
