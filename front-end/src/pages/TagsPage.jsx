@@ -1,10 +1,15 @@
 import { useState, useMemo } from "react";
-import { Search, Plus, X } from "lucide-react";
+import { Search, Plus, Tag as TagIcon } from "lucide-react";
 import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import { mockArticles } from "../data/mockArticles";
-
+import { Button } from "../components/ui/button.jsx";
+import { Input } from "../components/ui/input.jsx";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select.jsx";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
+import { Label } from "../components/ui/label.jsx";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 
 export default function TagsPage({ onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -156,145 +161,140 @@ export default function TagsPage({ onNavigate }) {
       showSortOptions={true}
     >
       <div className="p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
+        <div className="max-w-7xl mx-auto">
+          {/* Header Section */}
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div>
-                <h1 className="text-2xl font-bold mb-2">Tags</h1>
-                <p className="text-muted-foreground">
+                <h1 className="text-3xl font-bold mb-2">Tags</h1>
+                <p className="text-muted-foreground text-sm">
                   Organize and manage your content with tags
                 </p>
               </div>
-              <button
-                onClick={() => setIsCreateTagModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                <Plus size={16} />
-                Create Tag
-              </button>
+              <Dialog open={isCreateTagModalOpen} onOpenChange={setIsCreateTagModalOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus size={16} />
+                    Create Tag
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Tag</DialogTitle>
+                    <DialogDescription>
+                      Add a new tag to organize your content.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="tag-name">Tag Name</Label>
+                      <Input
+                        id="tag-name"
+                        type="text"
+                        value={newTagName}
+                        onChange={(e) => setNewTagName(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Enter tag name..."
+                        autoFocus
+                      />
+                    </div>
+                    {newTagName.trim() && tagStats.some(t => t.tag === newTagName.trim()) && (
+                      <p className="text-sm text-destructive">
+                        A tag with this name already exists.
+                      </p>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button 
+                      onClick={handleCreateTag}
+                      disabled={!newTagName.trim() || tagStats.some(t => t.tag === newTagName.trim())}
+                    >
+                      Create Tag
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
             
-            {/* Search and Sort */}
-            <div className="flex items-center gap-4">
+            {/* Search and Sort Controls */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
               <div className="relative flex-1 max-w-md">
-                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                <input
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground size-4" />
+                <Input
                   type="text"
                   placeholder="Search tags..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background focus:border-primary focus:outline-none"
+                  className="pl-10"
                 />
               </div>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-border rounded-lg bg-background focus:border-primary focus:outline-none"
-              >
-                <option value="usage">Sort by Usage</option>
-                <option value="alphabetical">Sort Alphabetically</option>
-              </select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="usage">Sort by Usage</SelectItem>
+                  <SelectItem value="alphabetical">Sort Alphabetically</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
+          {/* Tags Grid */}
           {filteredAndSortedTags.length === 0 ? (
-            <div className="bg-card border border-border rounded-lg p-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                <Search size={24} className="text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No tags found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchQuery ? 'Try adjusting your search terms' : 'Create your first tag to get started'}
-              </p>
-              {!searchQuery && (
-                <button
-                  onClick={() => setIsCreateTagModalOpen(true)}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Create Tag
-                </button>
-              )}
-            </div>
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 px-6">
+                <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <TagIcon className="size-8 text-muted-foreground" />
+                </div>
+                <CardTitle className="text-xl mb-2">No tags found</CardTitle>
+                <CardDescription className="text-center max-w-md">
+                  {searchQuery 
+                    ? 'Try adjusting your search terms to find what you\'re looking for.' 
+                    : 'Create your first tag to start organizing your content.'}
+                </CardDescription>
+                {!searchQuery && (
+                  <Button 
+                    onClick={() => setIsCreateTagModalOpen(true)}
+                    className="mt-6"
+                  >
+                    <Plus size={16} />
+                    Create Your First Tag
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredAndSortedTags.map(({ tag, articleCount, mediaBreakdown }) => (
-                <TagCard
-                  key={tag}
-                  tag={tag}
-                  articleCount={articleCount}
-                  maxCount={maxCount}
-                  mediaBreakdown={mediaBreakdown}
-                  onTagClick={handleTagClick}
-                  onRename={handleRename}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
+            <>
+              {/* Stats Summary */}
+              <div className="mb-6">
+                <p className="text-sm text-muted-foreground">
+                  Showing <span className="font-medium text-foreground">{filteredAndSortedTags.length}</span> of <span className="font-medium text-foreground">{tagStats.length}</span> tags
+                </p>
+              </div>
+
+              {/* Tags Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredAndSortedTags.map(({ tag, articleCount, mediaBreakdown }) => (
+                  <TagCard
+                    key={tag}
+                    tag={tag}
+                    articleCount={articleCount}
+                    maxCount={maxCount}
+                    mediaBreakdown={mediaBreakdown}
+                    onTagClick={handleTagClick}
+                    onRename={handleRename}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
-
-      {/* Create Tag Modal */}
-      {isCreateTagModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Create New Tag</h2>
-              <button
-                onClick={() => {
-                  setIsCreateTagModalOpen(false);
-                  setNewTagName("");
-                }}
-                className="p-1 hover:bg-accent rounded transition-colors"
-              >
-                <X size={16} className="text-muted-foreground" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Tag Name
-                </label>
-                <input
-                  type="text"
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Enter tag name..."
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:border-primary focus:outline-none"
-                  autoFocus
-                />
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleCreateTag}
-                  disabled={!newTagName.trim() || tagStats.some(t => t.tag === newTagName.trim())}
-                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Create Tag
-                </button>
-                <button
-                  onClick={() => {
-                    setIsCreateTagModalOpen(false);
-                    setNewTagName("");
-                  }}
-                  className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-              
-              {newTagName.trim() && tagStats.some(t => t.tag === newTagName.trim()) && (
-                <p className="text-sm text-destructive">
-                  A tag with this name already exists.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Save Stack Modal */}
       <SaveStackModal
