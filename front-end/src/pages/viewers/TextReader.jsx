@@ -470,7 +470,9 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 {highlights.map(h => (
                   <div key={h.id} className="p-2 bg-muted rounded">
                     <div className="flex items-center justify-between mb-1">
-                      <strong className="text-sm">{h.text.length > 60 ? h.text.slice(0,60) + '…' : h.text}</strong>
+                        <strong className="text-sm">
+                          {h.note && h.note.length > 0 ? (h.note.length > 80 ? h.note.slice(0,80) + '…' : h.note) : 'No annotation yet'}
+                        </strong>
                       <div className="flex gap-2">
                         <button onClick={() => scrollToHighlight(h.id)} className="text-xs">Jump</button>
                         <button onClick={() => { setEditingNoteId(h.id); setEditingNoteValue(h.note || ''); setShowHighlightsPanel(true); }} className="text-xs">Edit</button>
