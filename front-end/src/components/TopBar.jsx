@@ -17,12 +17,10 @@
  *  - Responsive behavior at all breakpoints
  */
 
-import { useState } from "react";
+// No React hooks required in this component after removing simple inline search
 import { 
   Menu, 
   Plus, 
-  Search, 
-  X, 
   NotebookPen, 
   CheckSquare,
   User,
@@ -44,17 +42,13 @@ import {
 export default function TopBar({
   // Navigation
   onMenuClick,
-  currentPage,
   onNavigate,
   
   // Page Configuration
   pageTitle,
   
   // Search - Basic Mode
-  showSearch = true,
   searchPlaceholder = "Search articles...",
-  initialSearchQuery = "",
-  onSearch,
   customSearchContent,
   
   // Search - Advanced Mode
@@ -87,24 +81,8 @@ export default function TopBar({
   totalCount = 0
 }) {
   // Internal State
-  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // Event Handlers
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    if (onSearch) {
-      onSearch(value);
-    }
-  };
-
-  const clearSearch = () => {
-    setSearchQuery("");
-    if (onSearch) {
-      onSearch("");
-    }
-  };
 
   return (
     <div className="bg-background border-b border-border sticky top-0 z-40 w-full">
@@ -147,39 +125,7 @@ export default function TopBar({
             </Button>
           )}
 
-          {/* Simple Search (Desktop) */}
-          {showSearch && !useAdvancedSearch && currentPage !== "settings" && (
-            <div className="hidden md:flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2 w-[280px] lg:w-[320px]">
-              <Search size={18} className="text-muted-foreground shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                placeholder={searchPlaceholder}
-                className="flex-1 bg-card text-foreground text-[14px] outline-none placeholder:text-muted-foreground"
-              />
-              {searchQuery && (
-                <button onClick={clearSearch} className="p-1 hover:opacity-70 transition-opacity">
-                  <X size={14} className="text-muted-foreground" />
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Simple Search (Mobile Icon) */}
-          {showSearch && !useAdvancedSearch && currentPage !== "settings" && (
-            <button
-              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-              className="md:hidden p-2 hover:bg-accent rounded-lg transition-colors"
-              aria-label={isSearchExpanded ? "Close search" : "Open search"}
-            >
-              {isSearchExpanded ? (
-                <X size={20} className="text-foreground" />
-              ) : (
-                <Search size={20} className="text-foreground" />
-              )}
-            </button>
-          )}
+          {/* Simple inline search removed — use advanced SearchFilter when `useAdvancedSearch` is true. */}
 
           {/* Add Link Button */}
           {onAddLink && (
@@ -266,27 +212,7 @@ export default function TopBar({
         />
       )}
 
-      {/* ROW 4: Mobile Expanded Search */}
-      {showSearch && isSearchExpanded && !customSearchContent && !useAdvancedSearch && (
-        <div className="md:hidden px-4 pb-3">
-          <div className="flex items-center gap-2 bg-input-background border border-border rounded-lg px-3 py-2">
-            <Search size={18} className="text-muted-foreground shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder={searchPlaceholder}
-              className="flex-1 bg-transparent text-foreground text-[14px] outline-none placeholder:text-muted-foreground"
-              autoFocus
-            />
-            {searchQuery && (
-              <button onClick={clearSearch} className="p-1 hover:opacity-70 transition-opacity">
-                <X size={14} className="text-muted-foreground" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Mobile/simple inline search removed; use advanced SearchFilter when `useAdvancedSearch` is true. */}
     </div>
   );
 }

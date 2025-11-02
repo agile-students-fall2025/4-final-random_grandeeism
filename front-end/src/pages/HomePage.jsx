@@ -16,13 +16,14 @@ import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { mockArticles, getArticlesByStatus, getArticleCounts } from "../data/mockArticles.js";
+import { STATUS } from "../constants/statuses.js";
 
 // Tab configuration with icons and status mapping
 const tabs = [
-  { name: "Inbox", icon: Inbox, status: "inbox" },
-  { name: "Daily Reading", icon: Calendar, status: "dailyReading" },
-  { name: "Continue Reading", icon: BookOpen, status: "inProgress" },
-  { name: "Rediscovery", icon: RotateCcw, status: "rediscovery" }
+  { name: "Inbox", icon: Inbox, status: STATUS.INBOX },
+  { name: "Daily Reading", icon: Calendar, status: STATUS.DAILY },
+  { name: "Continue Reading", icon: BookOpen, status: STATUS.CONTINUE },
+  { name: "Rediscovery", icon: RotateCcw, status: STATUS.REDISCOVERY }
 ];
 
 const HomePage = ({ onNavigate }) => {

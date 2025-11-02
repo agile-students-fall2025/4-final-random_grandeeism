@@ -5,25 +5,32 @@
  * Purpose: Filtered view showing only text/article content, excluding videos and audio
  */
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
+import ArticleCard from "../components/ArticleCard.jsx";
+import { mockArticles } from "../data/mockArticles.js";
+import applyFiltersAndSort from "../utils/searchUtils.js";
 
 const TextPage = ({ onNavigate }) => {
-  const mockArticles = [];
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  
+  const allArticles = mockArticles;
+  const [displayedArticles, setDisplayedArticles] = useState([]);
+
+  const baseLockedFilters = useMemo(() => ({ mediaType: 'article' }), []);
+
+  useEffect(() => {
+    setDisplayedArticles(applyFiltersAndSort(allArticles, baseLockedFilters));
+  }, [allArticles, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
-    console.log('Search in text articles:', query, filters);
-    setCurrentFilters(filters);
+    const merged = { ...baseLockedFilters, ...(filters || {}), query };
+    setCurrentFilters(merged);
+    setDisplayedArticles(applyFiltersAndSort(allArticles, merged));
   };
 
-  const handleSaveSearch = () => {
-    console.log('Save current search as a Stack');
-    setShowSaveStackModal(true);
-  };
+  const handleSaveSearch = () => setShowSaveStackModal(true);
 
   const handleSaveStack = (stackData) => {
     console.log('Saving stack:', stackData);
@@ -51,21 +58,29 @@ const TextPage = ({ onNavigate }) => {
       addLinkButtonText="Add Article"
     >
       <div className="p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-card border border-border rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Text Articles</h2>
-            <p className="text-muted-foreground mb-6">
-              This page will display:
-            </p>
-            <ul className="space-y-2 text-left max-w-md mx-auto">
-              <li>• All text-based articles and blog posts</li>
-              <li>• Filter by reading time (short, medium, long)</li>
-              <li>• Filter by tags and status</li>
-              <li>• Grid or list view options</li>
-              <li>• Estimated reading time for each article</li>
-              <li>• Reader mode preview</li>
-              <li>• Bulk actions for organizing articles</li>
-            </ul>
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Text Articles</h1>
+            <p className="text-muted-foreground">All text-based articles (filtered view).</p>
+          </div>
+
+          <div className="min-h-[200px]">
+            {displayedArticles.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {displayedArticles.map(article => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                    onArticleClick={() => onNavigate && onNavigate('text-reader', { article })}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-card border border-border rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2">No articles found</p>
+                <p className="text-sm text-muted-foreground">Try changing filters or search terms.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

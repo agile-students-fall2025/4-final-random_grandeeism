@@ -29,11 +29,12 @@ import {
 import { Button } from './ui/button.jsx';
 import { Input } from './ui/input.jsx';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem, SelectLabel } from './ui/select.jsx';
+import { STATUS } from "../constants/statuses.js";
 
 export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink }) {
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [newLinkTags, setNewLinkTags] = useState([]);
-  const [newLinkStatus, setNewLinkStatus] = useState('inbox');
+  const [newLinkStatus, setNewLinkStatus] = useState(STATUS.INBOX);
   const [newLinkFavorite, setNewLinkFavorite] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
@@ -94,7 +95,7 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
   const resetForm = () => {
     setNewLinkUrl('');
     setNewLinkTags([]);
-    setNewLinkStatus('inbox');
+  setNewLinkStatus(STATUS.INBOX);
     setNewLinkFavorite(false);
     setNewTagInput('');
     onClose();
@@ -188,43 +189,43 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
             {/* Inbox */}
             <button
               type="button"
-              onClick={() => setNewLinkStatus('inbox')}
+              onClick={() => setNewLinkStatus(STATUS.INBOX)}
               className={`p-3 rounded border-2 transition-all ${
-                newLinkStatus === 'inbox'
+                newLinkStatus === STATUS.INBOX
                   ? 'border-blue-500 bg-blue-500/10'
                   : 'border-border bg-background hover:border-blue-500/50'
               }`}
             >
-              <Inbox size={20} className={`mx-auto mb-1 ${newLinkStatus === 'inbox' ? 'text-blue-500' : 'text-muted-foreground'}`} />
-              <p className={`text-[12px] ${newLinkStatus === 'inbox' ? 'text-blue-500' : 'text-foreground'}`}>Inbox</p>
+              <Inbox size={20} className={`mx-auto mb-1 ${newLinkStatus === STATUS.INBOX ? 'text-blue-500' : 'text-muted-foreground'}`} />
+              <p className={`text-[12px] ${newLinkStatus === STATUS.INBOX ? 'text-blue-500' : 'text-foreground'}`}>Inbox</p>
             </button>
             
             {/* Daily Reading */}
             <button
               type="button"
-              onClick={() => setNewLinkStatus('dailyReading')}
+              onClick={() => setNewLinkStatus(STATUS.DAILY)}
               className={`p-3 rounded border-2 transition-all ${
-                newLinkStatus === 'dailyReading'
+                newLinkStatus === STATUS.DAILY
                   ? 'border-indigo-500 bg-indigo-500/10'
                   : 'border-border bg-background hover:border-indigo-500/50'
               }`}
             >
-              <Calendar size={20} className={`mx-auto mb-1 ${newLinkStatus === 'dailyReading' ? 'text-indigo-500' : 'text-muted-foreground'}`} />
-              <p className={`text-[12px] ${newLinkStatus === 'dailyReading' ? 'text-indigo-500' : 'text-foreground'}`}>Daily Reading</p>
+              <Calendar size={20} className={`mx-auto mb-1 ${newLinkStatus === STATUS.DAILY ? 'text-indigo-500' : 'text-muted-foreground'}`} />
+              <p className={`text-[12px] ${newLinkStatus === STATUS.DAILY ? 'text-indigo-500' : 'text-foreground'}`}>Daily Reading</p>
             </button>
             
             {/* Continue Reading */}
             <button
               type="button"
-              onClick={() => setNewLinkStatus('inProgress')}
+              onClick={() => setNewLinkStatus(STATUS.CONTINUE)}
               className={`p-3 rounded border-2 transition-all ${
-                newLinkStatus === 'inProgress'
+                newLinkStatus === STATUS.CONTINUE
                   ? 'border-amber-500 bg-amber-500/10'
                   : 'border-border bg-background hover:border-amber-500/50'
               }`}
             >
-              <BookOpen size={20} className={`mx-auto mb-1 ${newLinkStatus === 'inProgress' ? 'text-amber-500' : 'text-muted-foreground'}`} />
-              <p className={`text-[12px] ${newLinkStatus === 'inProgress' ? 'text-amber-500' : 'text-foreground'}`}>Continue Reading</p>
+              <BookOpen size={20} className={`mx-auto mb-1 ${newLinkStatus === STATUS.CONTINUE ? 'text-amber-500' : 'text-muted-foreground'}`} />
+              <p className={`text-[12px] ${newLinkStatus === STATUS.CONTINUE ? 'text-amber-500' : 'text-foreground'}`}>Continue Reading</p>
             </button>
           </div>
           
@@ -233,29 +234,29 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
             {/* Rediscovery Queue */}
             <button
               type="button"
-              onClick={() => setNewLinkStatus('rediscovery')}
+              onClick={() => setNewLinkStatus(STATUS.REDISCOVERY)}
               className={`p-3 rounded border-2 transition-all ${
-                newLinkStatus === 'rediscovery'
+                newLinkStatus === STATUS.REDISCOVERY
                   ? 'border-green-500 bg-green-500/10'
                   : 'border-border bg-background hover:border-green-500/50'
               }`}
             >
-              <RotateCcw size={20} className={`mx-auto mb-1 ${newLinkStatus === 'rediscovery' ? 'text-green-500' : 'text-muted-foreground'}`} />
-              <p className={`text-[12px] ${newLinkStatus === 'rediscovery' ? 'text-green-500' : 'text-foreground'}`}>Rediscovery Queue</p>
+              <RotateCcw size={20} className={`mx-auto mb-1 ${newLinkStatus === STATUS.REDISCOVERY ? 'text-green-500' : 'text-muted-foreground'}`} />
+              <p className={`text-[12px] ${newLinkStatus === STATUS.REDISCOVERY ? 'text-green-500' : 'text-foreground'}`}>Rediscovery Queue</p>
             </button>
             
             {/* Archive */}
             <button
               type="button"
-              onClick={() => setNewLinkStatus('archived')}
+              onClick={() => setNewLinkStatus(STATUS.ARCHIVED)}
               className={`p-3 rounded border-2 transition-all ${
-                newLinkStatus === 'archived'
+                newLinkStatus === STATUS.ARCHIVED
                   ? 'border-rose-500 bg-rose-500/10'
                   : 'border-border bg-background hover:border-rose-500/50'
               }`}
             >
-              <Archive size={20} className={`mx-auto mb-1 ${newLinkStatus === 'archived' ? 'text-rose-500' : 'text-muted-foreground'}`} />
-              <p className={`text-[12px] ${newLinkStatus === 'archived' ? 'text-rose-500' : 'text-foreground'}`}>Archive</p>
+              <Archive size={20} className={`mx-auto mb-1 ${newLinkStatus === STATUS.ARCHIVED ? 'text-rose-500' : 'text-muted-foreground'}`} />
+              <p className={`text-[12px] ${newLinkStatus === STATUS.ARCHIVED ? 'text-rose-500' : 'text-foreground'}`}>Archive</p>
             </button>
           </div>
         </div>
@@ -269,8 +270,8 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
               <SelectGroup>
                 <SelectLabel>Status</SelectLabel>
                 <SelectItem value="inbox">Inbox</SelectItem>
-                <SelectItem value="dailyReading">Daily Reading</SelectItem>
-                <SelectItem value="inProgress">Continue Reading</SelectItem>
+                <SelectItem value="daily">Daily Reading</SelectItem>
+                <SelectItem value="continue">Continue Reading</SelectItem>
                 <SelectItem value="rediscovery">Rediscovery Queue</SelectItem>
                 <SelectItem value="archived">Archive</SelectItem>
               </SelectGroup>

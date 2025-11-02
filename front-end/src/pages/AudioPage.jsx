@@ -5,25 +5,32 @@
  * Purpose: Filtered view showing only audio/podcast content with playback controls
  */
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
+import ArticleCard from "../components/ArticleCard.jsx";
+import { mockArticles } from "../data/mockArticles.js";
+import applyFiltersAndSort from "../utils/searchUtils.js";
 
 const AudioPage = ({ onNavigate }) => {
-  const mockArticles = [];
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  
+  const allArticles = mockArticles;
+  const [displayedArticles, setDisplayedArticles] = useState([]);
+
+  const baseLockedFilters = useMemo(() => ({ mediaType: 'podcast' }), []);
+
+  useEffect(() => {
+    setDisplayedArticles(applyFiltersAndSort(allArticles, baseLockedFilters));
+  }, [allArticles, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
-    console.log('Search in audio:', query, filters);
-    setCurrentFilters(filters);
+    const merged = { ...baseLockedFilters, ...(filters || {}), query };
+    setCurrentFilters(merged);
+    setDisplayedArticles(applyFiltersAndSort(allArticles, merged));
   };
 
-  const handleSaveSearch = () => {
-    console.log('Save current search as a Stack');
-    setShowSaveStackModal(true);
-  };
+  const handleSaveSearch = () => setShowSaveStackModal(true);
 
   const handleSaveStack = (stackData) => {
     console.log('Saving stack:', stackData);
@@ -51,22 +58,29 @@ const AudioPage = ({ onNavigate }) => {
       addLinkButtonText="Add Podcast"
     >
       <div className="p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-card border border-border rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Audio & Podcasts</h2>
-            <p className="text-muted-foreground mb-6">
-              This page will display:
-            </p>
-            <ul className="space-y-2 text-left max-w-md mx-auto">
-              <li>• All saved podcast episodes and audio content</li>
-              <li>• Episode artwork and podcast information</li>
-              <li>• Duration and publish date</li>
-              <li>• Filter by listen time (short, medium, long)</li>
-              <li>• Audio player with playback controls</li>
-              <li>• Listen progress tracking and resume functionality</li>
-              <li>• Speed controls and skip buttons</li>
-              <li>• Download for offline listening</li>
-            </ul>
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Audio & Podcasts</h1>
+            <p className="text-muted-foreground">All audio/podcast content (filtered view).</p>
+          </div>
+
+          <div className="min-h-[200px]">
+            {displayedArticles.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {displayedArticles.map(article => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                    onArticleClick={() => onNavigate && onNavigate('text-reader', { article })}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-card border border-border rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2">No audio found</p>
+                <p className="text-sm text-muted-foreground">Try adjusting filters or search.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

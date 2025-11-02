@@ -9,6 +9,7 @@
  */
 
 import { useState } from 'react';
+import { STATUS } from '../constants/statuses.js';
 import { 
   Star, 
   Tag, 
@@ -41,40 +42,40 @@ export default function ArticleCard({
   // Get status icon information
   const getStatusIconInfo = (status) => {
     switch (status) {
-      case 'inbox':
+      case STATUS.INBOX:
         return { 
           icon: Inbox, 
           color: 'text-foreground', 
           bgColor: 'bg-foreground/10',
-          label: 'Inbox'
+          label: 'Inbox',
         };
-      case 'dailyReading':
+      case STATUS.DAILY:
         return { 
           icon: Calendar, 
           color: 'text-foreground', 
           bgColor: 'bg-foreground/10',
-          label: 'Daily Reading'
+          label: 'Daily Reading',
         };
-      case 'inProgress':
+      case STATUS.CONTINUE:
         return { 
           icon: BookOpen, 
           color: 'text-foreground', 
           bgColor: 'bg-foreground/10',
-          label: 'Continue Reading'
+          label: 'Continue Reading',
         };
-      case 'rediscovery':
+      case STATUS.REDISCOVERY:
         return { 
           icon: RotateCcw, 
           color: 'text-foreground', 
           bgColor: 'bg-foreground/10',
-          label: 'Rediscovery Queue'
+          label: 'Rediscovery Queue',
         };
-      case 'archived':
+      case STATUS.ARCHIVED:
         return { 
           icon: Archive, 
           color: 'text-muted-foreground', 
           bgColor: 'bg-muted/50',
-          label: 'Archive'
+          label: 'Archive',
         };
       default:
         return { 
@@ -89,11 +90,11 @@ export default function ArticleCard({
   // Get next status in workflow
   const getNextStatus = () => {
     switch (article.status) {
-      case 'inbox': return 'dailyReading';
-      case 'dailyReading': return 'inProgress';
-      case 'inProgress': return 'rediscovery';
-      case 'rediscovery': return 'archived';
-      case 'archived': return null;
+      case STATUS.INBOX: return STATUS.DAILY;
+      case STATUS.DAILY: return STATUS.CONTINUE;
+      case STATUS.CONTINUE: return STATUS.REDISCOVERY;
+      case STATUS.REDISCOVERY: return STATUS.ARCHIVED;
+      case STATUS.ARCHIVED: return null;
       default: return null;
     }
   };
@@ -121,6 +122,7 @@ export default function ArticleCard({
     } else {
       onArticleClick(article);
     }
+    // no-op: card click should not change status by default
   };
 
   // Handle status icon click
@@ -131,26 +133,25 @@ export default function ArticleCard({
     }
   };
 
-  // Render status-specific action buttons
   const renderStatusButtons = () => {
     switch (article.status) {
-      case 'dailyReading':
+      case STATUS.DAILY:
         return (
           <>
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                onStatusChange(article.id, 'archived');
+                onStatusChange(article.id, STATUS.ARCHIVED);
               }}
               className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
             >
               <Check size={14} />
-              Mark as Completed
+              Move to Archive
             </button>
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                onStatusChange(article.id, 'inProgress');
+                onStatusChange(article.id, STATUS.CONTINUE);
               }}
               className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
             >
@@ -158,26 +159,26 @@ export default function ArticleCard({
               Continue Reading
             </button>
           </>
-        );
-      case 'inProgress':
+          );
+      case STATUS.CONTINUE:
         return (
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              onStatusChange(article.id, 'archived');
+              onStatusChange(article.id, STATUS.ARCHIVED);
             }}
             className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
           >
             <Check size={14} />
             Mark as Completed
           </button>
-        );
-      case 'rediscovery':
+          );
+      case STATUS.REDISCOVERY:
         return (
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              onStatusChange(article.id, 'archived');
+              onStatusChange(article.id, STATUS.ARCHIVED);
             }}
             className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
           >
@@ -185,12 +186,12 @@ export default function ArticleCard({
             Archive
           </button>
         );
-      case 'archived':
+      case STATUS.ARCHIVED:
         return (
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              onStatusChange(article.id, 'inbox');
+              onStatusChange(article.id, STATUS.INBOX);
             }}
             className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
           >
@@ -228,7 +229,7 @@ export default function ArticleCard({
         )}
 
         {/* Status Icon (Top Right) */}
-        {article.status !== 'archived' && nextStatus ? (
+  {article.status !== STATUS.ARCHIVED && nextStatus ? (
           <button
             onClick={handleStatusClick}
             onMouseEnter={() => setIsStatusHovered(true)}
@@ -242,7 +243,7 @@ export default function ArticleCard({
               <StatusIcon size={16} />
             )}
           </button>
-        ) : article.status === 'archived' ? (
+  ) : article.status === STATUS.ARCHIVED ? (
           <div className={`absolute top-4 right-4 p-2 rounded-full ${statusIconInfo.bgColor} ${statusIconInfo.color} opacity-60`}>
             <StatusIcon size={16} />
           </div>
@@ -290,7 +291,7 @@ export default function ArticleCard({
         )}
 
         {/* Progress Bar (Continue Reading Only) */}
-        {article.status === 'inProgress' && article.readProgress !== undefined && (
+  {article.status === STATUS.CONTINUE && article.readProgress !== undefined && (
           <div className="mt-3">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] text-foreground/80">

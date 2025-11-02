@@ -17,6 +17,7 @@
  */
 
 import { useState } from "react";
+import { STATUS } from "../constants/statuses.js";
 import TopBar from "./TopBar.jsx";
 import NavigationSidebar from "./NavigationSidebar.jsx";
 
@@ -76,10 +77,10 @@ export default function MainLayout({
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Auto-calculate counts for sidebar
-  const inboxCount = articles.filter(a => a.status === "inbox" && !a.isHidden).length;
-  const dailyReadingCount = articles.filter(a => a.status === "dailyReading" && !a.isHidden).length;
-  const inProgressCount = articles.filter(a => a.status === "inProgress" && !a.isHidden).length;
-  const rediscoveryCount = articles.filter(a => a.status === "rediscovery" && !a.isHidden).length;
+  const inboxCount = articles.filter(a => a.status === STATUS.INBOX && !a.isHidden).length;
+  const dailyReadingCount = articles.filter(a => a.status === STATUS.DAILY && !a.isHidden).length;
+  const inProgressCount = articles.filter(a => a.status === STATUS.CONTINUE && !a.isHidden).length;
+  const rediscoveryCount = articles.filter(a => a.status === STATUS.REDISCOVERY && !a.isHidden).length;
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">

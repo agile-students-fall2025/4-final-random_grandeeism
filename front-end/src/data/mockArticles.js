@@ -3,6 +3,8 @@
  * @description Mock article data for development and testing
  */
 
+import { STATUS } from "../constants/statuses.js";
+
 export const mockArticles = [
   {
     id: '1',
@@ -10,13 +12,12 @@ export const mockArticles = [
     url: 'https://examplelink.com/welcome-test-article',
     author: 'John Doe',
     readingTime: '1 min',
-    status: 'inbox',
+    status: STATUS.INBOX,
     isFavorite: false,
     tags: ['welcome', 'test'],
     dateAdded: new Date('2024-01-15'),
     hasAnnotations: false,
     readProgress: 0,
-    // --- ADDED THIS 'content' FIELD FOR TESTING ---
     content: `This is the first paragraph. You can select this text to test highlighting.
 This is the second paragraph. The component logic splits text based on newlines, so this will appear as a separate paragraph.
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
@@ -28,7 +29,6 @@ And more.
 And more.
 You can scroll down to test the completion modal.
 This is the very last line of the article.`
-    // --- END OF ADDED CONTENT ---
   },
   {
     id: '2',
@@ -36,13 +36,12 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/future-web-dev',
     author: 'Jane Smith',
     readingTime: '6 min',
-    status: 'inbox',
+    status: STATUS.INBOX,
     isFavorite: false,
     tags: ['web-development', 'technology'],
     dateAdded: new Date('2024-01-14'),
     hasAnnotations: false,
     readProgress: 0,
-    // Add content here if you want to test this article
     content: 'The future of web development looks bright, with new technologies emerging...'
   },
   {
@@ -51,7 +50,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/better-ui',
     author: 'Mike Johnson',
     readingTime: '4 min',
-    status: 'dailyReading',
+    status: STATUS.DAILY,
     isFavorite: true,
     tags: ['ui', 'design', 'ux'],
     dateAdded: new Date('2024-01-13'),
@@ -65,14 +64,14 @@ This is the very last line of the article.`
     url: 'https://example.com/future-javascript-podcast',
     author: 'Tech Podcast Network',
     readingTime: '52 min',
-    status: 'inProgress',
+    status: STATUS.CONTINUE,
     isFavorite: false,
     tags: ['javascript', 'podcast', 'web-development', 'technology'],
     dateAdded: new Date('2024-01-12'),
     hasAnnotations: true,
     readProgress: 35,
-    mediaType: 'podcast', // Mark as podcast
-    podcastUrl: 'https://example.com/podcast.mp3' // Add podcast URL
+    mediaType: 'podcast',
+    podcastUrl: 'https://example.com/podcast.mp3'
   },
   {
     id: '5',
@@ -80,7 +79,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/css-grid-flexbox',
     author: 'David Brown',
     readingTime: '5 min',
-    status: 'inbox',
+    status: STATUS.INBOX,
     isFavorite: false,
     tags: ['css', 'layout', 'frontend'],
     dateAdded: new Date('2024-01-11'),
@@ -94,7 +93,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/typescript-advanced-patterns',
     author: 'TypeScript Expert',
     readingTime: '18 min',
-    status: 'inProgress',
+    status: STATUS.CONTINUE,
     isFavorite: false,
     tags: ['typescript', 'programming'],
     dateAdded: new Date('2024-01-10'),
@@ -108,7 +107,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/modern-css',
     author: 'Alex Rodriguez',
     readingTime: '3 min',
-    status: 'rediscovery',
+    status: STATUS.REDISCOVERY,
     isFavorite: false,
     tags: ['css', 'modern', 'techniques'],
     dateAdded: new Date('2024-01-09'),
@@ -122,7 +121,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/typescript-best-practices',
     author: 'Emma Davis',
     readingTime: '9 min',
-    status: 'dailyReading',
+    status: STATUS.DAILY,
     isFavorite: false,
     tags: ['typescript', 'best-practices', 'development'],
     dateAdded: new Date('2024-01-08'),
@@ -136,7 +135,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/api-design',
     author: 'Tom Wilson',
     readingTime: '6 min',
-    status: 'inbox',
+    status: STATUS.INBOX,
     isFavorite: false,
     tags: ['api', 'design', 'backend'],
     dateAdded: new Date('2024-01-07'),
@@ -150,7 +149,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/database-optimization',
     author: 'Rachel Green',
     readingTime: '10 min',
-    status: 'dailyReading',
+    status: STATUS.DAILY,
     isFavorite: true,
     tags: ['database', 'optimization', 'performance'],
     dateAdded: new Date('2024-01-06'),
@@ -164,7 +163,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/advanced-react-patterns',
     author: 'Kevin Park',
     readingTime: '12 min',
-    status: 'dailyReading',
+    status: STATUS.DAILY,
     isFavorite: false,
     tags: ['react', 'patterns', 'advanced', 'javascript'],
     dateAdded: new Date('2024-01-05'),
@@ -178,7 +177,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/microservices-guide',
     author: 'Maria Garcia',
     readingTime: '15 min',
-    status: 'dailyReading',
+    status: STATUS.DAILY,
     isFavorite: true,
     tags: ['microservices', 'architecture', 'backend', 'scalability'],
     dateAdded: new Date('2024-01-04'),
@@ -192,7 +191,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/docker-best-practices',
     author: 'James Wilson',
     readingTime: '8 min',
-    status: 'rediscovery',
+    status: STATUS.REDISCOVERY,
     isFavorite: false,
     tags: ['docker', 'devops', 'containers', 'deployment'],
     dateAdded: new Date('2024-01-03'),
@@ -206,7 +205,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/graphql-vs-rest',
     author: 'Sophie Lee',
     readingTime: '9 min',
-    status: 'rediscovery',
+    status: STATUS.REDISCOVERY,
     isFavorite: true,
     tags: ['graphql', 'rest', 'api', 'comparison'],
     dateAdded: new Date('2024-01-02'),
@@ -220,7 +219,7 @@ This is the very last line of the article.`
     url: 'https://examplelink.com/ml-fundamentals',
     author: 'Dr. Robert Kim',
     readingTime: '20 min',
-    status: 'rediscovery',
+    status: STATUS.REDISCOVERY,
     isFavorite: false,
     tags: ['machine-learning', 'ai', 'fundamentals', 'data-science'],
     dateAdded: new Date('2024-01-01'),
@@ -231,10 +230,10 @@ This is the very last line of the article.`
   {
     id: '16',
     title: 'Node.js Performance Optimization',
-    url: 'https(://examplelink.com/nodejs-performance',
+    url: 'https://examplelink.com/nodejs-performance',
     author: 'Alex Thompson',
     readingTime: '14 min',
-    status: 'inProgress',
+    status: STATUS.CONTINUE,
     isFavorite: true,
     tags: ['nodejs', 'performance', 'backend', 'optimization'],
     dateAdded: new Date('2024-01-15'),
@@ -248,37 +247,35 @@ This is the very last line of the article.`
     url: 'https://youtube.com/watch?v=example',
     author: 'React University',
     readingTime: '35 min',
-    status: 'inbox',
+    status: STATUS.INBOX,
     isFavorite: false,
     tags: ['react-native', 'mobile', 'video'],
     dateAdded: new Date('2024-01-16'),
     hasAnnotations: false,
     readProgress: 0,
-    mediaType: 'video', // Mark as video
-    videoId: 'example' // Add video ID
+    mediaType: 'video',
+    videoId: 'example'
   }
 ];
 
-// Helper function to filter articles by status
 export const getArticlesByStatus = (articles, status) => {
   return articles.filter(article => article.status === status);
 };
 
-// Helper function to get article counts by status
 export const getArticleCounts = (articles) => {
   const counts = {
-    inbox: 0,
-    dailyReading: 0,
-    inProgress: 0,  // This maps to "Continue Reading"
-    rediscovery: 0,
-    archived: 0
+    [STATUS.INBOX]: 0,
+    [STATUS.DAILY]: 0,
+    [STATUS.CONTINUE]: 0,
+    [STATUS.REDISCOVERY]: 0,
+    [STATUS.ARCHIVED]: 0
   };
-  
+
   articles.forEach(article => {
     if (Object.prototype.hasOwnProperty.call(counts, article.status)) {
       counts[article.status]++;
     }
   });
-  
+
   return counts;
 };

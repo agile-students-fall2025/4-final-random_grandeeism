@@ -8,6 +8,7 @@
 import { useState } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
+import { STATUS } from "../constants/statuses.js";
 
 const ArchivePage = ({ onNavigate }) => {
   const mockArticles = [];
@@ -54,8 +55,8 @@ const ArchivePage = ({ onNavigate }) => {
       showSortOptions={true}
       availableTags={["Development", "Design", "AI", "Technology"]}
       availableFeeds={["TechCrunch", "Medium", "Dev.to"]}
-      lockedFilters={{ status: "archive" }}
-      preAppliedFilters={{ status: "archive" }}
+  lockedFilters={{ status: STATUS.ARCHIVED }}
+  preAppliedFilters={{ status: STATUS.ARCHIVED }}
       onFilterChipRemoved={() => onNavigate("search")}
     >
       <div className="p-6">

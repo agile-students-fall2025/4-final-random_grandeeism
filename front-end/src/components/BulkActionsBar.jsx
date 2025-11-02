@@ -6,6 +6,7 @@
  */
 
 import { X, Star, Tag, Archive, Trash2, Inbox, Calendar, BookOpen, RotateCcw, PanelBottomClose } from "lucide-react";
+import { STATUS } from "../constants/statuses.js";
 import { Button } from "./primitives/button.jsx";
 import {
   DropdownMenu,
@@ -96,23 +97,23 @@ export default function BulkActionsBar({
                   <PanelBottomClose size={16} className="mr-2" />
                   Move to Next Queue
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onBulkStatusChange('inbox')}>
+                <DropdownMenuItem onClick={() => onBulkStatusChange(STATUS.INBOX)}>
                   <Inbox size={16} className="mr-2" />
                   Move to Inbox
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onBulkStatusChange('dailyReading')}>
+                <DropdownMenuItem onClick={() => onBulkStatusChange(STATUS.DAILY)}>
                   <Calendar size={16} className="mr-2" />
                   Move to Daily Reading
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onBulkStatusChange('inProgress')}>
+                <DropdownMenuItem onClick={() => onBulkStatusChange(STATUS.CONTINUE)}>
                   <BookOpen size={16} className="mr-2" />
                   Move to Continue Reading
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onBulkStatusChange('rediscovery')}>
+                <DropdownMenuItem onClick={() => onBulkStatusChange(STATUS.REDISCOVERY)}>
                   <RotateCcw size={16} className="mr-2" />
                   Move to Rediscovery
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onBulkStatusChange('archived')}>
+                <DropdownMenuItem onClick={() => onBulkStatusChange(STATUS.ARCHIVED)}>
                   <Archive size={16} className="mr-2" />
                   Archive
                 </DropdownMenuItem>

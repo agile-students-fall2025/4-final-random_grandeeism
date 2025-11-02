@@ -5,25 +5,32 @@
  * Purpose: Helps users rediscover valuable content they saved but haven't read yet
  */
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
+import ArticleCard from "../components/ArticleCard.jsx";
+import { mockArticles } from "../data/mockArticles.js";
+import applyFiltersAndSort from "../utils/searchUtils.js";
 
 const RediscoveryPage = ({ onNavigate }) => {
-  const mockArticles = [];
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  
+  const allArticles = mockArticles;
+  const [displayedArticles, setDisplayedArticles] = useState([]);
+
+  const baseLockedFilters = useMemo(() => ({ status: 'completed' }), []);
+
+  useEffect(() => {
+    setDisplayedArticles(applyFiltersAndSort(allArticles, baseLockedFilters));
+  }, [allArticles, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
-    console.log('Search in rediscovery:', query, filters);
-    setCurrentFilters(filters);
+    const merged = { ...baseLockedFilters, ...(filters || {}), query };
+    setCurrentFilters(merged);
+    setDisplayedArticles(applyFiltersAndSort(allArticles, merged));
   };
 
-  const handleSaveSearch = () => {
-    console.log('Save current search as a Stack');
-    setShowSaveStackModal(true);
-  };
+  const handleSaveSearch = () => setShowSaveStackModal(true);
 
   const handleSaveStack = (stackData) => {
     console.log('Saving stack:', stackData);
@@ -41,8 +48,8 @@ const RediscoveryPage = ({ onNavigate }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
-      lockedFilters={{ status: "completed" }}
-      preAppliedFilters={{ status: "completed" }}
+  lockedFilters={{ status: "completed" }}
+  preAppliedFilters={{ status: "completed" }}
       onFilterChipRemoved={() => onNavigate("search")}
       showTimeFilter={true}
       showMediaFilter={true}
@@ -51,20 +58,29 @@ const RediscoveryPage = ({ onNavigate }) => {
       showSortOptions={true}
     >
       <div className="p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-card border border-border rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Rediscovery Queue</h2>
-            <p className="text-muted-foreground mb-6">
-              This page will display:
-            </p>
-            <ul className="space-y-2 text-left max-w-md mx-auto">
-              <li>• Older articles intelligently resurfaced for reading</li>
-              <li>• Smart algorithm based on age, tags, and relevance</li>
-              <li>• "Time capsule" feature for forgotten gems</li>
-              <li>• Move to Daily Reading or Archive</li>
-              <li>• Days since saved indicator</li>
-              <li>• Refresh queue to get new suggestions</li>
-            </ul>
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Rediscovery Queue</h1>
+            <p className="text-muted-foreground">Older saved content surfaced for rediscovery (filtered view).</p>
+          </div>
+
+          <div className="min-h-[200px]">
+            {displayedArticles.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {displayedArticles.map(article => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                    onArticleClick={() => onNavigate && onNavigate('text-reader', { article })}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-card border border-border rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2">No articles found</p>
+                <p className="text-sm text-muted-foreground">Try modifying filters or search.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
