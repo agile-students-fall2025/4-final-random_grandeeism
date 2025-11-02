@@ -1,0 +1,74 @@
+/* Highlight hover effects */
+.highlight-yellow:hover {
+  background-color: #fff7b7 !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.highlight-green:hover {
+  background-color: #d4ffd4 !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.highlight-blue:hover {
+  background-color: #d4e8ff !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.highlight-red:hover {
+  background-color: #ffd4d4 !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.highlight-purple:hover {
+  background-color: #e8d4ff !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+/* Interactive elements hover effects */
+.reader-interactive {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reader-interactive:hover {
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+/* Tag hover effects */
+.reader-tag {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reader-tag:hover {
+  filter: brightness(0.95);
+  transform: scale(1.05);
+}
+
+/* Button hover effects */
+.reader-button {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reader-button:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+
+/* Link hover effects */
+.reader-link {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.reader-link:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
