@@ -70,6 +70,9 @@ const SearchPage = ({ onNavigate, initialTag }) => {
                     key={article.id}
                     article={article}
                     onArticleClick={() => onNavigate && onNavigate('text-reader', { article })}
+                    onToggleFavorite={(id) => console.log('Toggle favorite:', id)}
+                    onStatusChange={(id, status) => console.log('Change status:', id, status)}
+                    onDelete={(id) => console.log('Delete article:', id)}
                   />
                 ))}
               </div>

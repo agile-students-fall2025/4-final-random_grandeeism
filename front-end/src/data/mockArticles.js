@@ -255,6 +255,48 @@ This is the very last line of the article.`
     readProgress: 0,
     mediaType: 'video',
     videoId: 'example'
+  },
+  {
+    id: '18',
+    title: 'Understanding Web Security Best Practices',
+    url: 'https://examplelink.com/web-security-best-practices',
+    author: 'Security Expert',
+    readingTime: '12 min',
+    status: STATUS.ARCHIVED,
+    isFavorite: true,
+    tags: ['security', 'web', 'best-practices'],
+    dateAdded: new Date('2023-12-20'),
+    hasAnnotations: true,
+    readProgress: 100,
+    content: 'Always validate user input, use HTTPS, implement CSP, and keep dependencies updated.'
+  },
+  {
+    id: '19',
+    title: 'Complete Guide to CSS Grid',
+    url: 'https://examplelink.com/complete-css-grid-guide',
+    author: 'Layout Guru',
+    readingTime: '15 min',
+    status: STATUS.ARCHIVED,
+    isFavorite: false,
+    tags: ['css', 'grid', 'layout', 'frontend'],
+    dateAdded: new Date('2023-12-15'),
+    hasAnnotations: true,
+    readProgress: 100,
+    content: 'CSS Grid revolutionized web layouts with two-dimensional control.'
+  },
+  {
+    id: '20',
+    title: 'Advanced JavaScript Patterns',
+    url: 'https://examplelink.com/advanced-js-patterns',
+    author: 'JS Master',
+    readingTime: '22 min',
+    status: STATUS.ARCHIVED,
+    isFavorite: true,
+    tags: ['javascript', 'patterns', 'advanced', 'programming'],
+    dateAdded: new Date('2023-12-10'),
+    hasAnnotations: true,
+    readProgress: 100,
+    content: 'Module pattern, revealing module pattern, singleton, observer, and more design patterns in JavaScript.'
   }
 ];
 

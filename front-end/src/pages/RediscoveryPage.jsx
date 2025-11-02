@@ -11,6 +11,7 @@ import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { mockArticles } from "../data/mockArticles.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
+import { STATUS } from "../constants/statuses.js";
 
 const RediscoveryPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
@@ -18,7 +19,7 @@ const RediscoveryPage = ({ onNavigate }) => {
   const allArticles = mockArticles;
   const [displayedArticles, setDisplayedArticles] = useState([]);
 
-  const baseLockedFilters = useMemo(() => ({ status: 'completed' }), []);
+  const baseLockedFilters = useMemo(() => ({ status: STATUS.REDISCOVERY }), []);
 
   useEffect(() => {
     setDisplayedArticles(applyFiltersAndSort(allArticles, baseLockedFilters));
@@ -48,8 +49,8 @@ const RediscoveryPage = ({ onNavigate }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
-  lockedFilters={{ status: "completed" }}
-  preAppliedFilters={{ status: "completed" }}
+      lockedFilters={{ status: STATUS.REDISCOVERY }}
+      preAppliedFilters={{ status: STATUS.REDISCOVERY }}
       onFilterChipRemoved={() => onNavigate("search")}
       showTimeFilter={true}
       showMediaFilter={true}
@@ -72,6 +73,9 @@ const RediscoveryPage = ({ onNavigate }) => {
                     key={article.id}
                     article={article}
                     onArticleClick={() => onNavigate && onNavigate('text-reader', { article })}
+                    onToggleFavorite={(id) => console.log('Toggle favorite:', id)}
+                    onStatusChange={(id, status) => console.log('Change status:', id, status)}
+                    onDelete={(id) => console.log('Delete article:', id)}
                   />
                 ))}
               </div>

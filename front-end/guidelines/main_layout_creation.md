@@ -248,8 +248,8 @@ MainLayout **automatically calculates** these counts from the `articles` prop:
 ```javascript
 // Calculate counts for sidebar
 const inboxCount = articles.filter(a => a.status === "inbox" && !a.isHidden).length;
-const dailyReadingCount = articles.filter(a => a.status === "dailyReading" && !a.isHidden).length;
-const inProgressCount = articles.filter(a => a.status === "inProgress" && !a.isHidden).length;
+const dailyReadingCount = articles.filter(a => a.status === "daily" && !a.isHidden).length;
+const inProgressCount = articles.filter(a => a.status === "continue" && !a.isHidden).length;
 const rediscoveryCount = articles.filter(a => a.status === "rediscovery" && !a.isHidden).length;
 const favoriteCount = articles.filter(a => a.isFavorite && !a.isHidden).length;
 ```
@@ -476,8 +476,8 @@ export default function MainLayout({
 
   // Calculate counts for sidebar
   const inboxCount = articles.filter(a => a.status === "inbox" && !a.isHidden).length;
-  const dailyReadingCount = articles.filter(a => a.status === "dailyReading" && !a.isHidden).length;
-  const inProgressCount = articles.filter(a => a.status === "inProgress" && !a.isHidden).length;
+  const dailyReadingCount = articles.filter(a => a.status === "daily" && !a.isHidden).length;
+  const inProgressCount = articles.filter(a => a.status === "continue" && !a.isHidden).length;
   const rediscoveryCount = articles.filter(a => a.status === "rediscovery" && !a.isHidden).length;
   const favoriteCount = articles.filter(a => a.isFavorite && !a.isHidden).length;
 
@@ -1030,7 +1030,7 @@ border-border       /* Sidebar separator */
 ```javascript
 const counts = useMemo(() => ({
   inbox: articles.filter(a => a.status === "inbox" && !a.isHidden).length,
-  dailyReading: articles.filter(a => a.status === "dailyReading" && !a.isHidden).length,
+  dailyReading: articles.filter(a => a.status === "daily" && !a.isHidden).length,
   // ... etc
 }), [articles]);
 ```

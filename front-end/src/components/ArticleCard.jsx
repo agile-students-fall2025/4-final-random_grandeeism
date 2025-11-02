@@ -37,7 +37,7 @@ export default function ArticleCard({
   onToggleSelect
 }) {
   const [isStatusHovered, setIsStatusHovered] = useState(false);
-  const [showMoreActions, setShowMoreActions] = useState(false);
+  const [showStatusSubmenu, setShowStatusSubmenu] = useState(false);
 
   // Get status icon information
   const getStatusIconInfo = (status) => {
@@ -130,77 +130,6 @@ export default function ArticleCard({
     e.stopPropagation();
     if (nextStatus && onStatusChange) {
       onStatusChange(article.id, nextStatus);
-    }
-  };
-
-  const renderStatusButtons = () => {
-    switch (article.status) {
-      case STATUS.DAILY:
-        return (
-          <>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                onStatusChange(article.id, STATUS.ARCHIVED);
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
-            >
-              <Check size={14} />
-              Move to Archive
-            </button>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                onStatusChange(article.id, STATUS.CONTINUE);
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
-            >
-              <BookOpen size={14} />
-              Continue Reading
-            </button>
-          </>
-          );
-      case STATUS.CONTINUE:
-        return (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onStatusChange(article.id, STATUS.ARCHIVED);
-            }}
-            className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
-          >
-            <Check size={14} />
-            Mark as Completed
-          </button>
-          );
-      case STATUS.REDISCOVERY:
-        return (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onStatusChange(article.id, STATUS.ARCHIVED);
-            }}
-            className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
-          >
-            <Archive size={14} />
-            Archive
-          </button>
-        );
-      case STATUS.ARCHIVED:
-        return (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onStatusChange(article.id, STATUS.INBOX);
-            }}
-            className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
-          >
-            <Inbox size={14} />
-            Unarchive
-          </button>
-        );
-      default:
-        return null;
     }
   };
 
@@ -310,8 +239,7 @@ export default function ArticleCard({
 
       {/* Actions Section */}
       <div className="px-4 pt-4 pb-2 border-t border-border">
-        {/* First Row - Always Visible */}
-        <div className="flex items-center gap-2 flex-wrap mb-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Favorite Button */}
           <button
             onClick={(e) => {
@@ -336,55 +264,93 @@ export default function ArticleCard({
             Manage Tags
           </button>
 
-          {/* More Actions Dropdown */}
+          {/* Change Status Dropdown */}
           <div className="relative">
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setShowMoreActions(!showMoreActions);
+                setShowStatusSubmenu(!showStatusSubmenu);
               }}
               className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
             >
-              <ChevronDown size={14} />
-              More
+              <PanelBottomClose size={14} />
+              Change Status
             </button>
 
-            {showMoreActions && (
-              <div className="absolute bottom-full left-0 mb-1 bg-popover border border-border rounded-md shadow-lg py-1 min-w-[150px] z-10">
-                {article.hasAnnotations && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMoreActions(false);
-                      // TODO: Open export modal
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
-                  >
-                    <FileDown size={14} />
-                    Export Notes
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMoreActions(false);
-                      onDelete(article.id);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-destructive/10 text-destructive transition-colors text-left"
-                  >
-                    <Trash2 size={14} />
-                    Delete
-                  </button>
-                )}
+            {showStatusSubmenu && (
+              <div className="absolute bottom-full left-0 mb-1 bg-popover border border-border rounded-md shadow-lg py-1 min-w-[160px] z-10">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(article.id, STATUS.INBOX);
+                    setShowStatusSubmenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
+                >
+                  <Inbox size={14} />
+                  Inbox
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(article.id, STATUS.DAILY);
+                    setShowStatusSubmenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
+                >
+                  <Calendar size={14} />
+                  Daily Reading
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(article.id, STATUS.CONTINUE);
+                    setShowStatusSubmenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
+                >
+                  <BookOpen size={14} />
+                  Continue Reading
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(article.id, STATUS.REDISCOVERY);
+                    setShowStatusSubmenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
+                >
+                  <RotateCcw size={14} />
+                  Rediscovery
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(article.id, STATUS.ARCHIVED);
+                    setShowStatusSubmenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
+                >
+                  <Archive size={14} />
+                  Archive
+                </button>
               </div>
             )}
           </div>
-        </div>
 
-        {/* Second Row - Status-Specific Actions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {renderStatusButtons()}
+          {/* Delete Button */}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(article.id);
+              }}
+              className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-destructive/10 hover:bg-destructive/20 text-destructive rounded transition-colors"
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+          )}
         </div>
       </div>
     </div>

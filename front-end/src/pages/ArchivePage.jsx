@@ -5,27 +5,33 @@
  * Purpose: Shows articles marked as archived with full search and filtering capabilities
  */
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
+import ArticleCard from "../components/ArticleCard.jsx";
+import { mockArticles } from "../data/mockArticles.js";
+import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
 
 const ArchivePage = ({ onNavigate }) => {
-  const mockArticles = [];
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
+  const allArticles = mockArticles;
+  const [displayedArticles, setDisplayedArticles] = useState([]);
 
-  const handleSearch = (query) => {
-    console.log('Search archive:', query);
-  };
+  const baseLockedFilters = useMemo(() => ({ status: STATUS.ARCHIVED }), []);
+
+  useEffect(() => {
+    setDisplayedArticles(applyFiltersAndSort(allArticles, baseLockedFilters));
+  }, [allArticles, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
-    console.log('Search archive with filters:', query, filters);
-    setCurrentFilters(filters);
+    const merged = { ...baseLockedFilters, ...(filters || {}), query };
+    setCurrentFilters(merged);
+    setDisplayedArticles(applyFiltersAndSort(allArticles, merged));
   };
 
   const handleSaveSearch = () => {
-    console.log('Save current search as a Stack');
     setShowSaveStackModal(true);
   };
 
@@ -41,40 +47,48 @@ const ArchivePage = ({ onNavigate }) => {
       onNavigate={onNavigate}
       articles={mockArticles}
       pageTitle="Archive"
-      showSearch={true}
-      searchPlaceholder="Search archive..."
-      onSearch={handleSearch}
+      useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
-      useAdvancedSearch={true}
+      availableTags={["Development", "Design", "AI", "Technology"]}
+      availableFeeds={["TechCrunch", "Medium", "Dev.to"]}
+      lockedFilters={{ status: STATUS.ARCHIVED }}
+      preAppliedFilters={{ status: STATUS.ARCHIVED }}
+      onFilterChipRemoved={() => onNavigate("search")}
       showTimeFilter={true}
       showMediaFilter={true}
       showTagFilter={true}
       showFavoritesFilter={true}
       showFeedFilter={true}
       showSortOptions={true}
-      availableTags={["Development", "Design", "AI", "Technology"]}
-      availableFeeds={["TechCrunch", "Medium", "Dev.to"]}
-  lockedFilters={{ status: STATUS.ARCHIVED }}
-  preAppliedFilters={{ status: STATUS.ARCHIVED }}
-      onFilterChipRemoved={() => onNavigate("search")}
     >
       <div className="p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-card border border-border rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Archive</h2>
-            <p className="text-muted-foreground mb-6">
-              This page will display:
-            </p>
-            <ul className="space-y-2 text-left max-w-md mx-auto">
-              <li>• All completed and archived articles</li>
-              <li>• Full search and advanced filtering capabilities</li>
-              <li>• Sort by date archived, date added, or title</li>
-              <li>• Filter by tags, media type, and feeds</li>
-              <li>• Restore articles back to Inbox or other queues</li>
-              <li>• Bulk actions for managing archived content</li>
-              <li>• Archive statistics and insights</li>
-            </ul>
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Archive</h1>
+            <p className="text-muted-foreground">All completed and archived articles.</p>
+          </div>
+
+          <div className="min-h-[200px]">
+            {displayedArticles.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {displayedArticles.map(article => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                    onArticleClick={() => onNavigate && onNavigate('text-reader', { article })}
+                    onToggleFavorite={(id) => console.log('Toggle favorite:', id)}
+                    onStatusChange={(id, status) => console.log('Change status:', id, status)}
+                    onDelete={(id) => console.log('Delete article:', id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-card border border-border rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2">No archived articles found</p>
+                <p className="text-sm text-muted-foreground">Try clearing filters or adjusting your search.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

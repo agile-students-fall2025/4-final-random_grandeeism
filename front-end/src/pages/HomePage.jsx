@@ -34,7 +34,7 @@ const HomePage = ({ onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Get current tab's status value
-  const currentStatus = tabs.find(t => t.name === activeTab)?.status || "inbox";
+  const currentStatus = tabs.find(t => t.name === activeTab)?.status || STATUS.INBOX;
 
   // Get articles for current tab with search filtering
   const currentTabArticles = useMemo(() => {

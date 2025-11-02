@@ -343,7 +343,7 @@ interface TextReaderProps {
   onClose: () => void;
   onNavigate: (page: string, view?: string) => void;
   onUpdateArticle?: (article: Article) => void;
-  onStatusChange?: (articleId: string, newStatus: "inProgress" | "archived") => void;
+  onStatusChange?: (articleId: string, newStatus: "continue" | "archived") => void;
 }
 ```
 
@@ -489,11 +489,11 @@ const handleStatusChange = (newStatus: Article["status"]) => {
   if (onUpdateArticle) {
     const updates: Partial<Article> = { status: newStatus };
     
-    if (newStatus === "dailyReading") {
+  if (newStatus === "daily") {
       updates.scheduledDate = new Date();
     }
     
-    if (newStatus === "inProgress") {
+  if (newStatus === "continue") {
       updates.readProgress = 30;
     }
     
@@ -523,9 +523,9 @@ const handleStatusAdvance = () => {
 
 const getNextStatus = () => {
   switch (article.status) {
-    case "inbox": return "dailyReading";
-    case "dailyReading": return "inProgress";
-    case "inProgress": return "rediscovery";
+  case "inbox": return "daily";
+  case "daily": return "continue";
+  case "continue": return "rediscovery";
     case "rediscovery": return "archived";
     case "archived": return null;
     default: return null;
@@ -679,7 +679,7 @@ interface Article {
   author?: string;
   publishedDate?: Date;
   readingTime: string;
-  status: "inbox" | "dailyReading" | "inProgress" | "rediscovery" | "archived";
+  status: "inbox" | "daily" | "continue" | "rediscovery" | "archived";
   isFavorite: boolean;
   tags: string[];
   dateAdded: Date;

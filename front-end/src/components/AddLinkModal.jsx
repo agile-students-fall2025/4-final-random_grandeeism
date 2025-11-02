@@ -107,7 +107,7 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
         resetForm();
       }
     }}>
-      <DialogContent className="w-full max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Link</DialogTitle>
           <DialogDescription>

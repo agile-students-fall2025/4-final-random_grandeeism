@@ -1,13 +1,11 @@
 import { useState, useMemo } from "react";
-import { Search, Plus, Tag as TagIcon } from "lucide-react";
+import { Search, Plus, Tag as TagIcon, ArrowUpDown, X } from "lucide-react";
 import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
-import SaveStackModal from "../components/SaveStackModal.jsx";
 import { mockArticles } from "../data/mockArticles";
 import { STATUS } from "../constants/statuses.js";
 import { Button } from "../components/ui/button.jsx";
 import { Input } from "../components/ui/input.jsx";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select.jsx";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
@@ -15,11 +13,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 export default function TagsPage({ onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("usage");
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isCreateTagModalOpen, setIsCreateTagModalOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   const [articles, setArticles] = useState(mockArticles);
-  const [showSaveStackModal, setShowSaveStackModal] = useState(false);
-  const [currentFilters, setCurrentFilters] = useState(null);
 
   // Calculate tag statistics
   const tagStats = useMemo(() => {
@@ -128,19 +125,9 @@ export default function TagsPage({ onNavigate }) {
     }
   };
 
-  const handleSearchWithFilters = (query, filters) => {
-    console.log('Search tags:', query, filters);
-    setCurrentFilters(filters);
-  };
-
-  const handleSaveSearch = () => {
-    console.log('Save current search as a Stack');
-    setShowSaveStackModal(true);
-  };
-
-  const handleSaveStack = (stackData) => {
-    console.log('Saving stack:', stackData);
-    alert(`Stack "${stackData.name}" saved successfully!`);
+  const sortLabels = {
+    usage: "Sort by Usage",
+    alphabetical: "Sort Alphabetically"
   };
 
   return (
@@ -150,20 +137,69 @@ export default function TagsPage({ onNavigate }) {
       onNavigate={onNavigate}
       articles={articles}
       pageTitle="Tags"
-      useAdvancedSearch={true}
-      onSearchWithFilters={handleSearchWithFilters}
-      onSaveSearch={handleSaveSearch}
-      availableTags={Array.from(new Set(articles.flatMap(article => article.tags)))}
-      showTimeFilter={true}
-      showMediaFilter={true}
-      showTagFilter={true}
-      showStatusFilter={true}
-      showFavoritesFilter={true}
-      showSortOptions={true}
+      showSearch={true}
+      customSearchContent={
+        <>
+          <p className="font-['New_Spirit:Medium',sans-serif] leading-[normal] text-[18px] text-foreground mb-3">
+            Tags
+          </p>
+          <div className="flex items-center gap-2">
+            {/* Search Input */}
+            <div className="flex-1 min-w-0 flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">
+              <Search size={18} className="text-muted-foreground shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tags..."
+                className="flex-1 min-w-0 bg-card text-foreground text-[14px] outline-none placeholder:text-muted-foreground"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")} 
+                  className="p-1 hover:opacity-70 transition-opacity shrink-0"
+                >
+                  <X size={14} className="text-muted-foreground" />
+                </button>
+              )}
+            </div>
+
+            {/* Sort Button */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
+              >
+                <ArrowUpDown size={14} />
+                {sortLabels[sortBy]}
+              </button>
+              
+              {showSortDropdown && (
+                <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-lg shadow-lg p-2 z-50 min-w-40">
+                  {Object.keys(sortLabels).map(option => (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        setSortBy(option);
+                        setShowSortDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-[14px] ${
+                        sortBy === option ? "bg-accent" : ""
+                      }`}
+                    >
+                      {sortLabels[option]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      }
     >
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          {/* Header Section */}
+          {/* Header Section with Create Button */}
           <div className="mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div>
@@ -219,29 +255,6 @@ export default function TagsPage({ onNavigate }) {
                 </DialogContent>
               </Dialog>
             </div>
-            
-            {/* Search and Sort Controls */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground size-4" />
-                <Input
-                  type="text"
-                  placeholder="Search tags..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue placeholder="Sort by..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="usage">Sort by Usage</SelectItem>
-                  <SelectItem value="alphabetical">Sort Alphabetically</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* Tags Grid */}
@@ -296,14 +309,6 @@ export default function TagsPage({ onNavigate }) {
           )}
         </div>
       </div>
-
-      {/* Save Stack Modal */}
-      <SaveStackModal
-        isOpen={showSaveStackModal}
-        onClose={() => setShowSaveStackModal(false)}
-        onSave={handleSaveStack}
-        currentFilters={currentFilters}
-      />
     </MainLayout>
   );
 }

@@ -18,10 +18,10 @@ export function applyFiltersAndSort(articles = [], filters = {}) {
   if (status && status !== "all") {
     // Map UI filter tokens to underlying article.status values.
     // - 'completed' should include rediscovery, archived, or fully-read items
-    // - 'archive' (UI label) should map to the 'archived' status value
     if (status === 'completed') {
       result = result.filter(a => a.status === STATUS.REDISCOVERY || a.status === STATUS.ARCHIVED || a.readProgress === 100);
-    } else if (status === 'archive' || status === 'archived') {
+    } else if (status === STATUS.ARCHIVED) {
+      // Archived filter: match articles with archived status
       result = result.filter(a => a.status === STATUS.ARCHIVED);
     } else {
       // Normal case: expect status to match the article.status token (e.g., 'inbox', 'daily', 'continue', 'rediscovery')

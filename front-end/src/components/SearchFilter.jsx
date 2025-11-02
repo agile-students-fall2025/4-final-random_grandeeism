@@ -98,8 +98,8 @@ export default function SearchFilter({
     inbox: "Inbox",
     daily: "Daily",
     continue: "Continue",
-    completed: "Completed",
-    archive: "Archive"
+    rediscovery: "Rediscovery",
+    archived: "Archive"
   };
 
   const favoritesFilterLabels = {
