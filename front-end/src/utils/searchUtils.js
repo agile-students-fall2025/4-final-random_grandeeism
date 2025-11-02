@@ -9,10 +9,19 @@ export function applyFiltersAndSort(articles = [], filters = {}) {
     mediaType = "all",
     sortBy = "dateAdded",
     status,
-    favoritesFilter = "all"
+    favoritesFilter = "all",
+    annotationsFilter = "all",
+    feed,
+    feedFilter
   } = filters || {};
 
   let result = articles.slice();
+  
+  // Feed filter (supports both 'feed' and 'feedFilter' for compatibility)
+  const feedValue = feed || feedFilter;
+  if (feedValue && feedValue !== "") {
+    result = result.filter(a => a.source === feedValue || a.feedId === feedValue);
+  }
 
   // Locked status/media filters are expected to be passed in via filters
   if (status && status !== "all") {
@@ -42,6 +51,13 @@ export function applyFiltersAndSort(articles = [], filters = {}) {
     result = result.filter(a => a.isFavorite);
   } else if (favoritesFilter === "nonFavorites") {
     result = result.filter(a => !a.isFavorite);
+  }
+
+  // Annotations
+  if (annotationsFilter === "annotated") {
+    result = result.filter(a => a.hasAnnotations);
+  } else if (annotationsFilter === "unannotated") {
+    result = result.filter(a => !a.hasAnnotations);
   }
 
   // Tags (any match)

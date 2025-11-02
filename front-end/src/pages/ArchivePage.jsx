@@ -59,6 +59,7 @@ const ArchivePage = ({ onNavigate }) => {
       showMediaFilter={true}
       showTagFilter={true}
       showFavoritesFilter={true}
+      showAnnotationsFilter={true}
       showFeedFilter={true}
       showSortOptions={true}
     >

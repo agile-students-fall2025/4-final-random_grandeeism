@@ -61,6 +61,7 @@ export default function TopBar({
   showTagFilter = false,
   showStatusFilter = false,
   showFavoritesFilter = false,
+  showAnnotationsFilter = false,
   showFeedFilter = false,
   showSortOptions = false,
   preAppliedFilters,
@@ -199,6 +200,7 @@ export default function TopBar({
           showTagFilter={showTagFilter}
           showStatusFilter={showStatusFilter}
           showFavoritesFilter={showFavoritesFilter}
+          showAnnotationsFilter={showAnnotationsFilter}
           showFeedFilter={showFeedFilter}
           showSortOptions={showSortOptions}
           preAppliedFilters={preAppliedFilters}

@@ -10,6 +10,7 @@ import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { mockArticles } from "../data/mockArticles.js";
+import { mockFeeds } from "../data/mockFeeds.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
 
@@ -52,14 +53,16 @@ const InboxPage = ({ onNavigate }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
-      availableFeeds={["TechCrunch", "Medium", "Dev.to"]}
-  lockedFilters={{ status: STATUS.INBOX }}
-  preAppliedFilters={{ status: STATUS.INBOX }}
+      availableFeeds={mockFeeds}
+      lockedFilters={{ status: STATUS.INBOX }}
+      preAppliedFilters={{ status: STATUS.INBOX }}
       onFilterChipRemoved={() => onNavigate("search")}
       showTimeFilter={true}
       showMediaFilter={true}
       showTagFilter={true}
+      showStatusFilter={true}
       showFavoritesFilter={true}
+      showAnnotationsFilter={true}
       showFeedFilter={true}
       showSortOptions={true}
     >

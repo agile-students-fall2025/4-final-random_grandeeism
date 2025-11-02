@@ -21,6 +21,7 @@ import ArchivePage from './pages/ArchivePage.jsx';
 import StatisticsPage from './pages/StatisticsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import FeedsPage from './pages/FeedsPage.jsx';
+import FeedArticlesPage from './pages/FeedArticlesPage.jsx';
 import TagsPage from './pages/TagsPage.jsx';
 import TagArticlesPage from './pages/TagArticlesPage.jsx';
 import FavoritesPage from './pages/FavoritesPage.jsx';
@@ -47,6 +48,7 @@ function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
   const [currentTag, setCurrentTag] = useState(null);
+  const [currentFeed, setCurrentFeed] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const dragOffset = useRef({ x: 0, y: 0 });
 
@@ -79,6 +81,13 @@ function App() {
       setCurrentTag(view.tag);
     } else {
       setCurrentTag(null);
+    }
+    
+    // Handle feed filtering
+    if (view && view.feed) {
+      setCurrentFeed(view.feed);
+    } else {
+      setCurrentFeed(null);
     }
     
     // Map page/view combinations to route names
@@ -117,6 +126,8 @@ function App() {
       setCurrentPage('audio');
     } else if (page === 'feeds') {
       setCurrentPage('feeds');
+    } else if (page === 'feed-articles') {
+      setCurrentPage('feed-articles');
     } else if (page === 'tags' || (page === 'articles' && view === 'Tags')) {
       setCurrentPage('tags');
     } else if (page === 'statistics') {
@@ -164,6 +175,8 @@ function App() {
         return <SettingsPage onNavigate={handleNavigate} />;
       case 'feeds':
         return <FeedsPage onNavigate={handleNavigate} />;
+      case 'feed-articles':
+        return <FeedArticlesPage onNavigate={handleNavigate} feed={currentFeed} />;
       case 'tags':
         return <TagsPage onNavigate={handleNavigate} />;
       case 'favorites':

@@ -32,7 +32,8 @@ import {
   Inbox,
   Star,
   Pin,
-  Rss
+  Rss,
+  MessageSquare
 } from "lucide-react";
 
 import { Badge } from "./ui/badge.jsx";
@@ -52,6 +53,7 @@ export default function SearchFilter({
   showSortOptions = true,
   showStatusFilter = false,
   showFavoritesFilter = false,
+  showAnnotationsFilter = false,
   showFeedFilter = false,
   
   // Initial State
@@ -108,6 +110,12 @@ export default function SearchFilter({
     nonFavorites: "Non-Starred"
   };
 
+  const annotationsFilterLabels = {
+    all: "All Articles",
+    annotated: "Annotated",
+    unannotated: "Unannotated"
+  };
+
   // Filter State
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedTags, setSelectedTags] = useState(preAppliedFilters?.tags || []);
@@ -116,7 +124,8 @@ export default function SearchFilter({
   const [sortBy, setSortBy] = useState(preAppliedFilters?.sortBy || "dateAdded");
   const [statusFilter, setStatusFilter] = useState(lockedFilters.status || preAppliedFilters?.status || "all");
   const [favoritesFilter, setFavoritesFilter] = useState(lockedFilters.favoritesFilter || preAppliedFilters?.favoritesFilter || "all");
-  const [feedFilter, setFeedFilter] = useState(preAppliedFilters?.feedFilter || "");
+  const [annotationsFilter, setAnnotationsFilter] = useState(preAppliedFilters?.annotationsFilter || "all");
+  const [feedFilter, setFeedFilter] = useState(lockedFilters.feed || preAppliedFilters?.feedFilter || "");
 
   // Dropdown State
   const [showFilters, setShowFilters] = useState(false);
@@ -126,6 +135,7 @@ export default function SearchFilter({
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showFavoritesDropdown, setShowFavoritesDropdown] = useState(false);
+  const [showAnnotationsDropdown, setShowAnnotationsDropdown] = useState(false);
   const [showFeedDropdown, setShowFeedDropdown] = useState(false);
 
   // Ref for change detection
@@ -140,6 +150,7 @@ export default function SearchFilter({
     sortBy !== "dateAdded" || 
     (statusFilter !== "all" && statusFilter !== lockedFilters.status) || 
     (favoritesFilter !== "all" && favoritesFilter !== lockedFilters.favoritesFilter) ||
+    annotationsFilter !== "all" ||
     feedFilter !== "";
 
   // Event Handlers
@@ -160,6 +171,14 @@ export default function SearchFilter({
   };
 
   const removeTag = (tag) => {
+    // Check if this is a locked/preapplied tag
+    if (lockedFilters?.tags?.includes(tag)) {
+      // Call the handler to navigate away
+      if (onFilterChipRemoved) {
+        onFilterChipRemoved();
+      }
+      return;
+    }
     setSelectedTags(prev => prev.filter(t => t !== tag));
   };
 
@@ -170,7 +189,8 @@ export default function SearchFilter({
     setSortBy("dateAdded");
     setStatusFilter(lockedFilters.status || "all");
     setFavoritesFilter(lockedFilters.favoritesFilter || "all");
-    setFeedFilter("");
+    setAnnotationsFilter("all");
+    setFeedFilter(lockedFilters.feed || "");
     setSearchQuery("");
   };
 
@@ -224,10 +244,11 @@ export default function SearchFilter({
       sortBy,
       status: statusFilter,
       favoritesFilter,
+      annotationsFilter,
       feedFilter
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedTags, timeFilter, mediaType, sortBy, statusFilter, favoritesFilter, feedFilter]);
+  }, [searchQuery, selectedTags, timeFilter, mediaType, sortBy, statusFilter, favoritesFilter, annotationsFilter, feedFilter]);
 
   return (
     <div className="border-b border-border px-4 py-3 md:px-6">
@@ -391,11 +412,31 @@ export default function SearchFilter({
             </Badge>
           )}
           
+          {/* Annotations Filter */}
+          {annotationsFilter !== "all" && (
+            <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+              {annotationsFilter === "annotated" ? "Annotated" : "Unannotated"}
+              <button onClick={() => setAnnotationsFilter("all")} className="hover:opacity-70">
+                <X size={12} />
+              </button>
+            </Badge>
+          )}
+          
           {/* Feed Filter */}
           {feedFilter && (
             <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
-              {availableFeeds.find(f => f.id === feedFilter)?.name || "Feed"}
-              <button onClick={() => setFeedFilter("")} className="hover:opacity-70">
+              {availableFeeds.find(f => f.id === feedFilter || f.name === feedFilter)?.name || feedFilter}
+              <button onClick={() => {
+                // Check if this is a locked feed filter
+                if (lockedFilters?.feed === feedFilter) {
+                  // Call the handler to navigate away
+                  if (onFilterChipRemoved) {
+                    onFilterChipRemoved();
+                  }
+                  return;
+                }
+                setFeedFilter("");
+              }} className="hover:opacity-70">
                 <X size={12} />
               </button>
             </Badge>
@@ -428,6 +469,7 @@ export default function SearchFilter({
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
                   setShowFeedDropdown(false);
+                  setShowAnnotationsDropdown(false);
                 }}
                 className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
               >
@@ -477,12 +519,13 @@ export default function SearchFilter({
                   setShowSortDropdown(false);
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
+                  setShowAnnotationsDropdown(false);
                 }}
                 className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
               >
                 <Rss size={14} />
                 {feedFilter ? (
-                  availableFeeds.find(f => f.id === feedFilter)?.name || "Feed"
+                  availableFeeds.find(f => f.id === feedFilter || f.name === feedFilter)?.name || feedFilter
                 ) : (
                   "All Feeds"
                 )}
@@ -504,20 +547,23 @@ export default function SearchFilter({
                   </button>
                   
                   {/* Individual feeds */}
-                  {availableFeeds.map(feed => (
-                    <button
-                      key={feed.id}
-                      onClick={() => {
-                        setFeedFilter(feed.id);
-                        setShowFeedDropdown(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-[14px] ${
-                        feedFilter === feed.id ? "bg-accent" : ""
-                      }`}
-                    >
-                      {feed.name}
-                    </button>
-                  ))}
+                  {availableFeeds.map(feed => {
+                    const feedValue = feed.id || feed.name;
+                    return (
+                      <button
+                        key={feedValue}
+                        onClick={() => {
+                          setFeedFilter(feedValue);
+                          setShowFeedDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-[14px] ${
+                          feedFilter === feedValue ? "bg-accent" : ""
+                        }`}
+                      >
+                        {feed.name}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -535,6 +581,7 @@ export default function SearchFilter({
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
                   setShowFeedDropdown(false);
+                  setShowAnnotationsDropdown(false);
                 }}
                 className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
               >
@@ -575,6 +622,7 @@ export default function SearchFilter({
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
                   setShowFeedDropdown(false);
+                  setShowAnnotationsDropdown(false);
                 }}
                 className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
               >
@@ -614,6 +662,7 @@ export default function SearchFilter({
                   setShowSortDropdown(false);
                   setShowFavoritesDropdown(false);
                   setShowFeedDropdown(false);
+                  setShowAnnotationsDropdown(false);
                 }}
                 className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
               >
@@ -654,6 +703,7 @@ export default function SearchFilter({
                   setShowSortDropdown(false);
                   setShowStatusDropdown(false);
                   setShowFeedDropdown(false);
+                  setShowAnnotationsDropdown(false);
                 }}
                 className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
               >
@@ -682,6 +732,47 @@ export default function SearchFilter({
             </div>
           )}
 
+          {/* Annotations Filter */}
+          {showAnnotationsFilter && (
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowAnnotationsDropdown(!showAnnotationsDropdown);
+                  setShowTagDropdown(false);
+                  setShowTimeDropdown(false);
+                  setShowMediaDropdown(false);
+                  setShowSortDropdown(false);
+                  setShowStatusDropdown(false);
+                  setShowFavoritesDropdown(false);
+                  setShowFeedDropdown(false);
+                }}
+                className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
+              >
+                <MessageSquare size={14} />
+                {annotationsFilterLabels[annotationsFilter]}
+              </button>
+              
+              {showAnnotationsDropdown && (
+                <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-lg shadow-lg p-2 z-50 min-w-[160px]">
+                  {Object.keys(annotationsFilterLabels).map(option => (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        setAnnotationsFilter(option);
+                        setShowAnnotationsDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-[14px] ${
+                        annotationsFilter === option ? "bg-accent" : ""
+                      }`}
+                    >
+                      {annotationsFilterLabels[option]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Sort Options */}
           {showSortOptions && (
             <div className="relative">
@@ -694,6 +785,7 @@ export default function SearchFilter({
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
                   setShowFeedDropdown(false);
+                  setShowAnnotationsDropdown(false);
                 }}
                 className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
               >

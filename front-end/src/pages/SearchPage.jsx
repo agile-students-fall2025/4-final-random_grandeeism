@@ -10,6 +10,7 @@ import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { mockArticles } from "../data/mockArticles.js";
+import { mockFeeds } from "../data/mockFeeds.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 
 const SearchPage = ({ onNavigate, initialTag }) => {
@@ -48,11 +49,14 @@ const SearchPage = ({ onNavigate, initialTag }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
+      availableFeeds={mockFeeds}
       showTimeFilter={true}
       showMediaFilter={true}
       showTagFilter={true}
       showStatusFilter={true}
       showFavoritesFilter={true}
+      showAnnotationsFilter={true}
+      showFeedFilter={true}
       showSortOptions={true}
     >
       <div className="p-6">

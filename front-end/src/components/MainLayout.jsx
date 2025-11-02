@@ -58,6 +58,7 @@ export default function MainLayout({
   showTagFilter = false,
   showStatusFilter = false,
   showFavoritesFilter = false,
+  showAnnotationsFilter = false,
   showFeedFilter = false,
   showSortOptions = false,
   preAppliedFilters,
@@ -160,6 +161,7 @@ export default function MainLayout({
           showTagFilter={showTagFilter}
           showStatusFilter={showStatusFilter}
           showFavoritesFilter={showFavoritesFilter}
+          showAnnotationsFilter={showAnnotationsFilter}
           showFeedFilter={showFeedFilter}
           showSortOptions={showSortOptions}
           preAppliedFilters={preAppliedFilters}

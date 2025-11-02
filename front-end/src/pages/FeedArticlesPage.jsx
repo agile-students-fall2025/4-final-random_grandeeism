@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, Tag as TagIcon, FileText } from "lucide-react";
+import { ChevronLeft, Rss, FileText } from "lucide-react";
 import ArticleCard from "../components/ArticleCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
@@ -13,14 +13,14 @@ import { Badge } from "../components/ui/badge.jsx";
 // Get all available tags from mockArticles
 const allAvailableTags = Array.from(new Set(mockArticles.flatMap(article => article.tags)));
 
-export default function TagArticlesPage({ onNavigate, tag }) {
+export default function FeedArticlesPage({ onNavigate, feed }) {
   const [articles, setArticles] = useState(mockArticles);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [displayedArticles, setDisplayedArticles] = useState([]);
 
-  // Base locked filters - always include the tag
-  const baseLockedFilters = useMemo(() => ({ tags: tag ? [tag] : [] }), [tag]);
+  // Base locked filters - always include the feed
+  const baseLockedFilters = useMemo(() => ({ feed: feed || "" }), [feed]);
 
   // Initial load with locked filters
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function TagArticlesPage({ onNavigate, tag }) {
       currentView="Search"
       onNavigate={onNavigate}
       articles={displayedArticles}
-      pageTitle={`Tag: ${tag || 'Untagged'}`}
+      pageTitle={`Feed: ${feed || 'Unknown Feed'}`}
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
@@ -102,38 +102,38 @@ export default function TagArticlesPage({ onNavigate, tag }) {
           <div className="mb-8">
             <Button
               variant="ghost"
-              onClick={() => onNavigate('tags')}
+              onClick={() => onNavigate('feeds')}
               className="mb-6 -ml-3"
             >
               <ChevronLeft className="size-4" />
-              Back to Tags
+              Back to Feeds
             </Button>
             
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <TagIcon className="size-5 text-primary" />
+                  <Rss className="size-5 text-primary" />
                 </div>
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold text-foreground mb-2">
-                    {tag || 'Untagged'}
+                    {feed || 'Unknown Feed'}
                   </h1>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span>
                       {displayedArticles.length} {displayedArticles.length === 1 ? 'item' : 'items'}
                     </span>
                     <span>•</span>
-                    <span>Tagged articles</span>
+                    <span>Feed articles</span>
                   </div>
                 </div>
               </div>
               
-              {/* Tag Badge */}
-              {tag && (
+              {/* Feed Badge */}
+              {feed && (
                 <div>
                   <Badge variant="secondary" className="text-sm">
-                    <TagIcon className="size-3 mr-1.5" />
-                    {tag}
+                    <Rss className="size-3 mr-1.5" />
+                    {feed}
                   </Badge>
                 </div>
               )}
@@ -149,18 +149,18 @@ export default function TagArticlesPage({ onNavigate, tag }) {
                 </div>
                 <CardTitle className="text-xl mb-2">No articles found</CardTitle>
                 <CardDescription className="text-center max-w-md">
-                  {tag 
-                    ? `No articles are currently tagged with "${tag}". Try adding this tag to articles or check back later.`
+                  {feed 
+                    ? `No articles are currently available from "${feed}". Try refreshing the feed or check back later.`
                     : "Try adjusting your search terms or filters to find what you're looking for."}
                 </CardDescription>
-                {tag && (
+                {feed && (
                   <Button
                     variant="outline"
-                    onClick={() => onNavigate('tags')}
+                    onClick={() => onNavigate('feeds')}
                     className="mt-6"
                   >
                     <ChevronLeft className="size-4" />
-                    Browse All Tags
+                    Browse All Feeds
                   </Button>
                 )}
               </CardContent>
@@ -170,7 +170,7 @@ export default function TagArticlesPage({ onNavigate, tag }) {
               {/* Results Summary */}
               <div className="mb-6">
                 <p className="text-sm text-muted-foreground">
-                  Showing <span className="font-medium text-foreground">{displayedArticles.length}</span> {displayedArticles.length === 1 ? 'article' : 'articles'} tagged with "{tag}"
+                  Showing <span className="font-medium text-foreground">{displayedArticles.length}</span> {displayedArticles.length === 1 ? 'article' : 'articles'} from "{feed}"
                 </p>
               </div>
 

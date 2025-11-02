@@ -58,6 +58,7 @@ const FavoritesPage = ({ onNavigate }) => {
       showMediaFilter={true}
       showTagFilter={true}
       showStatusFilter={true}
+      showAnnotationsFilter={true}
       showFeedFilter={true}
       showSortOptions={true}
     >
