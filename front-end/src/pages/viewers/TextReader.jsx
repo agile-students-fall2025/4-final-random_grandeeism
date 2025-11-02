@@ -30,6 +30,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [highlights, setHighlights] = useState([]);
   const [selection, setSelection] = useState(null);
   const [showHighlightsPanel, setShowHighlightsPanel] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNoteValue, setEditingNoteValue] = useState('');
   const [isCompletionOpen, setIsCompletionOpen] = useState(false);
   const [completionShownFor, setCompletionShownFor] = useState(() => {
     try { return JSON.parse(localStorage.getItem('completion_shown') || '{}'); } catch { return {}; }
@@ -237,12 +239,31 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     };
 
     highlightsStore.addHighlight(h);
+    // open inline editor so user can add an annotation immediately
+    setEditingNoteId(h.id);
+    setEditingNoteValue('');
+    setShowHighlightsPanel(true);
     setSelection(null);
     refreshHighlights();
     try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
   };
 
   const removeHighlight = (id) => { highlightsStore.deleteHighlight(id); refreshHighlights(); };
+
+  const saveEditingNote = async () => {
+    if (!editingNoteId) return;
+    try {
+      highlightsStore.updateHighlight(editingNoteId, { note: editingNoteValue });
+    } catch (e) { console.error('save note failed', e); }
+    setEditingNoteId(null);
+    setEditingNoteValue('');
+    refreshHighlights();
+  };
+
+  const cancelEditingNote = () => {
+    setEditingNoteId(null);
+    setEditingNoteValue('');
+  };
 
   const scrollToHighlight = (id) => {
     const el = document.querySelector(`[data-highlight-id="${id}"]`);
@@ -324,9 +345,21 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               padding: '0.08rem 0.24rem',
               borderRadius: 4,
               boxShadow: isDark ? 'inset 0 -6px 0 rgba(0,0,0,0.18)' : undefined,
+              cursor: 'pointer',
             };
             return (
-              <mark key={i} data-highlight-id={part.highlight.id} style={style}>
+              <mark
+                key={i}
+                data-highlight-id={part.highlight.id}
+                style={style}
+                onClick={() => {
+                  try {
+                    setEditingNoteId(part.highlight.id);
+                    setEditingNoteValue(part.highlight.note || '');
+                    setShowHighlightsPanel(true);
+                  } catch { /* ignore */ }
+                }}
+              >
                 {part.text}
               </mark>
             );
@@ -415,6 +448,24 @@ const TextReader = ({ onNavigate, article, articleId }) => {
             <aside className="w-80 border-l border-border pl-4">
               <h4 className="font-semibold mb-2">Highlights</h4>
               {highlights.length === 0 && <p className="text-sm text-muted-foreground">No highlights yet</p>}
+
+              {/* Inline annotation editor */}
+              {editingNoteId && (
+                <div className="mb-3 p-2 bg-muted rounded">
+                  <label className="text-sm font-medium mb-1 block">Edit note</label>
+                  <textarea value={editingNoteValue} onChange={(e) => setEditingNoteValue(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" rows={4} />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={saveEditingNote}
+                      className={`px-3 py-1 rounded text-sm ${isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-primary text-white'}`}
+                    >
+                      Save
+                    </button>
+                    <button onClick={cancelEditingNote} className="px-3 py-1 bg-card border border-border rounded text-sm">Cancel</button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {highlights.map(h => (
                   <div key={h.id} className="p-2 bg-muted rounded">
@@ -422,6 +473,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                       <strong className="text-sm">{h.text.length > 60 ? h.text.slice(0,60) + '…' : h.text}</strong>
                       <div className="flex gap-2">
                         <button onClick={() => scrollToHighlight(h.id)} className="text-xs">Jump</button>
+                        <button onClick={() => { setEditingNoteId(h.id); setEditingNoteValue(h.note || ''); setShowHighlightsPanel(true); }} className="text-xs">Edit</button>
                         <button onClick={() => removeHighlight(h.id)} className="text-xs text-destructive">Delete</button>
                       </div>
                     </div>
