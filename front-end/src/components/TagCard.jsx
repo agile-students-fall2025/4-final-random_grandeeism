@@ -1,4 +1,21 @@
+import { useState } from "react";
 import { Tag, Edit2, Trash2, FileText, Video, Headphones } from "lucide-react";
+import { Button } from "./ui/button.jsx";
+import { Card } from "./ui/card.jsx";
+import { Input } from "./ui/input.jsx";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "./ui/dialog.jsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog.jsx";
+import { Label } from "./ui/label.jsx";
+import { Badge } from "./ui/badge.jsx";
 
 /**
  * TagCard component for displaying individual tags in the Tags view
@@ -23,109 +40,190 @@ export default function TagCard({
   onRename,
   onDelete,
 }) {
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [newTagName, setNewTagName] = useState(tag);
+
   const handleRename = (e) => {
     e.stopPropagation();
-    const newTag = prompt(`Rename tag "${tag}" to:`, tag);
-    
-    if (newTag && newTag.trim() !== '' && newTag !== tag) {
-      onRename?.(tag, newTag.trim());
+    setNewTagName(tag);
+    setIsRenameDialogOpen(true);
+  };
+
+  const handleRenameConfirm = () => {
+    if (newTagName && newTagName.trim() !== '' && newTagName.trim() !== tag) {
+      onRename?.(tag, newTagName.trim());
+      setIsRenameDialogOpen(false);
     }
   };
 
   const handleDelete = (e) => {
     e.stopPropagation();
-    if (confirm(`Delete tag "${tag}"? This will remove it from ${articleCount} ${articleCount === 1 ? 'item' : 'items'}.`)) {
-      onDelete?.(tag);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    onDelete?.(tag);
+    setIsDeleteDialogOpen(false);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && newTagName.trim() !== tag) {
+      e.preventDefault();
+      handleRenameConfirm();
     }
   };
 
   return (
-    <div className="bg-card border border-border rounded-[8px] p-4 hover:border-primary/50 transition-all group">
-      <div className="flex items-start justify-between gap-3">
-        {/* Main clickable area */}
-        <div 
-          className="flex-1 cursor-pointer" 
-          onClick={() => onTagClick(tag)}
-        >
-          {/* Tag Icon & Name */}
-          <div className="flex items-center gap-2 mb-3">
-            <Tag size={20} className="text-muted-foreground" />
-            <h3 className="font-['Inter:Medium', sans-serif] text-[18px] text-foreground group-hover:text-primary transition-colors">
-              {tag}
-            </h3>
-          </div>
-          
-          {/* Article Count */}
-          <div className="mb-3">
-            <div className="text-[24px] font-['Inter:SemiBold', sans-serif] text-foreground">
-              {articleCount} {articleCount === 1 ? 'item' : 'items'}
-            </div>
-          </div>
-          
-          {/* Media Breakdown */}
-          {mediaBreakdown && (
-            <div className="flex items-center gap-3 text-[12px] text-muted-foreground mb-3 flex-wrap">
-              {mediaBreakdown.articles > 0 && (
-                <span className="flex items-center gap-1">
-                  <FileText size={14} />
-                  {mediaBreakdown.articles} {mediaBreakdown.articles === 1 ? 'article' : 'articles'}
-                </span>
+    <>
+      <Card 
+        className="group hover:border-primary/50 transition-all cursor-pointer"
+        onClick={() => onTagClick(tag)}
+      >
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-3">
+            {/* Main content area */}
+            <div className="flex-1 min-w-0">
+              {/* Tag Icon & Name */}
+              <div className="flex items-center gap-2 mb-3">
+                <Tag className="size-5 text-muted-foreground shrink-0" />
+                <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                  {tag}
+                </h3>
+              </div>
+              
+              {/* Article Count */}
+              <div className="mb-3">
+                <div className="text-2xl font-semibold text-foreground">
+                  {articleCount}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {articleCount === 1 ? 'item' : 'items'}
+                </div>
+              </div>
+              
+              {/* Media Breakdown */}
+              {mediaBreakdown && (
+                <div className="flex items-center gap-2 mb-4 flex-wrap">
+                  {mediaBreakdown.articles > 0 && (
+                    <Badge variant="outline" className="text-xs gap-1">
+                      <FileText className="size-3" />
+                      {mediaBreakdown.articles}
+                    </Badge>
+                  )}
+                  {mediaBreakdown.videos > 0 && (
+                    <Badge variant="outline" className="text-xs gap-1">
+                      <Video className="size-3" />
+                      {mediaBreakdown.videos}
+                    </Badge>
+                  )}
+                  {mediaBreakdown.podcasts > 0 && (
+                    <Badge variant="outline" className="text-xs gap-1">
+                      <Headphones className="size-3" />
+                      {mediaBreakdown.podcasts}
+                    </Badge>
+                  )}
+                </div>
               )}
-              {mediaBreakdown.videos > 0 && (
+              
+              {/* Usage Bar */}
+              <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                <div 
+                  className="bg-primary h-full rounded-full transition-all duration-300"
+                  style={{ width: `${Math.max((articleCount / maxCount) * 100, 5)}%` }}
+                />
+              </div>
+            </div>
+            
+            {/* Action Buttons (hover-revealed) */}
+            <div className="flex items-start gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              {/* Rename */}
+              {onRename && (
                 <>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Video size={14} />
-                    {mediaBreakdown.videos} {mediaBreakdown.videos === 1 ? 'video' : 'videos'}
-                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    onClick={handleRename}
+                    title="Rename tag"
+                  >
+                    <Edit2 className="size-4" />
+                  </Button>
+                  <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+                    <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Rename Tag</DialogTitle>
+                      <DialogDescription>
+                        Enter a new name for the tag "{tag}".
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="rename-tag">New Tag Name</Label>
+                        <Input
+                          id="rename-tag"
+                          type="text"
+                          value={newTagName}
+                          onChange={(e) => setNewTagName(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                          placeholder="Enter new tag name..."
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </DialogClose>
+                      <Button 
+                        onClick={handleRenameConfirm}
+                        disabled={!newTagName.trim() || newTagName.trim() === tag}
+                      >
+                        Rename
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                  </Dialog>
                 </>
               )}
-              {mediaBreakdown.podcasts > 0 && (
+              
+              {/* Delete */}
+              {onDelete && (
                 <>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Headphones size={14} />
-                    {mediaBreakdown.podcasts} {mediaBreakdown.podcasts === 1 ? 'podcast' : 'podcasts'}
-                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={handleDelete}
+                    title="Delete tag"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Tag?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete the tag "{tag}"? This will remove it from {articleCount} {articleCount === 1 ? 'item' : 'items'}. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteConfirm}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                  </AlertDialog>
                 </>
               )}
             </div>
-          )}
-          
-          {/* Usage Bar */}
-          <div className="w-full bg-accent rounded-full h-2">
-            <div 
-              className="bg-foreground/70 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(articleCount / maxCount) * 100}%` }}
-            />
           </div>
         </div>
-        
-        {/* Action Buttons (hover-revealed) */}
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          {/* Rename */}
-          {onRename && (
-            <button
-              onClick={handleRename}
-              className="p-2 hover:bg-accent rounded-lg transition-colors"
-              title="Rename tag"
-            >
-              <Edit2 size={16} className="text-muted-foreground" />
-            </button>
-          )}
-          
-          {/* Delete */}
-          {onDelete && (
-            <button
-              onClick={handleDelete}
-              className="p-2 hover:bg-destructive/10 rounded-lg transition-colors"
-              title="Delete tag"
-            >
-              <Trash2 size={16} className="text-destructive" />
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+      </Card>
+    </>
   );
 }
