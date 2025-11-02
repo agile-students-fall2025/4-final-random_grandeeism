@@ -23,6 +23,8 @@ export const getHighlightsForArticle = (articleId) => {
   const all = loadAll();
   return all
     .filter(h => String(h.articleId) === String(articleId))
+    // ensure a title field exists for each highlight (migration/default)
+    .map(h => ({ ...(h || {}), title: typeof h.title === 'string' ? h.title : '' }))
     .sort((a, b) => {
       // sort by paragraphIndex then start offset to make rendering deterministic
       const pa = (typeof a.paragraphIndex === 'number') ? a.paragraphIndex : 0;
@@ -36,9 +38,11 @@ export const getHighlightsForArticle = (articleId) => {
 
 export const addHighlight = (highlight) => {
   const all = loadAll();
-  all.push(highlight);
+  // ensure title exists
+  const next = { ...(highlight || {}), title: typeof highlight.title === 'string' ? highlight.title : '' };
+  all.push(next);
   saveAll(all);
-  return highlight;
+  return next;
 };
 
 export const updateHighlight = (id, patch) => {
