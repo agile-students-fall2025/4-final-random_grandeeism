@@ -14,6 +14,7 @@
 
 import { useState } from "react";
 import { Star, Tag, X, Inbox, Calendar, Archive, BookOpen, RotateCcw } from "lucide-react";
+import { STATUS } from "../../constants/statuses.js";
 
 export default function AddLinkModal({ 
   isOpen, 
@@ -23,7 +24,7 @@ export default function AddLinkModal({
 }) {
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [newLinkTags, setNewLinkTags] = useState([]);
-  const [newLinkStatus, setNewLinkStatus] = useState("inbox");
+  const [newLinkStatus, setNewLinkStatus] = useState(STATUS.INBOX);
   const [newLinkFavorite, setNewLinkFavorite] = useState(false);
   const [newTagInput, setNewTagInput] = useState("");
 
@@ -75,7 +76,7 @@ export default function AddLinkModal({
   const handleReset = () => {
     setNewLinkUrl("");
     setNewLinkTags([]);
-    setNewLinkStatus("inbox");
+  setNewLinkStatus(STATUS.INBOX);
     setNewLinkFavorite(false);
     setNewTagInput("");
   };
@@ -171,9 +172,9 @@ export default function AddLinkModal({
           <div className="grid grid-cols-3 gap-2 mb-2">
             {/* Inbox */}
             <button
-              onClick={() => setNewLinkStatus("inbox")}
+              onClick={() => setNewLinkStatus(STATUS.INBOX)}
               className={`p-3 rounded border-2 transition-all ${
-                newLinkStatus === "inbox"
+                newLinkStatus === STATUS.INBOX
                   ? "border-blue-500 bg-blue-500/10"
                   : "border-border bg-background hover:border-blue-500/50"
               }`}
@@ -181,11 +182,11 @@ export default function AddLinkModal({
               <Inbox 
                 size={20} 
                 className={`mx-auto mb-1 ${
-                  newLinkStatus === "inbox" ? "text-blue-500" : "text-muted-foreground"
+                  newLinkStatus === STATUS.INBOX ? "text-blue-500" : "text-muted-foreground"
                 }`} 
               />
               <p className={`text-[12px] ${
-                newLinkStatus === "inbox" ? "text-blue-500 font-medium" : "text-foreground"
+                newLinkStatus === STATUS.INBOX ? "text-blue-500 font-medium" : "text-foreground"
               }`}>
                 Inbox
               </p>
@@ -193,9 +194,9 @@ export default function AddLinkModal({
             
             {/* Daily Reading */}
             <button
-              onClick={() => setNewLinkStatus("daily")}
+              onClick={() => setNewLinkStatus(STATUS.DAILY)}
               className={`p-3 rounded border-2 transition-all ${
-                newLinkStatus === "daily"
+                newLinkStatus === STATUS.DAILY
                   ? "border-blue-500 bg-blue-500/10"
                   : "border-border bg-background hover:border-blue-500/50"
               }`}
@@ -203,11 +204,11 @@ export default function AddLinkModal({
               <Calendar 
                 size={20} 
                 className={`mx-auto mb-1 ${
-                  newLinkStatus === "daily" ? "text-blue-500" : "text-muted-foreground"
+                  newLinkStatus === STATUS.DAILY ? "text-blue-500" : "text-muted-foreground"
                 }`} 
               />
               <p className={`text-[12px] ${
-                newLinkStatus === "daily" ? "text-blue-500 font-medium" : "text-foreground"
+                newLinkStatus === STATUS.DAILY ? "text-blue-500 font-medium" : "text-foreground"
               }`}>
                 Daily Reading
               </p>
@@ -215,9 +216,9 @@ export default function AddLinkModal({
             
             {/* Continue Reading */}
             <button
-              onClick={() => setNewLinkStatus("continue")}
+              onClick={() => setNewLinkStatus(STATUS.CONTINUE)}
               className={`p-3 rounded border-2 transition-all ${
-                newLinkStatus === "continue"
+                newLinkStatus === STATUS.CONTINUE
                   ? "border-purple-500 bg-purple-500/10"
                   : "border-border bg-background hover:border-purple-500/50"
               }`}
@@ -225,11 +226,11 @@ export default function AddLinkModal({
               <BookOpen 
                 size={20} 
                 className={`mx-auto mb-1 ${
-                  newLinkStatus === "continue" ? "text-purple-500" : "text-muted-foreground"
+                  newLinkStatus === STATUS.CONTINUE ? "text-purple-500" : "text-muted-foreground"
                 }`} 
               />
               <p className={`text-[12px] ${
-                newLinkStatus === "continue" ? "text-purple-500 font-medium" : "text-foreground"
+                newLinkStatus === STATUS.CONTINUE ? "text-purple-500 font-medium" : "text-foreground"
               }`}>
                 Continue Reading
               </p>
@@ -240,9 +241,9 @@ export default function AddLinkModal({
           <div className="grid grid-cols-2 gap-2">
             {/* Rediscovery Queue */}
             <button
-              onClick={() => setNewLinkStatus("completed")}
+              onClick={() => setNewLinkStatus(STATUS.REDISCOVERY)}
               className={`p-3 rounded border-2 transition-all ${
-                newLinkStatus === "completed"
+                newLinkStatus === STATUS.REDISCOVERY
                   ? "border-orange-500 bg-orange-500/10"
                   : "border-border bg-background hover:border-orange-500/50"
               }`}
@@ -250,11 +251,11 @@ export default function AddLinkModal({
               <RotateCcw 
                 size={20} 
                 className={`mx-auto mb-1 ${
-                  newLinkStatus === "completed" ? "text-orange-500" : "text-muted-foreground"
+                  newLinkStatus === STATUS.REDISCOVERY ? "text-orange-500" : "text-muted-foreground"
                 }`} 
               />
               <p className={`text-[12px] ${
-                newLinkStatus === "completed" ? "text-orange-500 font-medium" : "text-foreground"
+                newLinkStatus === STATUS.REDISCOVERY ? "text-orange-500 font-medium" : "text-foreground"
               }`}>
                 Rediscovery Queue
               </p>
@@ -262,9 +263,9 @@ export default function AddLinkModal({
             
             {/* Archive */}
             <button
-              onClick={() => setNewLinkStatus("archive")}
+              onClick={() => setNewLinkStatus(STATUS.ARCHIVED)}
               className={`p-3 rounded border-2 transition-all ${
-                newLinkStatus === "archive"
+                newLinkStatus === STATUS.ARCHIVED
                   ? "border-gray-500 bg-gray-500/10"
                   : "border-border bg-background hover:border-gray-500/50"
               }`}
@@ -272,11 +273,11 @@ export default function AddLinkModal({
               <Archive 
                 size={20} 
                 className={`mx-auto mb-1 ${
-                  newLinkStatus === "archive" ? "text-gray-500" : "text-muted-foreground"
+                  newLinkStatus === STATUS.ARCHIVED ? "text-gray-500" : "text-muted-foreground"
                 }`} 
               />
               <p className={`text-[12px] ${
-                newLinkStatus === "archive" ? "text-gray-500 font-medium" : "text-foreground"
+                newLinkStatus === STATUS.ARCHIVED ? "text-gray-500 font-medium" : "text-foreground"
               }`}>
                 Archive
               </p>

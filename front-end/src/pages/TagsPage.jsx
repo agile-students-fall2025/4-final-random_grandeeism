@@ -4,6 +4,7 @@ import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import { mockArticles } from "../data/mockArticles";
+import { STATUS } from "../constants/statuses.js";
 import { Button } from "../components/ui/button.jsx";
 import { Input } from "../components/ui/input.jsx";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select.jsx";
@@ -106,7 +107,7 @@ export default function TagsPage({ onNavigate }) {
         url: "https://example.com",
         author: "User",
         readingTime: "5 min",
-        status: "inbox",
+        status: STATUS.INBOX,
         isFavorite: false,
         tags: [trimmedTag],
         dateAdded: new Date(),

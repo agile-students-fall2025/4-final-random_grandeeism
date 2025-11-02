@@ -11,6 +11,7 @@ import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { mockArticles } from "../data/mockArticles.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
+import { STATUS } from "../constants/statuses.js";
 
 const InboxPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
@@ -18,7 +19,7 @@ const InboxPage = ({ onNavigate }) => {
   const allArticles = mockArticles;
   const [displayedArticles, setDisplayedArticles] = useState([]);
 
-  const baseLockedFilters = useMemo(() => ({ status: "inbox" }), []);
+  const baseLockedFilters = useMemo(() => ({ status: STATUS.INBOX }), []);
 
   useEffect(() => {
     // Initialize view with locked filters applied
@@ -52,8 +53,8 @@ const InboxPage = ({ onNavigate }) => {
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
       availableFeeds={["TechCrunch", "Medium", "Dev.to"]}
-      lockedFilters={{ status: "inbox" }}
-      preAppliedFilters={{ status: "inbox" }}
+  lockedFilters={{ status: STATUS.INBOX }}
+  preAppliedFilters={{ status: STATUS.INBOX }}
       onFilterChipRemoved={() => onNavigate("search")}
       showTimeFilter={true}
       showMediaFilter={true}

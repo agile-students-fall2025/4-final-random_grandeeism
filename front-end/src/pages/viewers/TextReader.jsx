@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } from 'react';
+import { STATUS } from '../../constants/statuses.js';
 import { ThemeContext } from '../../contexts/ThemeContext.jsx';
 import { mockArticles } from '../../data/mockArticles';
 import CompletionModal from '../../components/CompletionModal.jsx';
@@ -270,7 +271,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   const handleCompletion = (reflection) => {
     if (!current) return;
-    changeStatus('archived');
+  changeStatus(STATUS.ARCHIVED);
     try {
       const notesKey = 'article_reflections_v1';
       const raw = localStorage.getItem(notesKey);
