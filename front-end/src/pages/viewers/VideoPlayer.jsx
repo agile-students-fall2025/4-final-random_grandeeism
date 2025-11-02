@@ -1,125 +1,714 @@
 /**
- * VideoPlayer.jsx
+ * VideoPlayer.jsx (VideoViewer)
  * 
- * Description: Full-featured video player with enhanced viewing controls
- * Purpose: Provides a rich video watching experience for video content
- * Features:
- *  - Custom video player controls (play, pause, seek, volume, fullscreen)
- *  - Playback speed adjustment
- *  - Quality selection (480p, 720p, 1080p, etc.)
- *  - Picture-in-picture mode
- *  - Closed captions/subtitles support
- *  - Keyboard shortcuts for navigation
- *  - Theater and fullscreen modes
- *  - Auto-play next video in queue
- *  - Video bookmarking and timestamps
+ * Description: Full-featured YouTube video player with timestamped annotations
+ * Purpose: Provides rich video watching experience with notes and transcript
  */
 
-const VideoPlayer = ({ onNavigate }) => {
-  return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <button 
-            onClick={() => onNavigate && onNavigate('home')}
-            className="text-sm text-muted-foreground hover:text-foreground mb-4"
-          >
-            ← Back to Home
-          </button>
-          <h1 className="text-3xl font-bold mb-4">Video Player</h1>
-          <p className="text-muted-foreground">
-            Enhanced video viewing experience
-          </p>
-        </div>
+import { useState, useEffect, useRef } from "react";
+import { 
+  Play, Pause, Volume2, VolumeX, Maximize, StickyNote, X, 
+  Clock, ArrowLeft, Star, Tag, Calendar, Check, BookmarkPlus, 
+  BookOpen, RotateCcw, Inbox, ChevronDown, Edit2, Trash2
+} from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import TagManager from "../../components/TagManager";
+import CompletionModal from "../../components/CompletionModal";
+import { STATUS } from "../../constants/statuses";
 
-        {/* Video Player Card */}
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          {/* Video Display Area */}
-          <div className="relative w-full aspect-video bg-black flex items-center justify-center">
-            <div className="text-white text-center">
-              <div className="text-6xl mb-4">▶</div>
-              <p className="text-lg">Video Player Area</p>
-              <p className="text-sm text-gray-400">16:9 Aspect Ratio</p>
-            </div>
-            
-            {/* Player Controls Overlay (bottom) */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-              <div className="space-y-2">
-                {/* Progress Bar */}
-                <div className="w-full h-1 bg-white/30 rounded-full overflow-hidden">
-                  <div className="h-full w-1/4 bg-primary"></div>
-                </div>
-                
-                {/* Control Buttons */}
-                <div className="flex items-center justify-between text-white text-sm">
-                  <div className="flex items-center gap-4">
-                    <button className="hover:opacity-80">▶</button>
-                    <button className="hover:opacity-80">⏭</button>
-                    <span>5:30 / 20:00</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <button className="hover:opacity-80">CC</button>
-                    <button className="hover:opacity-80">⚙</button>
-                    <button className="hover:opacity-80">⛶</button>
-                  </div>
-                </div>
-              </div>
-            </div>
+const VideoPlayer = ({ article, onUpdateArticle, onClose }) => {
+  // Playback state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(100);
+  const [isMuted, setIsMuted] = useState(false);
+
+  // Notes state
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [selectedAnnotation, setSelectedAnnotation] = useState(null);
+  const [isEditingNote, setIsEditingNote] = useState(false);
+
+  // UI state
+  const [showTranscript, setShowTranscript] = useState(true);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showTagsMenu, setShowTagsMenu] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [hasShownCompletionModal, setHasShownCompletionModal] = useState(false);
+  const [isHoveringAdvance, setIsHoveringAdvance] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+
+  // Refs
+  const playerRef = useRef(null);
+  const intervalRef = useRef(null);
+  const controlsTimeoutRef = useRef(null);
+
+  // Data
+  const videoAnnotations = article?.videoAnnotations || [];
+  const transcript = article?.transcript || [];
+  const videoId = getVideoId(article?.url || article?.videoUrl);
+
+  // Extract YouTube video ID from URL
+  function getVideoId(url) {
+    if (!url) return null;
+    const regex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/;
+    const match = url?.match(regex);
+    return match ? match[1] : article?.videoId || null;
+  }
+
+  // Initialize YouTube Player
+  useEffect(() => {
+    if (!videoId) return;
+
+    // Load YouTube IFrame API
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
+
+    window.onYouTubeIframeAPIReady = () => {
+      playerRef.current = new window.YT.Player('youtube-player', {
+        videoId: videoId,
+        playerVars: {
+          controls: 0,
+          modestbranding: 1,
+          rel: 0,
+        },
+        events: {
+          onReady: (event) => {
+            setDuration(event.target.getDuration());
+          },
+          onStateChange: (event) => {
+            if (event.data === window.YT.PlayerState.PLAYING) {
+              setIsPlaying(true);
+              startTimeTracking();
+            } else if (event.data === window.YT.PlayerState.PAUSED) {
+              setIsPlaying(false);
+              stopTimeTracking();
+            } else if (event.data === window.YT.PlayerState.ENDED && !hasShownCompletionModal) {
+              setShowCompletionModal(true);
+              setHasShownCompletionModal(true);
+            }
+          },
+        },
+      });
+    };
+
+    return () => stopTimeTracking();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoId]);
+
+  // Time tracking
+  const startTimeTracking = () => {
+    intervalRef.current = setInterval(() => {
+      if (playerRef.current && playerRef.current.getCurrentTime) {
+        setCurrentTime(playerRef.current.getCurrentTime());
+      }
+    }, 100);
+  };
+
+  const stopTimeTracking = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  // Auto-hide controls
+  useEffect(() => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setControlsVisible(false);
+      }, 3000);
+    } else {
+      setControlsVisible(true);
+    }
+
+    return () => {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    };
+  }, [isPlaying, currentTime]);
+
+  const handleMouseMove = () => {
+    setControlsVisible(true);
+  };
+
+  // Playback controls
+  const togglePlayPause = () => {
+    if (!playerRef.current) return;
+    
+    if (isPlaying) {
+      playerRef.current.pauseVideo();
+    } else {
+      playerRef.current.playVideo();
+    }
+  };
+
+  const handleSeek = (time) => {
+    if (!playerRef.current) return;
+    playerRef.current.seekTo(time, true);
+    setCurrentTime(time);
+  };
+
+  const handleProgressClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = (e.clientX - rect.left) / rect.width;
+    const time = pos * duration;
+    handleSeek(time);
+  };
+
+  const handleVolumeChange = (newVolume) => {
+    if (!playerRef.current) return;
+    playerRef.current.setVolume(newVolume);
+    setVolume(newVolume);
+    setIsMuted(newVolume === 0);
+  };
+
+  const toggleMute = () => {
+    if (!playerRef.current) return;
+    
+    if (isMuted) {
+      playerRef.current.unMute();
+      setIsMuted(false);
+    } else {
+      playerRef.current.mute();
+      setIsMuted(true);
+    }
+  };
+
+  // Note management
+  const handleAddNote = () => {
+    if (!noteText.trim()) return;
+    
+    const newAnnotation = {
+      id: Date.now().toString(),
+      timestamp: currentTime,
+      note: noteText,
+      createdAt: new Date()
+    };
+    
+    const updatedAnnotations = [...videoAnnotations, newAnnotation]
+      .sort((a, b) => a.timestamp - b.timestamp);
+    
+    onUpdateArticle({
+      ...article,
+      videoAnnotations: updatedAnnotations,
+      hasAnnotations: true
+    });
+    
+    setNoteText("");
+    setShowAddNote(false);
+    toast.success("Note added successfully");
+  };
+
+  const handleEditNote = () => {
+    if (!noteText.trim() || !selectedAnnotation) return;
+    
+    const updated = videoAnnotations.map(a =>
+      a.id === selectedAnnotation.id ? { ...a, note: noteText } : a
+    );
+    
+    onUpdateArticle({
+      ...article,
+      videoAnnotations: updated
+    });
+    
+    setNoteText("");
+    setSelectedAnnotation(null);
+    setIsEditingNote(false);
+    toast.success("Note updated");
+  };
+
+  const handleDeleteNote = (annotationId) => {
+    const updated = videoAnnotations.filter(a => a.id !== annotationId);
+    onUpdateArticle({
+      ...article,
+      videoAnnotations: updated,
+      hasAnnotations: updated.length > 0
+    });
+    toast.success("Note deleted");
+  };
+
+  const jumpToTimestamp = (timestamp) => {
+    handleSeek(timestamp);
+  };
+
+  const openEditNote = (annotation) => {
+    setSelectedAnnotation(annotation);
+    setNoteText(annotation.note);
+    setIsEditingNote(true);
+  };
+
+  // Status management
+  const getNextStatus = () => {
+    const statusFlow = {
+      [STATUS.INBOX]: STATUS.DAILY,
+      [STATUS.DAILY]: STATUS.CONTINUE,
+      [STATUS.CONTINUE]: STATUS.REDISCOVERY,
+      [STATUS.REDISCOVERY]: STATUS.ARCHIVED,
+      [STATUS.ARCHIVED]: STATUS.ARCHIVED,
+    };
+    return statusFlow[article?.status] || STATUS.DAILY;
+  };
+
+  const handleStatusChange = (newStatus) => {
+    const now = new Date();
+    const updates = { status: newStatus };
+
+    if (newStatus === STATUS.DAILY && article?.status === STATUS.INBOX) {
+      updates.dateToRead = now;
+    } else if (newStatus === STATUS.CONTINUE) {
+      updates.dateToContinue = now;
+    } else if (newStatus === STATUS.REDISCOVERY) {
+      updates.dateToRediscover = now;
+    } else if (newStatus === STATUS.ARCHIVED) {
+      updates.dateArchived = now;
+    }
+
+    onUpdateArticle({ ...article, ...updates });
+    setShowStatusMenu(false);
+    toast.success(`Moved to ${newStatus}`);
+  };
+
+  const handleAdvanceStatus = () => {
+    const nextStatus = getNextStatus();
+    handleStatusChange(nextStatus);
+  };
+
+  const handleToggleFavorite = () => {
+    onUpdateArticle({ ...article, isFavorite: !article?.isFavorite });
+    toast.success(article?.isFavorite ? "Removed from favorites" : "Added to favorites");
+  };
+
+  const handleCompletion = (reflection) => {
+    const updates = {
+      status: STATUS.REDISCOVERY,
+      dateToRediscover: new Date(),
+      readProgress: 100
+    };
+
+    if (reflection) {
+      const reflectionNote = {
+        id: Date.now().toString(),
+        timestamp: duration,
+        note: `Reflection: ${reflection}`,
+        createdAt: new Date()
+      };
+      updates.videoAnnotations = [...videoAnnotations, reflectionNote];
+      updates.hasAnnotations = true;
+    }
+
+    onUpdateArticle({ ...article, ...updates });
+    setShowCompletionModal(false);
+    toast.success("Video completed and moved to rediscovery");
+    if (onClose) onClose();
+  };
+
+  // Transcript interaction
+  const handleTranscriptClick = (segment) => {
+    handleSeek(segment.timestamp);
+  };
+
+  const getActiveTranscriptSegment = () => {
+    return transcript.find((seg, index) => {
+      const nextSeg = transcript[index + 1];
+      return currentTime >= seg.timestamp && 
+             (!nextSeg || currentTime < nextSeg.timestamp);
+    });
+  };
+
+  // Time formatting
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const activeSegment = getActiveTranscriptSegment();
+  const nextStatus = getNextStatus();
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-accent rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleToggleFavorite}
+              className="p-2 hover:bg-accent rounded-lg transition-colors"
+            >
+              <Star className={`w-5 h-5 ${article?.isFavorite ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+            </button>
+            <h1 className="text-[20px] font-['New_Spirit:Medium',_sans-serif]">
+              {article?.title}
+            </h1>
           </div>
 
-          {/* Video Info */}
-          <div className="p-6">
-            <h2 className="text-2xl font-semibold mb-2">Sample Video Title</h2>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-              <span>Channel Name</span>
-              <span>•</span>
-              <span>1.2K views</span>
-              <span>•</span>
-              <span>March 18, 2024</span>
+          <div className="flex items-center gap-2">
+            {/* Status Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowStatusMenu(!showStatusMenu)}
+                className="px-4 py-2 bg-accent hover:bg-accent/80 rounded-lg text-[14px] flex items-center gap-2"
+              >
+                <span>{article?.status}</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {showStatusMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg overflow-hidden z-50">
+                  <button
+                    onClick={() => handleStatusChange(STATUS.INBOX)}
+                    className="w-full px-4 py-2 text-left hover:bg-accent text-[14px] flex items-center gap-2"
+                  >
+                    <Inbox className="w-4 h-4" />
+                    Inbox
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(STATUS.DAILY)}
+                    className="w-full px-4 py-2 text-left hover:bg-accent text-[14px] flex items-center gap-2"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Daily Reading
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(STATUS.CONTINUE)}
+                    className="w-full px-4 py-2 text-left hover:bg-accent text-[14px] flex items-center gap-2"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    Continue Reading
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(STATUS.REDISCOVERY)}
+                    className="w-full px-4 py-2 text-left hover:bg-accent text-[14px] flex items-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Rediscovery
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(STATUS.ARCHIVED)}
+                    className="w-full px-4 py-2 text-left hover:bg-accent text-[14px] flex items-center gap-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    Archive
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Video Controls */}
-            <div className="flex flex-wrap gap-3 mb-6">
-              <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80 text-sm">
-                Theater Mode
-              </button>
-              <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80 text-sm">
-                PiP Mode
-              </button>
-              <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80 text-sm">
-                Quality: 1080p
-              </button>
-              <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80 text-sm">
-                Speed: 1.0x
-              </button>
-              <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80 text-sm">
-                Subtitles
-              </button>
-            </div>
-
-            {/* Description */}
-            <div className="pt-6 border-t border-border">
-              <h3 className="font-semibold mb-3">Description</h3>
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p>Features will include:</p>
-                <ul className="space-y-1 ml-4">
-                  <li>• Custom video player with full controls</li>
-                  <li>• Playback speed adjustment (0.25x - 2x)</li>
-                  <li>• Quality selection (auto, 1080p, 720p, 480p)</li>
-                  <li>• Picture-in-picture mode for multitasking</li>
-                  <li>• Closed captions and subtitle support</li>
-                  <li>• Keyboard shortcuts (Space, Arrow keys, F, M, etc.)</li>
-                  <li>• Theater mode and fullscreen viewing</li>
-                  <li>• Video bookmarks and timestamp notes</li>
-                  <li>• Auto-play next video in queue</li>
-                  <li>• Frame-by-frame navigation</li>
-                </ul>
-              </div>
-            </div>
+            {/* Tags Button */}
+            <button
+              onClick={() => setShowTagsMenu(!showTagsMenu)}
+              className="px-4 py-2 bg-accent hover:bg-accent/80 rounded-lg text-[14px] flex items-center gap-2"
+            >
+              <Tag className="w-4 h-4" />
+              Tags
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Main Content */}
+      <div className="pt-20 flex">
+        {/* Video Player Area */}
+        <div className="flex-1 p-8">
+          <div className="max-w-4xl mx-auto">
+            {/* Video Container */}
+            <div 
+              className="relative aspect-video bg-black rounded-lg overflow-hidden mb-4"
+              onMouseMove={handleMouseMove}
+            >
+              <div id="youtube-player" className="w-full h-full"></div>
+
+              {/* Controls Overlay */}
+              <AnimatePresence>
+                {controlsVisible && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4"
+                  >
+                    {/* Progress Bar */}
+                    <div
+                      className="w-full h-2 bg-white/30 rounded-full cursor-pointer hover:h-3 transition-all mb-4"
+                      onClick={handleProgressClick}
+                    >
+                      <div
+                        className="h-full bg-white rounded-full relative"
+                        style={{ width: `${(currentTime / duration) * 100}%` }}
+                      >
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+
+                    {/* Control Buttons */}
+                    <div className="flex items-center justify-between text-white">
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={togglePlayPause}
+                          className="w-10 h-10 flex items-center justify-center hover:bg-white/20 rounded-full transition-colors"
+                        >
+                          {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+                        </button>
+                        <span className="font-mono text-[13px]">
+                          {formatTime(currentTime)} / {formatTime(duration)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={toggleMute}
+                          className="hover:opacity-80"
+                        >
+                          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                        </button>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={isMuted ? 0 : volume}
+                          onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                          className="w-20 h-2 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer"
+                        />
+                        <button className="hover:opacity-80">
+                          <Maximize className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowAddNote(true)}
+                className="px-4 py-2 bg-accent hover:bg-accent/80 rounded-lg text-[14px] flex items-center gap-2"
+              >
+                <StickyNote className="w-4 h-4" />
+                Add Note at {formatTime(currentTime)}
+              </button>
+
+              <button
+                onClick={handleAdvanceStatus}
+                onMouseEnter={() => setIsHoveringAdvance(true)}
+                onMouseLeave={() => setIsHoveringAdvance(false)}
+                className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-[14px] flex items-center gap-2"
+              >
+                Advance to {isHoveringAdvance ? nextStatus : 'Next'} →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes & Transcript Panel */}
+        <div className="w-96 border-l border-border bg-accent/50 overflow-y-auto" style={{ height: 'calc(100vh - 80px)' }}>
+          <div className="p-4">
+            {/* Tab Headers */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setShowTranscript(false)}
+                className={`flex-1 px-4 py-2 rounded-lg text-[14px] ${!showTranscript ? 'bg-background' : 'bg-transparent hover:bg-background/50'}`}
+              >
+                Notes ({videoAnnotations.length})
+              </button>
+              <button
+                onClick={() => setShowTranscript(true)}
+                className={`flex-1 px-4 py-2 rounded-lg text-[14px] ${showTranscript ? 'bg-background' : 'bg-transparent hover:bg-background/50'}`}
+              >
+                Transcript
+              </button>
+            </div>
+
+            {/* Notes List */}
+            {!showTranscript && (
+              <div className="space-y-2">
+                {videoAnnotations.length === 0 ? (
+                  <p className="text-[14px] text-muted-foreground text-center py-8">
+                    No notes yet. Add your first note!
+                  </p>
+                ) : (
+                  videoAnnotations.map((annotation) => (
+                    <div
+                      key={annotation.id}
+                      className="bg-background border border-border rounded-lg p-3 cursor-pointer hover:bg-accent group"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <button
+                          onClick={() => jumpToTimestamp(annotation.timestamp)}
+                          className="font-mono text-[12px] text-primary bg-primary/10 px-2 py-1 rounded hover:bg-primary/20"
+                        >
+                          {formatTime(annotation.timestamp)}
+                        </button>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => openEditNote(annotation)}
+                            className="p-1 hover:bg-accent rounded"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteNote(annotation.id)}
+                            className="p-1 hover:bg-accent rounded"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-[14px] leading-relaxed">{annotation.note}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* Transcript List */}
+            {showTranscript && (
+              <div className="space-y-1">
+                {transcript.length === 0 ? (
+                  <p className="text-[14px] text-muted-foreground text-center py-8">
+                    No transcript available
+                  </p>
+                ) : (
+                  transcript.map((segment) => (
+                    <div
+                      key={segment.id}
+                      onClick={() => handleTranscriptClick(segment)}
+                      className={`p-2 rounded cursor-pointer hover:bg-accent/50 border-l-4 ${
+                        activeSegment?.id === segment.id ? 'border-primary bg-accent' : 'border-transparent'
+                      }`}
+                    >
+                      <span className="font-mono text-[12px] text-muted-foreground mr-2">
+                        {formatTime(segment.timestamp)}
+                      </span>
+                      <span className="text-[14px] leading-relaxed">{segment.text}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Add/Edit Note Modal */}
+      <AnimatePresence>
+        {(showAddNote || isEditingNote) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowAddNote(false);
+              setIsEditingNote(false);
+              setNoteText("");
+              setSelectedAnnotation(null);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-background border border-border rounded-lg p-6 max-w-lg w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[18px] font-['New_Spirit:Medium',_sans-serif]">
+                  {isEditingNote ? 'Edit Note' : 'Add Note'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowAddNote(false);
+                    setIsEditingNote(false);
+                    setNoteText("");
+                    setSelectedAnnotation(null);
+                  }}
+                  className="p-2 hover:bg-accent rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-[14px] text-muted-foreground">
+                  <Clock className="w-4 h-4" />
+                  <span>Timestamp: {formatTime(isEditingNote ? selectedAnnotation?.timestamp : currentTime)}</span>
+                </div>
+
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder="Enter your note..."
+                  className="w-full h-32 px-3 py-2 bg-background border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary text-[14px]"
+                  autoFocus
+                />
+
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => {
+                      setShowAddNote(false);
+                      setIsEditingNote(false);
+                      setNoteText("");
+                      setSelectedAnnotation(null);
+                    }}
+                    className="px-4 py-2 bg-accent hover:bg-accent/80 rounded-lg text-[14px]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={isEditingNote ? handleEditNote : handleAddNote}
+                    className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-[14px] flex items-center gap-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    {isEditingNote ? 'Update' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Tags Manager */}
+      {showTagsMenu && (
+        <TagManager
+          isOpen={showTagsMenu}
+          onClose={() => setShowTagsMenu(false)}
+          currentTags={article?.tags || []}
+          onSave={(newTags) => {
+            onUpdateArticle({ ...article, tags: newTags });
+            setShowTagsMenu(false);
+          }}
+        />
+      )}
+
+      {/* Completion Modal */}
+      <CompletionModal
+        isOpen={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        onComplete={handleCompletion}
+        onSkip={() => {
+          handleStatusChange(STATUS.REDISCOVERY);
+          setShowCompletionModal(false);
+        }}
+        itemTitle={article?.title}
+      />
     </div>
   );
 };

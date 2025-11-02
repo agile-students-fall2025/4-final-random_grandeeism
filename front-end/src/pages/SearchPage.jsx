@@ -16,19 +16,19 @@ import applyFiltersAndSort from "../utils/searchUtils.js";
 const SearchPage = ({ onNavigate, initialTag }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(initialTag ? { tags: [initialTag] } : {});
-  const allArticles = mockArticles;
+  const [articles, setArticles] = useState(mockArticles);
   const [displayedArticles, setDisplayedArticles] = useState([]);
 
   useEffect(() => {
     const initial = initialTag ? { tags: [initialTag] } : {};
     setCurrentFilters(initial);
-    setDisplayedArticles(applyFiltersAndSort(allArticles, initial));
-  }, [initialTag, allArticles]);
+    setDisplayedArticles(applyFiltersAndSort(articles, initial));
+  }, [initialTag, articles]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...(filters || {}), query };
     setCurrentFilters(merged);
-    setDisplayedArticles(applyFiltersAndSort(allArticles, merged));
+    setDisplayedArticles(applyFiltersAndSort(articles, merged));
   };
 
   const handleSaveSearch = () => setShowSaveStackModal(true);
@@ -38,12 +38,32 @@ const SearchPage = ({ onNavigate, initialTag }) => {
     alert(`Stack "${stackData.name}" saved successfully!`);
   };
 
+  const handleStatusChange = (articleId, newStatus) => {
+    setArticles(prev => prev.map(article => 
+      article.id === articleId 
+        ? { ...article, status: newStatus }
+        : article
+    ));
+  };
+
+  const handleToggleFavorite = (articleId) => {
+    setArticles(prev => prev.map(article => 
+      article.id === articleId 
+        ? { ...article, isFavorite: !article.isFavorite }
+        : article
+    ));
+  };
+
+  const handleDeleteArticle = (articleId) => {
+    setArticles(prev => prev.filter(article => article.id !== articleId));
+  };
+
   return (
     <MainLayout
       currentPage="search"
       currentView="Search"
       onNavigate={onNavigate}
-      articles={mockArticles}
+      articles={articles}
       pageTitle="Search"
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
@@ -61,11 +81,6 @@ const SearchPage = ({ onNavigate, initialTag }) => {
     >
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">Advanced Search</h1>
-            <p className="text-muted-foreground">Use the filters above to search and sort across all articles.</p>
-          </div>
-
           <div className="min-h-[200px]">
             {displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -74,9 +89,9 @@ const SearchPage = ({ onNavigate, initialTag }) => {
                     key={article.id}
                     article={article}
                     onArticleClick={() => onNavigate && onNavigate('text-reader', { article })}
-                    onToggleFavorite={(id) => console.log('Toggle favorite:', id)}
-                    onStatusChange={(id, status) => console.log('Change status:', id, status)}
-                    onDelete={(id) => console.log('Delete article:', id)}
+                    onToggleFavorite={handleToggleFavorite}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteArticle}
                   />
                 ))}
               </div>

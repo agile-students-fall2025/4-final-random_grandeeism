@@ -16,19 +16,19 @@ import { STATUS } from "../constants/statuses.js";
 const ArchivePage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  const allArticles = mockArticles;
+  const [articles, setArticles] = useState(mockArticles);
   const [displayedArticles, setDisplayedArticles] = useState([]);
 
   const baseLockedFilters = useMemo(() => ({ status: STATUS.ARCHIVED }), []);
 
   useEffect(() => {
-    setDisplayedArticles(applyFiltersAndSort(allArticles, baseLockedFilters));
-  }, [allArticles, baseLockedFilters]);
+    setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
+  }, [articles, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
     setCurrentFilters(merged);
-    setDisplayedArticles(applyFiltersAndSort(allArticles, merged));
+    setDisplayedArticles(applyFiltersAndSort(articles, merged));
   };
 
   const handleSaveSearch = () => {
@@ -40,12 +40,32 @@ const ArchivePage = ({ onNavigate }) => {
     alert(`Stack "${stackData.name}" saved successfully!`);
   };
 
+  const handleStatusChange = (articleId, newStatus) => {
+    setArticles(prev => prev.map(article => 
+      article.id === articleId 
+        ? { ...article, status: newStatus }
+        : article
+    ));
+  };
+
+  const handleToggleFavorite = (articleId) => {
+    setArticles(prev => prev.map(article => 
+      article.id === articleId 
+        ? { ...article, isFavorite: !article.isFavorite }
+        : article
+    ));
+  };
+
+  const handleDeleteArticle = (articleId) => {
+    setArticles(prev => prev.filter(article => article.id !== articleId));
+  };
+
   return (
     <MainLayout
       currentPage="articles"
       currentView="Archive"
       onNavigate={onNavigate}
-      articles={mockArticles}
+      articles={articles}
       pageTitle="Archive"
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
@@ -65,11 +85,6 @@ const ArchivePage = ({ onNavigate }) => {
     >
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">Archive</h1>
-            <p className="text-muted-foreground">All completed and archived articles.</p>
-          </div>
-
           <div className="min-h-[200px]">
             {displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -78,9 +93,9 @@ const ArchivePage = ({ onNavigate }) => {
                     key={article.id}
                     article={article}
                     onArticleClick={() => onNavigate && onNavigate('text-reader', { article })}
-                    onToggleFavorite={(id) => console.log('Toggle favorite:', id)}
-                    onStatusChange={(id, status) => console.log('Change status:', id, status)}
-                    onDelete={(id) => console.log('Delete article:', id)}
+                    onToggleFavorite={handleToggleFavorite}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteArticle}
                   />
                 ))}
               </div>

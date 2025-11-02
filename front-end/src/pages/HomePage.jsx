@@ -139,11 +139,6 @@ const HomePage = ({ onNavigate }) => {
     >
       <div className="p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome back</h1>
-            <p className="text-muted-foreground">Here's your reading overview</p>
-          </div>
-          
           {/* Tab Navigation */}
           <div className="border-b border-border mb-6">
             <div className="flex">

@@ -271,7 +271,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   const handleCompletion = (reflection) => {
     if (!current) return;
-  changeStatus(STATUS.ARCHIVED);
+  changeStatus(STATUS.REDISCOVERY);
     try {
       const notesKey = 'article_reflections_v1';
       const raw = localStorage.getItem(notesKey);

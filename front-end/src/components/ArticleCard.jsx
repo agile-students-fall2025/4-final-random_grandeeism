@@ -25,6 +25,7 @@ import {
   ExternalLink,
   PanelBottomClose  // For manual status change actions (not automatic queue advancement)
 } from 'lucide-react';
+import ExportNotesModal from './ExportNotesModal.jsx';
 
 export default function ArticleCard({
   article,
@@ -38,6 +39,7 @@ export default function ArticleCard({
 }) {
   const [isStatusHovered, setIsStatusHovered] = useState(false);
   const [showStatusSubmenu, setShowStatusSubmenu] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Get status icon information
   const getStatusIconInfo = (status) => {
@@ -131,6 +133,12 @@ export default function ArticleCard({
     if (nextStatus && onStatusChange) {
       onStatusChange(article.id, nextStatus);
     }
+  };
+
+  // Handle export
+  const handleExport = (format, destination) => {
+    console.log('Exporting notes:', { articleId: article.id, format, destination });
+    // TODO: Implement actual export functionality
   };
 
   return (
@@ -264,6 +272,20 @@ export default function ArticleCard({
             Manage Tags
           </button>
 
+          {/* Export Notes Button (only shown if article has annotations) */}
+          {article.hasAnnotations && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowExportModal(true);
+              }}
+              className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
+            >
+              <FileDown size={14} />
+              Export Notes
+            </button>
+          )}
+
           {/* Change Status Dropdown */}
           <div className="relative">
             <button
@@ -353,6 +375,14 @@ export default function ArticleCard({
           )}
         </div>
       </div>
+
+      {/* Export Notes Modal */}
+      <ExportNotesModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        articleTitle={article.title}
+        onExport={handleExport}
+      />
     </div>
   );
 }

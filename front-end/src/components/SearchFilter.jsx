@@ -125,7 +125,7 @@ export default function SearchFilter({
   const [statusFilter, setStatusFilter] = useState(lockedFilters.status || preAppliedFilters?.status || "all");
   const [favoritesFilter, setFavoritesFilter] = useState(lockedFilters.favoritesFilter || preAppliedFilters?.favoritesFilter || "all");
   const [annotationsFilter, setAnnotationsFilter] = useState(preAppliedFilters?.annotationsFilter || "all");
-  const [feedFilter, setFeedFilter] = useState(lockedFilters.feed || preAppliedFilters?.feedFilter || "");
+  const [feedFilter, setFeedFilter] = useState(lockedFilters.feed || preAppliedFilters?.feed || preAppliedFilters?.feedFilter || "");
 
   // Dropdown State
   const [showFilters, setShowFilters] = useState(false);
@@ -207,6 +207,7 @@ export default function SearchFilter({
       prev.sortBy !== preAppliedFilters.sortBy ||
       prev.status !== preAppliedFilters.status ||
       prev.favoritesFilter !== preAppliedFilters.favoritesFilter ||
+      prev.feed !== preAppliedFilters.feed ||
       prev.feedFilter !== preAppliedFilters.feedFilter ||
       JSON.stringify(prev.tags) !== JSON.stringify(preAppliedFilters.tags);
 
@@ -221,7 +222,7 @@ export default function SearchFilter({
       const newSortBy = preAppliedFilters.sortBy || "dateAdded";
       const newStatusFilter = lockedFilters.status || preAppliedFilters.status || "all";
       const newFavoritesFilter = lockedFilters.favoritesFilter || preAppliedFilters.favoritesFilter || "all";
-      const newFeedFilter = preAppliedFilters.feedFilter || "";
+      const newFeedFilter = lockedFilters.feed || preAppliedFilters.feed || preAppliedFilters.feedFilter || "";
 
       setSearchQuery(newQuery);
       setSelectedTags(newTags);
