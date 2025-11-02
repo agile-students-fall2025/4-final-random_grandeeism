@@ -32,6 +32,9 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [showHighlightsPanel, setShowHighlightsPanel] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteValue, setEditingNoteValue] = useState('');
+  const [focusedHighlightId, setFocusedHighlightId] = useState(null);
+  
+  const [editingTitle, setEditingTitle] = useState('');
   const [isCompletionOpen, setIsCompletionOpen] = useState(false);
   const [completionShownFor, setCompletionShownFor] = useState(() => {
     try { return JSON.parse(localStorage.getItem('completion_shown') || '{}'); } catch { return {}; }
@@ -216,6 +219,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     return () => { if (el) el && el.removeEventListener('scroll', onScroll); };
   }, [current, completionShownFor]);
 
+  // autofocus was removed by request — do not auto-focus the textarea
+
   
 
   const applyHighlight = (color) => {
@@ -235,13 +240,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       text: selection.text,
       color,
       note: '',
+      title: '',
       createdAt: new Date().toISOString(),
     };
 
     highlightsStore.addHighlight(h);
     // open inline editor so user can add an annotation immediately
-    setEditingNoteId(h.id);
-    setEditingNoteValue('');
+  setEditingNoteId(h.id);
+  setEditingNoteValue('');
+  setEditingTitle('');
     setShowHighlightsPanel(true);
     setSelection(null);
     refreshHighlights();
@@ -253,10 +260,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const saveEditingNote = async () => {
     if (!editingNoteId) return;
     try {
-      highlightsStore.updateHighlight(editingNoteId, { note: editingNoteValue });
+      highlightsStore.updateHighlight(editingNoteId, { note: editingNoteValue, title: editingTitle });
     } catch (e) { console.error('save note failed', e); }
     setEditingNoteId(null);
     setEditingNoteValue('');
+    setEditingTitle('');
     refreshHighlights();
   };
 
@@ -354,8 +362,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 style={style}
                 onClick={() => {
                   try {
-                    setEditingNoteId(part.highlight.id);
-                    setEditingNoteValue(part.highlight.note || '');
+                    // focus this single highlight in the panel (do NOT open the editor)
+                    setFocusedHighlightId(part.highlight.id);
                     setShowHighlightsPanel(true);
                   } catch { /* ignore */ }
                 }}
@@ -446,12 +454,19 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
           {showHighlightsPanel && (
             <aside className="w-80 border-l border-border pl-4">
-              <h4 className="font-semibold mb-2">Highlights</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold">Highlights</h4>
+                  {focusedHighlightId && (
+                    <button onClick={() => setFocusedHighlightId(null)} className="text-xs px-2 py-1 bg-card border border-border rounded">Show all</button>
+                  )}
+                </div>
               {highlights.length === 0 && <p className="text-sm text-muted-foreground">No highlights yet</p>}
 
               {/* Inline annotation editor */}
               {editingNoteId && (
                 <div className="mb-3 p-2 bg-muted rounded">
+                  <label className="text-sm font-medium mb-1 block">Title</label>
+                  <input value={editingTitle} onChange={(e) => setEditingTitle(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" placeholder="Enter a title for this highlight" />
                   <label className="text-sm font-medium mb-1 block">Edit note</label>
                   <textarea value={editingNoteValue} onChange={(e) => setEditingNoteValue(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" rows={4} />
                   <div className="flex gap-2">
@@ -466,23 +481,30 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 </div>
               )}
 
-              <div className="space-y-3">
-                {highlights.map(h => (
-                  <div key={h.id} className="p-2 bg-muted rounded">
-                    <div className="flex items-center justify-between mb-1">
-                        <strong className="text-sm">
-                          {h.note && h.note.length > 0 ? (h.note.length > 80 ? h.note.slice(0,80) + '…' : h.note) : 'No annotation yet'}
-                        </strong>
-                      <div className="flex gap-2">
-                        <button onClick={() => scrollToHighlight(h.id)} className="text-xs">Jump</button>
-                        <button onClick={() => { setEditingNoteId(h.id); setEditingNoteValue(h.note || ''); setShowHighlightsPanel(true); }} className="text-xs">Edit</button>
-                        <button onClick={() => removeHighlight(h.id)} className="text-xs text-destructive">Delete</button>
+              {/* If we're editing the focused highlight, only show the editor pane (H_specific editing) */}
+              {!(focusedHighlightId && editingNoteId === focusedHighlightId) && (
+                <div className="space-y-3">
+                  {(focusedHighlightId ? highlights.filter(h => h.id === focusedHighlightId) : highlights).map(h => (
+                    <div
+                      key={h.id}
+                      className="p-2 bg-muted rounded"
+                      onClick={() => { setFocusedHighlightId(h.id); setShowHighlightsPanel(true); }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                          <strong className="text-sm">{h.title && h.title.length > 0 ? (h.title.length > 80 ? h.title.slice(0,80) + '…' : h.title) : 'No title yet'}</strong>
+                        <div className="flex gap-2">
+                          <button onClick={(e) => { e.stopPropagation(); scrollToHighlight(h.id); }} className="text-xs">Jump</button>
+                          <button onClick={(e) => { e.stopPropagation(); setFocusedHighlightId(h.id); setEditingNoteId(h.id); setEditingTitle(h.title || ''); setEditingNoteValue(h.note || ''); setShowHighlightsPanel(true); }} className="text-xs">Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); removeHighlight(h.id); }} className="text-xs text-destructive">Delete</button>
+                        </div>
                       </div>
+                      <div className="text-[13px] text-muted-foreground">{h.note && h.note.length > 0 ? h.note : 'No annotation yet'}</div>
                     </div>
-                    {h.note && <div className="text-[13px] text-muted-foreground">{h.note}</div>}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </aside>
           )}
         </div>
