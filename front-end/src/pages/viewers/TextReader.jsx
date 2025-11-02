@@ -247,10 +247,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
     highlightsStore.addHighlight(h);
     // open inline editor so user can add an annotation immediately
-  setEditingNoteId(h.id);
-  setEditingNoteValue('');
-  setEditingTitle('');
+    setEditingNoteId(h.id);
+    setEditingNoteValue('');
+    setEditingTitle('');
     setShowHighlightsPanel(true);
+    setFocusedHighlightId(h.id); // Focus the newly created highlight
     setSelection(null);
     refreshHighlights();
     try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
@@ -266,6 +267,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     setEditingNoteId(null);
     setEditingNoteValue('');
     setEditingTitle('');
+    setFocusedHighlightId(editingNoteId); // Keep focus on the edited highlight
     refreshHighlights();
   };
 
