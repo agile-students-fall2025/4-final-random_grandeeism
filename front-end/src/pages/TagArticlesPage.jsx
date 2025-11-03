@@ -78,7 +78,6 @@ export default function TagArticlesPage({ onNavigate, tag }) {
       currentView="Search"
       onNavigate={onNavigate}
       articles={displayedArticles}
-      pageTitle={`Tag: ${tag || 'Untagged'}`}
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}

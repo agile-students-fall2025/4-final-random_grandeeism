@@ -33,7 +33,16 @@ import {
   Star,
   Pin,
   Rss,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  Video,
+  Headphones,
+  Calendar,
+  BookOpen,
+  Archive,
+  Heart,
+  StickyNote,
+  Package
 } from "lucide-react";
 
 import { Badge } from "./ui/badge.jsx";
@@ -106,7 +115,7 @@ export default function SearchFilter({
 
   const favoritesFilterLabels = {
     all: "All Articles",
-    favorites: "Starred Only",
+    favorites: "Favorites",
     nonFavorites: "Non-Starred"
   };
 
@@ -114,6 +123,28 @@ export default function SearchFilter({
     all: "All Articles",
     annotated: "Annotated",
     unannotated: "Unannotated"
+  };
+
+  // Icon mapping functions
+  const getStatusIcon = (status) => {
+    const icons = {
+      inbox: Inbox,
+      daily: Calendar,
+      continue: BookOpen,
+      rediscovery: Clock,
+      archived: Archive
+    };
+    return icons[status] || Inbox;
+  };
+
+  const getMediaTypeIcon = (type) => {
+    const icons = {
+      all: Package,
+      article: FileText,
+      video: Video,
+      podcast: Headphones
+    };
+    return icons[type] || FileText;
   };
 
   // Filter State
@@ -318,32 +349,41 @@ export default function SearchFilter({
       {(hasActiveFilters || lockedFilters.status || lockedFilters.mediaType || lockedFilters.favoritesFilter) && (
         <div className="flex flex-wrap items-center gap-2 mb-2">
           {/* Locked Status Filter */}
-          {lockedFilters.status && lockedFilters.status !== "all" && (
-            <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
-              {statusFilterLabels[lockedFilters.status]}
-              {onFilterChipRemoved && (
-                <button onClick={onFilterChipRemoved} className="hover:opacity-70">
-                  <X size={12} />
-                </button>
-              )}
-            </Badge>
-          )}
+          {lockedFilters.status && lockedFilters.status !== "all" && (() => {
+            const StatusIcon = getStatusIcon(lockedFilters.status);
+            return (
+              <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+                <StatusIcon size={12} />
+                {statusFilterLabels[lockedFilters.status]}
+                {onFilterChipRemoved && (
+                  <button onClick={onFilterChipRemoved} className="hover:opacity-70">
+                    <X size={12} />
+                  </button>
+                )}
+              </Badge>
+            );
+          })()}
           
           {/* Locked Media Type Filter */}
-          {lockedFilters.mediaType && lockedFilters.mediaType !== "all" && (
-            <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
-              {mediaTypeLabels[lockedFilters.mediaType]}
-              {onFilterChipRemoved && (
-                <button onClick={onFilterChipRemoved} className="hover:opacity-70">
-                  <X size={12} />
-                </button>
-              )}
-            </Badge>
-          )}
+          {lockedFilters.mediaType && lockedFilters.mediaType !== "all" && (() => {
+            const MediaIcon = getMediaTypeIcon(lockedFilters.mediaType);
+            return (
+              <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+                <MediaIcon size={12} />
+                {mediaTypeLabels[lockedFilters.mediaType]}
+                {onFilterChipRemoved && (
+                  <button onClick={onFilterChipRemoved} className="hover:opacity-70">
+                    <X size={12} />
+                  </button>
+                )}
+              </Badge>
+            );
+          })()}
           
           {/* Locked Favorites Filter */}
           {lockedFilters.favoritesFilter && lockedFilters.favoritesFilter !== "all" && (
             <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+              <Star size={12} fill="currentColor" />
               {favoritesFilterLabels[lockedFilters.favoritesFilter]}
               {onFilterChipRemoved && (
                 <button onClick={onFilterChipRemoved} className="hover:opacity-70">
@@ -356,6 +396,7 @@ export default function SearchFilter({
           {/* Removable filters: tags */}
           {selectedTags.map(tag => (
             <Badge key={tag} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+              <Tag size={12} />
               {tag}
               <button onClick={() => removeTag(tag)} className="hover:opacity-70">
                 <X size={12} />
@@ -366,6 +407,7 @@ export default function SearchFilter({
           {/* Time Filter */}
           {timeFilter !== "all" && (
             <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+              <Clock size={12} />
               {timeFilterLabels[timeFilter]}
               <button onClick={() => setTimeFilter("all")} className="hover:opacity-70">
                 <X size={12} />
@@ -374,18 +416,23 @@ export default function SearchFilter({
           )}
           
           {/* Media Type Filter (removable) */}
-          {mediaType !== "all" && mediaType !== lockedFilters.mediaType && (
-            <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
-              {mediaTypeLabels[mediaType]}
-              <button onClick={() => setMediaType(lockedFilters.mediaType || "all")} className="hover:opacity-70">
-                <X size={12} />
-              </button>
-            </Badge>
-          )}
+          {mediaType !== "all" && mediaType !== lockedFilters.mediaType && (() => {
+            const MediaIcon = getMediaTypeIcon(mediaType);
+            return (
+              <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+                <MediaIcon size={12} />
+                {mediaTypeLabels[mediaType]}
+                <button onClick={() => setMediaType(lockedFilters.mediaType || "all")} className="hover:opacity-70">
+                  <X size={12} />
+                </button>
+              </Badge>
+            );
+          })()}
           
           {/* Sort Filter */}
           {sortBy !== "dateAdded" && (
             <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+              <ArrowUpDown size={12} />
               {sortLabels[sortBy]}
               <button onClick={() => setSortBy("dateAdded")} className="hover:opacity-70">
                 <X size={12} />
@@ -394,18 +441,23 @@ export default function SearchFilter({
           )}
           
           {/* Status Filter (removable) */}
-          {statusFilter !== "all" && statusFilter !== lockedFilters.status && (
-            <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
-              {statusFilterLabels[statusFilter]}
-              <button onClick={() => setStatusFilter(lockedFilters.status || "all")} className="hover:opacity-70">
-                <X size={12} />
-              </button>
-            </Badge>
-          )}
+          {statusFilter !== "all" && statusFilter !== lockedFilters.status && (() => {
+            const StatusIcon = getStatusIcon(statusFilter);
+            return (
+              <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+                <StatusIcon size={12} />
+                {statusFilterLabels[statusFilter]}
+                <button onClick={() => setStatusFilter(lockedFilters.status || "all")} className="hover:opacity-70">
+                  <X size={12} />
+                </button>
+              </Badge>
+            );
+          })()}
           
           {/* Favorites Filter (removable) */}
           {favoritesFilter !== "all" && favoritesFilter !== lockedFilters.favoritesFilter && (
             <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+              <Star size={12} fill="currentColor" />
               {favoritesFilterLabels[favoritesFilter]}
               <button onClick={() => setFavoritesFilter(lockedFilters.favoritesFilter || "all")} className="hover:opacity-70">
                 <X size={12} />
@@ -416,6 +468,7 @@ export default function SearchFilter({
           {/* Annotations Filter */}
           {annotationsFilter !== "all" && (
             <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+              <StickyNote size={12} />
               {annotationsFilter === "annotated" ? "Annotated" : "Unannotated"}
               <button onClick={() => setAnnotationsFilter("all")} className="hover:opacity-70">
                 <X size={12} />
@@ -426,6 +479,7 @@ export default function SearchFilter({
           {/* Feed Filter */}
           {feedFilter && (
             <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+              <Rss size={12} />
               {availableFeeds.find(f => f.id === feedFilter || f.name === feedFilter)?.name || feedFilter}
               <button onClick={() => {
                 // Check if this is a locked feed filter
@@ -612,44 +666,52 @@ export default function SearchFilter({
           )}
 
           {/* Media Type Filter */}
-          {showMediaFilter && !lockedFilters.mediaType && (
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowMediaDropdown(!showMediaDropdown);
-                  setShowTagDropdown(false);
-                  setShowTimeDropdown(false);
-                  setShowSortDropdown(false);
-                  setShowStatusDropdown(false);
-                  setShowFavoritesDropdown(false);
-                  setShowFeedDropdown(false);
-                  setShowAnnotationsDropdown(false);
-                }}
-                className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
-              >
-                {mediaTypeLabels[mediaType]}
-              </button>
+          {showMediaFilter && !lockedFilters.mediaType && (() => {
+            const MediaIcon = getMediaTypeIcon(mediaType);
+            return (
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowMediaDropdown(!showMediaDropdown);
+                    setShowTagDropdown(false);
+                    setShowTimeDropdown(false);
+                    setShowSortDropdown(false);
+                    setShowStatusDropdown(false);
+                    setShowFavoritesDropdown(false);
+                    setShowFeedDropdown(false);
+                    setShowAnnotationsDropdown(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
+                >
+                  <MediaIcon size={14} />
+                  {mediaTypeLabels[mediaType]}
+                </button>
               
               {showMediaDropdown && (
                 <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-lg shadow-lg p-2 z-50 min-w-[160px]">
-                  {Object.keys(mediaTypeLabels).map(option => (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        setMediaType(option);
-                        setShowMediaDropdown(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-[14px] ${
-                        mediaType === option ? "bg-accent" : ""
-                      }`}
-                    >
-                      {mediaTypeLabels[option]}
-                    </button>
-                  ))}
+                  {Object.keys(mediaTypeLabels).map(option => {
+                    const OptionIcon = getMediaTypeIcon(option);
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => {
+                          setMediaType(option);
+                          setShowMediaDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-[14px] flex items-center gap-2 ${
+                          mediaType === option ? "bg-accent" : ""
+                        }`}
+                      >
+                        <OptionIcon size={14} />
+                        {mediaTypeLabels[option]}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* Status Filter */}
           {showStatusFilter && !lockedFilters.status && (

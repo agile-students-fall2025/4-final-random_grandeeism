@@ -256,7 +256,7 @@ export default function ArticleCard({
             }}
             className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
           >
-            <Star size={14} className={article.isFavorite ? 'fill-yellow-500 text-yellow-500' : ''} />
+            <Star size={14} className={article.isFavorite ? 'fill-foreground text-foreground' : ''} />
             {article.isFavorite ? 'Unfavorite' : 'Favorite'}
           </button>
 

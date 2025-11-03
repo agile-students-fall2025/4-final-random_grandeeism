@@ -18,6 +18,7 @@
 
 import { useState } from "react";
 import { STATUS } from "../constants/statuses.js";
+import { mockArticles } from "../data/mockArticles.js";
 import TopBar from "./TopBar.jsx";
 import NavigationSidebar from "./NavigationSidebar.jsx";
 
@@ -28,8 +29,8 @@ export default function MainLayout({
   currentView,
   onNavigate,
   
-  // === DATA (Required for counts) ===
-  articles = [],
+  // === DATA (Optional - kept for compatibility, counts now use mockArticles) ===
+  articles: _articles = [],
   
   // === ACTIONS (Optional) ===
   onAddLink,
@@ -77,11 +78,11 @@ export default function MainLayout({
   // Mobile menu state
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  // Auto-calculate counts for sidebar
-  const inboxCount = articles.filter(a => a.status === STATUS.INBOX && !a.isHidden).length;
-  const dailyReadingCount = articles.filter(a => a.status === STATUS.DAILY && !a.isHidden).length;
-  const inProgressCount = articles.filter(a => a.status === STATUS.CONTINUE && !a.isHidden).length;
-  const rediscoveryCount = articles.filter(a => a.status === STATUS.REDISCOVERY && !a.isHidden).length;
+  // Auto-calculate counts for sidebar from full article list (not filtered view)
+  const inboxCount = mockArticles.filter(a => a.status === STATUS.INBOX && !a.isHidden).length;
+  const dailyReadingCount = mockArticles.filter(a => a.status === STATUS.DAILY && !a.isHidden).length;
+  const inProgressCount = mockArticles.filter(a => a.status === STATUS.CONTINUE && !a.isHidden).length;
+  const rediscoveryCount = mockArticles.filter(a => a.status === STATUS.REDISCOVERY && !a.isHidden).length;
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">

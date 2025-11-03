@@ -15,8 +15,9 @@ import { Inbox, Calendar, BookOpen, RotateCcw } from "lucide-react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { mockArticles, getArticlesByStatus, getArticleCounts } from "../data/mockArticles.js";
+import { mockArticles, getArticleCounts } from "../data/mockArticles.js";
 import { STATUS } from "../constants/statuses.js";
+import applyFiltersAndSort from "../utils/searchUtils.js";
 
 // Tab configuration with icons and status mapping
 const tabs = [
@@ -31,28 +32,18 @@ const HomePage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [activeTab, setActiveTab] = useState("Inbox");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [displayedArticles, setDisplayedArticles] = useState([]);
 
   // Get current tab's status value
   const currentStatus = tabs.find(t => t.name === activeTab)?.status || STATUS.INBOX;
 
-  // Get articles for current tab with search filtering
-  const currentTabArticles = useMemo(() => {
-    let filteredArticles = getArticlesByStatus(articles, currentStatus);
-    
-    // Apply search filter if there's a search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filteredArticles = filteredArticles.filter(article => 
-        article.title.toLowerCase().includes(query) ||
-        article.author?.toLowerCase().includes(query) ||
-        article.tags?.some(tag => tag.toLowerCase().includes(query)) ||
-        article.url.toLowerCase().includes(query)
-      );
-    }
-    
-    return filteredArticles;
-  }, [articles, currentStatus, searchQuery]);
+  // Base locked filters based on active tab
+  const baseLockedFilters = useMemo(() => ({ status: currentStatus }), [currentStatus]);
+
+  // Initialize displayed articles with locked filters
+  useEffect(() => {
+    setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
+  }, [articles, baseLockedFilters]);
 
   // Get article counts for display
   const articleCounts = useMemo(() => {
@@ -86,59 +77,55 @@ const HomePage = ({ onNavigate }) => {
     setArticles(prev => prev.filter(article => article.id !== articleId));
   };
 
-  // Get pre-applied filters based on active tab (memoized to prevent re-creation)
-  const preAppliedFilters = useMemo(() => ({
-    status: currentStatus,
-    tags: [],
-    timeFilter: "all",
-    mediaType: "all",
-    sortBy: "dateAdded",
-    favoritesFilter: "all"
-  }), [currentStatus]);
-
-
-  // Update filters when tab changes
-  useEffect(() => {
-    setCurrentFilters(preAppliedFilters);
-  }, [preAppliedFilters]);
-
-
-  const handleSimpleSearch = (query) => {
-    console.log('Simple search:', query);
-    setSearchQuery(query);
+  const handleSearchWithFilters = (query, filters) => {
+    // Merge locked filters (status) with search filters
+    const merged = { ...baseLockedFilters, ...(filters || {}), query };
+    setCurrentFilters(merged);
+    setDisplayedArticles(applyFiltersAndSort(articles, merged));
   };
 
-  const clearSearch = () => {
-    setSearchQuery("");
+  const handleSaveSearch = () => {
+    setShowSaveStackModal(true);
   };
-
 
   const handleSaveStack = (stackData) => {
     console.log('Saving stack:', stackData);
-    // TODO: Implement actual save to backend/state
     alert(`Stack "${stackData.name}" saved successfully!`);
     setShowSaveStackModal(false);
   };
 
-  // Note: preAppliedFilters is used to seed filter UI when tabs change.
-  // The following helper functions were intentionally removed because
-  // they were previously unused; re-add them later when wiring advanced
-  // search and filter flows across pages.
+  // Handler for when the locked filter chip is removed - navigate to search page
+  const handleFilterChipRemoved = () => {
+    onNavigate('search');
+  };
 
   return (
     <MainLayout
       currentPage="home"
       currentView={activeTab}
       onNavigate={onNavigate}
-      articles={currentTabArticles}
-      pageTitle="Home"
-      showSearch={true}
-      searchPlaceholder="Search articles..."
-      onSearch={handleSimpleSearch}
-      initialSearchQuery={searchQuery}
+      articles={displayedArticles}
+      useAdvancedSearch={true}
+      onSearchWithFilters={handleSearchWithFilters}
+      onSaveSearch={handleSaveSearch}
+      availableTags={["Development", "Design", "AI", "Technology"]}
+      lockedFilters={baseLockedFilters}
+      preAppliedFilters={baseLockedFilters}
+      onFilterChipRemoved={handleFilterChipRemoved}
+      showTimeFilter={true}
+      showMediaFilter={true}
+      showTagFilter={true}
+      showFavoritesFilter={true}
+      showAnnotationsFilter={true}
+      showSortOptions={true}
     >
       <div className="p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome back</h1>
+            <p className="text-muted-foreground">Here's your reading overview</p>
+          </div>
+          
           {/* Tab Navigation */}
           <div className="border-b border-border mb-6">
             <div className="flex">
@@ -169,26 +156,11 @@ const HomePage = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Search Results Indicator */}
-          {searchQuery.trim() && (
-            <div className="mb-4 p-3 bg-accent/50 border border-border rounded-lg">
-              <p className="text-sm text-foreground">
-                <span className="font-medium">{currentTabArticles.length}</span> result{currentTabArticles.length !== 1 ? 's' : ''} found for "<span className="font-medium">{searchQuery}</span>" in {activeTab}
-              </p>
-              <button 
-                onClick={clearSearch}
-                className="text-xs text-muted-foreground hover:text-foreground underline mt-1"
-              >
-                Clear search
-              </button>
-            </div>
-          )}
-
           {/* Tab Content */}
           <div className="min-h-[400px]">
-            {currentTabArticles.length > 0 ? (
+            {displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {currentTabArticles.map((article) => (
+                {displayedArticles.map((article) => (
                   <ArticleCard
                     key={article.id}
                     article={article}
@@ -201,29 +173,13 @@ const HomePage = ({ onNavigate }) => {
               </div>
             ) : (
               <div className="bg-card border border-border rounded-lg p-8 text-center">
-                <p className="text-lg font-medium mb-2">
-                  {searchQuery.trim() ? 'No results found' : activeTab}
-                </p>
+                <p className="text-lg font-medium mb-2">{activeTab}</p>
                 <p className="text-sm text-muted-foreground">
-                  {searchQuery.trim() ? (
-                    `No articles found matching "${searchQuery}" in ${activeTab}`
-                  ) : (
-                    <>
-                      {activeTab === "Inbox" && "No new articles waiting to be triaged"}
-                      {activeTab === "Daily Reading" && "No articles scheduled for today's reading session"}
-                      {activeTab === "Continue Reading" && "No articles in progress"}
-                      {activeTab === "Rediscovery" && "No articles scheduled for rediscovery"}
-                    </>
-                  )}
+                  {activeTab === "Inbox" && "No new articles waiting to be triaged"}
+                  {activeTab === "Daily Reading" && "No articles scheduled for today's reading session"}
+                  {activeTab === "Continue Reading" && "No articles in progress"}
+                  {activeTab === "Rediscovery" && "No articles scheduled for rediscovery"}
                 </p>
-                {searchQuery.trim() && (
-                  <button 
-                    onClick={clearSearch}
-                    className="mt-3 text-sm text-primary hover:underline"
-                  >
-                    Clear search
-                  </button>
-                )}
               </div>
             )}
           </div>

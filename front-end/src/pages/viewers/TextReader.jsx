@@ -345,7 +345,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
             <button onClick={goBack} className="text-sm text-muted-foreground hover:text-foreground mr-3">← Back</button>
             {current && (
               <button onClick={toggleFavorite} className="inline-flex items-center gap-2 text-sm">
-                <Star size={16} className={appliedFavorite ? 'text-yellow-400' : 'text-muted-foreground'} />
+                <Star size={16} className={appliedFavorite ? 'fill-foreground text-foreground' : 'text-muted-foreground'} />
                 {appliedFavorite ? 'Favorited' : 'Favorite'}
               </button>
             )}

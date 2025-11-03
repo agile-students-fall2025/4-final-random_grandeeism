@@ -78,7 +78,6 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
       currentView="Search"
       onNavigate={onNavigate}
       articles={displayedArticles}
-      pageTitle={`Feed: ${feed || 'Unknown Feed'}`}
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}

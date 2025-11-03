@@ -139,13 +139,9 @@ export default function FeedsPage({ onNavigate }) {
       currentView="Feeds"
       onNavigate={onNavigate}
       articles={articles}
-      pageTitle="Feeds"
       showSearch={true}
       customSearchContent={
         <>
-          <p className="font-['New_Spirit:Medium',sans-serif] leading-[normal] text-[18px] text-foreground mb-3">
-            Feeds
-          </p>
           <div className="flex items-center gap-2">
             {/* Search Input */}
             <div className="flex-1 min-w-0 flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">

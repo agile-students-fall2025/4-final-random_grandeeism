@@ -29,14 +29,14 @@ export default function ExportNotesModal({
   const [selectedDestination, setSelectedDestination] = useState("download");
 
   // Mock integration data (from global state in production)
-  const connectedIntegrations = [
-    { id: "notion", name: "Notion", connected: false },
-    { id: "obsidian", name: "Obsidian", connected: false },
-    { id: "logseq", name: "Logseq", connected: false },
-    { id: "zotero", name: "Zotero", connected: false },
-  ];
+  // const connectedIntegrations = [
+  //   { id: "notion", name: "Notion", connected: false },
+  //   { id: "obsidian", name: "Obsidian", connected: false },
+  //   { id: "logseq", name: "Logseq", connected: false },
+  //   { id: "zotero", name: "Zotero", connected: false },
+  // ];
 
-  const activeIntegrations = connectedIntegrations.filter(i => i.connected);
+  // const activeIntegrations = connectedIntegrations.filter(i => i.connected);
 
   const handleExport = () => {
     onExport(selectedFormat, selectedDestination);
@@ -44,7 +44,7 @@ export default function ExportNotesModal({
     const formatName = selectedFormat.toUpperCase();
     const destinationName = selectedDestination === "download" 
       ? "your device" 
-      : connectedIntegrations.find(i => i.id === selectedDestination)?.name || selectedDestination;
+      : selectedDestination;
     
     toast.success(`Notes exported successfully!`, {
       description: `Exported as ${formatName} to ${destinationName}`,
@@ -157,7 +157,7 @@ export default function ExportNotesModal({
                 </div>
 
                 {/* Connected Integrations */}
-                {activeIntegrations.map(integration => (
+                {/* {activeIntegrations.map(integration => (
                   <div key={integration.id} className="border border-border p-3 rounded-lg hover:bg-accent transition-colors">
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem value={integration.id} id={`dest-${integration.id}`} />
@@ -170,10 +170,10 @@ export default function ExportNotesModal({
                       </Label>
                     </div>
                   </div>
-                ))}
+                ))} */}
 
                 {/* No Integrations Message */}
-                {activeIntegrations.length === 0 && (
+                {/* {activeIntegrations.length === 0 && (
                   <div className="p-4 bg-accent rounded-lg">
                     <p className="text-[13px] text-muted-foreground">
                       No PKM integrations connected. Visit{" "}
@@ -183,7 +183,7 @@ export default function ExportNotesModal({
                       to connect Notion, Obsidian, Logseq, or Zotero.
                     </p>
                   </div>
-                )}
+                )} */}
               </div>
             </RadioGroup>
           </div>

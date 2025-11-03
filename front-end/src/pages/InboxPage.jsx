@@ -68,7 +68,6 @@ const InboxPage = ({ onNavigate }) => {
       currentView="Inbox"
       onNavigate={onNavigate}
       articles={articles}
-      pageTitle="Inbox"
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
@@ -88,6 +87,11 @@ const InboxPage = ({ onNavigate }) => {
     >
         <div className="p-6">
           <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">Inbox</h1>
+              <p className="text-muted-foreground">Articles in your inbox (filtered by Search).</p>
+            </div>
+
             <div className="min-h-[200px]">
               {displayedArticles.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

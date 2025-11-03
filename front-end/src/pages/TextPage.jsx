@@ -62,7 +62,6 @@ const TextPage = ({ onNavigate }) => {
       currentPage="text"
       onNavigate={onNavigate}
       articles={articles}
-      pageTitle="Text Articles"
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
@@ -74,11 +73,17 @@ const TextPage = ({ onNavigate }) => {
       showTagFilter={true}
       showStatusFilter={true}
       showFavoritesFilter={true}
+      showAnnotationsFilter={true}
       showSortOptions={true}
       addLinkButtonText="Add Article"
     >
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Text Articles</h1>
+            <p className="text-muted-foreground">All your saved text-based articles.</p>
+          </div>
+
           <div className="min-h-[200px]">
             {displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

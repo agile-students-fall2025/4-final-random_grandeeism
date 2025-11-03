@@ -136,13 +136,9 @@ export default function TagsPage({ onNavigate }) {
       currentView="Tags"
       onNavigate={onNavigate}
       articles={articles}
-      pageTitle="Tags"
       showSearch={true}
       customSearchContent={
         <>
-          <p className="font-['New_Spirit:Medium',sans-serif] leading-[normal] text-[18px] text-foreground mb-3">
-            Tags
-          </p>
           <div className="flex items-center gap-2">
             {/* Search Input */}
             <div className="flex-1 min-w-0 flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">

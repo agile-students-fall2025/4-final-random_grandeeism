@@ -49,10 +49,10 @@ const StatisticsPage = ({ onNavigate }) => {
   const getIntensityClass = (minutes) => {
     if (minutes == null) return "bg-muted/20";
     if (minutes === 0) return "bg-muted/40";
-    if (minutes <= 10) return "bg-indigo-200";
-    if (minutes <= 25) return "bg-indigo-300";
-    if (minutes <= 45) return "bg-indigo-400";
-    return "bg-indigo-500";
+    if (minutes <= 10) return "bg-muted/60";
+    if (minutes <= 25) return "bg-muted/80";
+    if (minutes <= 45) return "bg-foreground/60";
+    return "bg-foreground/90";
   };
 
   // Compute stats from generated data
@@ -88,7 +88,6 @@ const StatisticsPage = ({ onNavigate }) => {
       currentView="Statistics"
       onNavigate={onNavigate}
       articles={mockArticles}
-      pageTitle="Statistics"
       showSearch={false}
     >
       <div className="p-6">
@@ -191,10 +190,10 @@ const StatisticsPage = ({ onNavigate }) => {
             <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
               <span>Less</span>
               <div className="h-3 w-3 rounded-xs bg-muted/40 border border-border/50" />
-              <div className="h-3 w-3 rounded-xs bg-indigo-200" />
-              <div className="h-3 w-3 rounded-xs bg-indigo-300" />
-              <div className="h-3 w-3 rounded-xs bg-indigo-400" />
-              <div className="h-3 w-3 rounded-xs bg-indigo-500" />
+              <div className="h-3 w-3 rounded-xs bg-muted/60 border border-border/50" />
+              <div className="h-3 w-3 rounded-xs bg-muted/80 border border-border/50" />
+              <div className="h-3 w-3 rounded-xs bg-foreground/60 border border-border/50" />
+              <div className="h-3 w-3 rounded-xs bg-foreground/90 border border-border/50" />
               <span>More</span>
             </div>
           </div>
