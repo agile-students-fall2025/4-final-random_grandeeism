@@ -57,7 +57,9 @@ export default function SearchFilter({
   availableTags = [],
   availableFeeds = [],
   showTimeFilter = true,
-  showMediaFilter = false,
+  /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Filter prop (unimplemented) */
+  /* TODO: Uncomment when video/audio player implementation is complete */
+  // showMediaFilter = false,
   showTagFilter = true,
   showSortOptions = true,
   showStatusFilter = false,
@@ -90,12 +92,16 @@ export default function SearchFilter({
     long: "Long (> 15 min)"
   };
 
+  /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type labels (unimplemented) */
+  /* TODO: Uncomment when video/audio player implementation is complete */
+  /*
   const mediaTypeLabels = {
     all: "All Types",
     article: "Text",
     video: "Video",
     podcast: "Audio"
   };
+  */
 
   const sortLabels = {
     dateAdded: "Date Added (Newest)",
@@ -137,6 +143,9 @@ export default function SearchFilter({
     return icons[status] || Inbox;
   };
 
+  /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type icon function (unimplemented) */
+  /* TODO: Uncomment when video/audio player implementation is complete */
+  /*
   const getMediaTypeIcon = (type) => {
     const icons = {
       all: Package,
@@ -146,12 +155,15 @@ export default function SearchFilter({
     };
     return icons[type] || FileText;
   };
+  */
 
   // Filter State
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedTags, setSelectedTags] = useState(preAppliedFilters?.tags || []);
   const [timeFilter, setTimeFilter] = useState(preAppliedFilters?.timeFilter || "all");
-  const [mediaType, setMediaType] = useState(lockedFilters.mediaType || preAppliedFilters?.mediaType || "all");
+  /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type state (unimplemented) */
+  /* TODO: Uncomment when video/audio player implementation is complete */
+  // const [mediaType, setMediaType] = useState(lockedFilters.mediaType || preAppliedFilters?.mediaType || "all");
   const [sortBy, setSortBy] = useState(preAppliedFilters?.sortBy || "dateAdded");
   const [statusFilter, setStatusFilter] = useState(lockedFilters.status || preAppliedFilters?.status || "all");
   const [favoritesFilter, setFavoritesFilter] = useState(lockedFilters.favoritesFilter || preAppliedFilters?.favoritesFilter || "all");
@@ -162,7 +174,9 @@ export default function SearchFilter({
   const [showFilters, setShowFilters] = useState(false);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
-  const [showMediaDropdown, setShowMediaDropdown] = useState(false);
+  /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type dropdown state (unimplemented) */
+  /* TODO: Uncomment when video/audio player implementation is complete */
+  // const [showMediaDropdown, setShowMediaDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showFavoritesDropdown, setShowFavoritesDropdown] = useState(false);
@@ -176,7 +190,9 @@ export default function SearchFilter({
   const hasActiveFilters = 
     selectedTags.length > 0 || 
     timeFilter !== "all" || 
-    (mediaType !== "all" && mediaType !== lockedFilters.mediaType) || 
+    /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type filter (unimplemented) */
+    /* TODO: Uncomment when video/audio player implementation is complete */
+    /* (mediaType !== "all" && mediaType !== lockedFilters.mediaType) || */
     searchQuery !== "" || 
     sortBy !== "dateAdded" || 
     (statusFilter !== "all" && statusFilter !== lockedFilters.status) || 
@@ -216,7 +232,9 @@ export default function SearchFilter({
   const clearAllFilters = () => {
     setSelectedTags([]);
     setTimeFilter("all");
-    setMediaType(lockedFilters.mediaType || "all");
+    /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type filter (unimplemented) */
+    /* TODO: Uncomment when video/audio player implementation is complete */
+    /* setMediaType(lockedFilters.mediaType || "all"); */
     setSortBy("dateAdded");
     setStatusFilter(lockedFilters.status || "all");
     setFavoritesFilter(lockedFilters.favoritesFilter || "all");
@@ -249,7 +267,8 @@ export default function SearchFilter({
       const newQuery = preAppliedFilters.query || "";
       const newTags = preAppliedFilters.tags || [];
       const newTimeFilter = preAppliedFilters.timeFilter || "all";
-      const newMediaType = lockedFilters.mediaType || preAppliedFilters.mediaType || "all";
+      /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type (unimplemented) */
+      // const newMediaType = lockedFilters.mediaType || preAppliedFilters.mediaType || "all";
       const newSortBy = preAppliedFilters.sortBy || "dateAdded";
       const newStatusFilter = lockedFilters.status || preAppliedFilters.status || "all";
       const newFavoritesFilter = lockedFilters.favoritesFilter || preAppliedFilters.favoritesFilter || "all";
@@ -258,7 +277,8 @@ export default function SearchFilter({
       setSearchQuery(newQuery);
       setSelectedTags(newTags);
       setTimeFilter(newTimeFilter);
-      setMediaType(newMediaType);
+      /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type (unimplemented) */
+      // setMediaType(newMediaType);
       setSortBy(newSortBy);
       setStatusFilter(newStatusFilter);
       setFavoritesFilter(newFavoritesFilter);
@@ -272,7 +292,8 @@ export default function SearchFilter({
       query: searchQuery,
       tags: selectedTags,
       timeFilter,
-      mediaType,
+      /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type (unimplemented) */
+      // mediaType,
       sortBy,
       status: statusFilter,
       favoritesFilter,
@@ -280,7 +301,7 @@ export default function SearchFilter({
       feedFilter
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedTags, timeFilter, mediaType, sortBy, statusFilter, favoritesFilter, annotationsFilter, feedFilter]);
+  }, [searchQuery, selectedTags, timeFilter, /* mediaType, */ sortBy, statusFilter, favoritesFilter, annotationsFilter, feedFilter]);
 
   return (
     <div className="border-b border-border px-4 py-3 md:px-6">
@@ -364,7 +385,10 @@ export default function SearchFilter({
             );
           })()}
           
-          {/* Locked Media Type Filter */}
+          {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Locked Media Type Filter (unimplemented) */}
+          {/* TODO: Uncomment when video/audio player implementation is complete */}
+          {/* 
+          Locked Media Type Filter:
           {lockedFilters.mediaType && lockedFilters.mediaType !== "all" && (() => {
             const MediaIcon = getMediaTypeIcon(lockedFilters.mediaType);
             return (
@@ -379,6 +403,7 @@ export default function SearchFilter({
               </Badge>
             );
           })()}
+          */}
           
           {/* Locked Favorites Filter */}
           {lockedFilters.favoritesFilter && lockedFilters.favoritesFilter !== "all" && (
@@ -415,7 +440,10 @@ export default function SearchFilter({
             </Badge>
           )}
           
-          {/* Media Type Filter (removable) */}
+          {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type Filter (unimplemented) */}
+          {/* TODO: Uncomment when video/audio player implementation is complete */}
+          {/* 
+          Media Type Filter (removable):
           {mediaType !== "all" && mediaType !== lockedFilters.mediaType && (() => {
             const MediaIcon = getMediaTypeIcon(mediaType);
             return (
@@ -428,6 +456,7 @@ export default function SearchFilter({
               </Badge>
             );
           })()}
+          */}
           
           {/* Sort Filter */}
           {sortBy !== "dateAdded" && (
@@ -519,7 +548,7 @@ export default function SearchFilter({
                 onClick={() => {
                   setShowTagDropdown(!showTagDropdown);
                   setShowTimeDropdown(false);
-                  setShowMediaDropdown(false);
+                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
                   setShowSortDropdown(false);
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
@@ -570,7 +599,7 @@ export default function SearchFilter({
                   setShowFeedDropdown(!showFeedDropdown);
                   setShowTagDropdown(false);
                   setShowTimeDropdown(false);
-                  setShowMediaDropdown(false);
+                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
                   setShowSortDropdown(false);
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
@@ -631,7 +660,7 @@ export default function SearchFilter({
                 onClick={() => {
                   setShowTimeDropdown(!showTimeDropdown);
                   setShowTagDropdown(false);
-                  setShowMediaDropdown(false);
+                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
                   setShowSortDropdown(false);
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
@@ -665,7 +694,10 @@ export default function SearchFilter({
             </div>
           )}
 
-          {/* Media Type Filter */}
+          {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type Filter (unimplemented) */}
+          {/* TODO: Uncomment when video/audio player implementation is complete */}
+          {/* 
+          Media Type Filter:
           {showMediaFilter && !lockedFilters.mediaType && (() => {
             const MediaIcon = getMediaTypeIcon(mediaType);
             return (
@@ -712,6 +744,7 @@ export default function SearchFilter({
             </div>
             );
           })()}
+          */}
 
           {/* Status Filter */}
           {showStatusFilter && !lockedFilters.status && (
@@ -721,7 +754,7 @@ export default function SearchFilter({
                   setShowStatusDropdown(!showStatusDropdown);
                   setShowTagDropdown(false);
                   setShowTimeDropdown(false);
-                  setShowMediaDropdown(false);
+                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
                   setShowSortDropdown(false);
                   setShowFavoritesDropdown(false);
                   setShowFeedDropdown(false);
@@ -762,7 +795,7 @@ export default function SearchFilter({
                   setShowFavoritesDropdown(!showFavoritesDropdown);
                   setShowTagDropdown(false);
                   setShowTimeDropdown(false);
-                  setShowMediaDropdown(false);
+                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
                   setShowSortDropdown(false);
                   setShowStatusDropdown(false);
                   setShowFeedDropdown(false);
@@ -803,7 +836,7 @@ export default function SearchFilter({
                   setShowAnnotationsDropdown(!showAnnotationsDropdown);
                   setShowTagDropdown(false);
                   setShowTimeDropdown(false);
-                  setShowMediaDropdown(false);
+                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
                   setShowSortDropdown(false);
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
@@ -844,7 +877,7 @@ export default function SearchFilter({
                   setShowSortDropdown(!showSortDropdown);
                   setShowTagDropdown(false);
                   setShowTimeDropdown(false);
-                  setShowMediaDropdown(false);
+                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
                   setShowFeedDropdown(false);
