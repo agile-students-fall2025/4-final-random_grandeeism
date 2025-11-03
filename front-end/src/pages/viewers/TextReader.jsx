@@ -474,7 +474,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           {!showHighlightsPanel && (
             <div className="w-10 h-full bg-card border-l border-border flex flex-col items-center pt-3 justify-between">
               <div className="flex flex-col items-center">
-                <button onClick={() => setShowHighlightsPanel(true)} className="p-2 rounded bg-accent reader-button mb-2 hover:bg-accent/80" title="Show Highlights">
+                <button onClick={() => { setFocusedHighlightId(null); setShowHighlightsPanel(true); }} className="p-2 rounded bg-accent reader-button mb-2 hover:bg-accent/80" title="Show Highlights">
                   <StickyNote size={18} className="text-foreground" />
                 </button>
               </div>
@@ -502,7 +502,19 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <StickyNote size={20} className="text-foreground" />
-                    <h3 className="font-semibold text-lg">Highlights</h3>
+                    <div className="flex flex-col">
+                      <h3 className="font-semibold text-lg">
+                        {focusedHighlightId ? 'Highlight Details' : 'All Highlights'}
+                      </h3>
+                      {focusedHighlightId && highlights.length > 0 && (
+                        <button 
+                          onClick={() => setFocusedHighlightId(null)}
+                          className="text-xs text-muted-foreground hover:text-foreground mt-0.5 text-left"
+                        >
+                          ← Back to all highlights
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <button onClick={() => setShowHighlightsPanel(false)} className="p-2 hover:bg-accent rounded-lg transition-all reader-button" title="Close">
                     <span aria-hidden="true">✕</span>
