@@ -18,6 +18,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { toast } from "sonner";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
 import { Checkbox } from "../components/ui/checkbox.jsx";
+import { getUserProfile } from "../data/mockUserProfile.js";
 
 const SettingsPage = ({ onNavigate }) => {
   const mockArticles = [];
@@ -27,13 +28,15 @@ const SettingsPage = ({ onNavigate }) => {
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.fontFamily || 'serif'; } catch { return 'serif'; }
   });
   
-  // Profile state
-  const initialProfileData = {
-    email: "johndoe@gmail.com",
-    name: "John Doe",
-    username: "john_doe"
-  };
-  const [profileData, setProfileData] = useState(initialProfileData);
+  // Profile state - loaded from mock data (will be replaced with backend API call)
+  const mockProfile = getUserProfile();
+  const [profileData, setProfileData] = useState({
+    email: mockProfile.email,
+    name: mockProfile.name,
+    username: mockProfile.username,
+    avatar: mockProfile.avatar
+  });
+  const initialProfileData = { ...mockProfile }; // Store original values for reset
   // Track the value when user starts editing each field
   const fieldValuesOnFocus = useRef({});
 
@@ -82,6 +85,25 @@ const SettingsPage = ({ onNavigate }) => {
         // description: `Your ${fieldLabels[field].toLowerCase()} has been changed.`,
       });
     }
+  };
+
+  // Reset profile data to initial values
+  const handleResetProfile = () => {
+    setProfileData({ ...initialProfileData });
+    toast.success("Profile reset to original values");
+  };
+
+  // Handle avatar change - generate new random image
+  const handleChangeAvatar = () => {
+    const newAvatar = `https://picsum.photos/200/200?random=${Date.now()}`;
+    setProfileData(prev => ({ ...prev, avatar: newAvatar }));
+    toast.success("Avatar updated");
+  };
+
+  // Handle avatar deletion - reset to original
+  const handleDeleteAvatar = () => {
+    setProfileData(prev => ({ ...prev, avatar: initialProfileData.avatar }));
+    toast.success("Avatar reset to original");
   };
 
   const themeOptions = [
@@ -407,13 +429,19 @@ const SettingsPage = ({ onNavigate }) => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Avatar className="size-8 cursor-pointer hover:opacity-80 transition-opacity">
-                        <AvatarImage src="https://github.com/one-loop.png" alt="@username"/>
-                        <AvatarFallback>CN</AvatarFallback>
+                        <AvatarImage src={profileData.avatar} alt={profileData.username || "@username"}/>
+                        <AvatarFallback>
+                          {profileData.name 
+                            ? profileData.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                            : profileData.username 
+                            ? profileData.username.slice(0, 2).toUpperCase()
+                            : 'CN'}
+                        </AvatarFallback>
                       </Avatar>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem><Pencil size={16} className="mr-2" /> Change Avatar</DropdownMenuItem>
-                      <DropdownMenuItem><Trash size={16} className="mr-2" /> Delete Avatar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleChangeAvatar}><Pencil size={16} className="mr-2" /> Change Avatar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDeleteAvatar}><Trash size={16} className="mr-2" /> Delete Avatar</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   

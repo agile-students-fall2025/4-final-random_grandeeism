@@ -7,6 +7,7 @@ import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
 import TagManager from '../../components/TagManager.jsx';
 import * as highlightsStore from '../../data/mockHighlights';
 import { Star } from 'lucide-react';
+import '../../styles/textReader.css';
 
 // small palette used by the selection toolbar
 const HIGHLIGHT_COLORS = [
@@ -31,6 +32,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [highlights, setHighlights] = useState([]);
   const [selection, setSelection] = useState(null);
   const [showHighlightsPanel, setShowHighlightsPanel] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNoteValue, setEditingNoteValue] = useState('');
+  const [focusedHighlightId, setFocusedHighlightId] = useState(null);
+  
+  const [editingTitle, setEditingTitle] = useState('');
   const [isCompletionOpen, setIsCompletionOpen] = useState(false);
   const [completionShownFor, setCompletionShownFor] = useState(() => {
     try { return JSON.parse(localStorage.getItem('completion_shown') || '{}'); } catch { return {}; }
@@ -215,6 +221,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     return () => { if (el) el && el.removeEventListener('scroll', onScroll); };
   }, [current, completionShownFor]);
 
+  // autofocus was removed by request — do not auto-focus the textarea
+
   
 
   const applyHighlight = (color) => {
@@ -234,16 +242,40 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       text: selection.text,
       color,
       note: '',
+      title: '',
       createdAt: new Date().toISOString(),
     };
 
     highlightsStore.addHighlight(h);
+    // open inline editor so user can add an annotation immediately
+    setEditingNoteId(h.id);
+    setEditingNoteValue('');
+    setEditingTitle('');
+    setShowHighlightsPanel(true);
+    setFocusedHighlightId(h.id); // Focus the newly created highlight
     setSelection(null);
     refreshHighlights();
     try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
   };
 
   const removeHighlight = (id) => { highlightsStore.deleteHighlight(id); refreshHighlights(); };
+
+  const saveEditingNote = async () => {
+    if (!editingNoteId) return;
+    try {
+      highlightsStore.updateHighlight(editingNoteId, { note: editingNoteValue, title: editingTitle });
+    } catch (e) { console.error('save note failed', e); }
+    setEditingNoteId(null);
+    setEditingNoteValue('');
+    setEditingTitle('');
+    setFocusedHighlightId(editingNoteId); // Keep focus on the edited highlight
+    refreshHighlights();
+  };
+
+  const cancelEditingNote = () => {
+    setEditingNoteId(null);
+    setEditingNoteValue('');
+  };
 
   const scrollToHighlight = (id) => {
     const el = document.querySelector(`[data-highlight-id="${id}"]`);
@@ -325,9 +357,22 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               padding: '0.08rem 0.24rem',
               borderRadius: 4,
               boxShadow: isDark ? 'inset 0 -6px 0 rgba(0,0,0,0.18)' : undefined,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
             };
             return (
-              <mark key={i} data-highlight-id={part.highlight.id} style={style}>
+              <mark
+                key={i}
+                data-highlight-id={part.highlight.id}
+                style={style}
+                onClick={() => {
+                  try {
+                    // focus this single highlight in the panel (do NOT open the editor)
+                    setFocusedHighlightId(part.highlight.id);
+                    setShowHighlightsPanel(true);
+                  } catch { /* ignore */ }
+                }}
+              >
                 {part.text}
               </mark>
             );
@@ -342,7 +387,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <button onClick={goBack} className="text-sm text-muted-foreground hover:text-foreground mr-3">← Back</button>
+            <button onClick={goBack} className="text-sm text-muted-foreground hover:text-foreground mr-3 reader-button">← Back</button>
             {current && (
               <button onClick={toggleFavorite} className="inline-flex items-center gap-2 text-sm">
                 <Star size={16} className={appliedFavorite ? 'fill-foreground text-foreground' : 'text-muted-foreground'} />
@@ -352,8 +397,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            <button onClick={() => setShowHighlightsPanel(s => !s)} className="text-sm px-2 py-1 bg-accent rounded">Highlights</button>
-            <button onClick={() => setSettingsOpen(true)} className="text-sm px-2 py-1 bg-accent rounded">Settings</button>
+            <button onClick={() => setShowHighlightsPanel(s => !s)} className="text-sm px-2 py-1 bg-accent rounded reader-button">Highlights</button>
+            <button onClick={() => setSettingsOpen(true)} className="text-sm px-2 py-1 bg-accent rounded reader-button">Settings</button>
           </div>
         </div>
 
@@ -366,12 +411,12 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 {current.readingTime && <span className="mr-2">• {current.readingTime}</span>}
                 {current.dateAdded && <span className="mr-2">• {new Date(current.dateAdded).toLocaleDateString()}</span>}
                 {current.url && (
-                  <a href={current.url} target="_blank" rel="noreferrer" className="underline">Source</a>
+                  <a href={current.url} target="_blank" rel="noreferrer" className="underline reader-link">Source</a>
                 )}
               </p>
 
               <div className="flex items-center gap-2">
-                {current.tags && <div className="flex flex-wrap gap-2">{current.tags.map(t => <span key={t} className="text-[12px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded">{t}</span>)}</div>}
+                {current.tags && <div className="flex flex-wrap gap-2">{current.tags.map(t => <span key={t} className="text-[12px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded reader-tag">{t}</span>)}</div>}
                 <div className="ml-4">
                   <TagManager articleId={current.id} currentTags={current.tags || []} allTags={Array.from(new Set(mockArticles.flatMap(a => a.tags || [])))} onUpdateTags={handleUpdateTags} />
                 </div>
@@ -414,22 +459,57 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
           {showHighlightsPanel && (
             <aside className="w-80 border-l border-border pl-4">
-              <h4 className="font-semibold mb-2">Highlights</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold">Highlights</h4>
+                  {focusedHighlightId && (
+                    <button onClick={() => setFocusedHighlightId(null)} className="text-xs px-2 py-1 bg-card border border-border rounded reader-button hover:bg-accent">Show all</button>
+                  )}
+                </div>
               {highlights.length === 0 && <p className="text-sm text-muted-foreground">No highlights yet</p>}
-              <div className="space-y-3">
-                {highlights.map(h => (
-                  <div key={h.id} className="p-2 bg-muted rounded">
-                    <div className="flex items-center justify-between mb-1">
-                      <strong className="text-sm">{h.text.length > 60 ? h.text.slice(0,60) + '…' : h.text}</strong>
-                      <div className="flex gap-2">
-                        <button onClick={() => scrollToHighlight(h.id)} className="text-xs">Jump</button>
-                        <button onClick={() => removeHighlight(h.id)} className="text-xs text-destructive">Delete</button>
-                      </div>
-                    </div>
-                    {h.note && <div className="text-[13px] text-muted-foreground">{h.note}</div>}
+
+              {/* Inline annotation editor */}
+              {editingNoteId && (
+                <div className="mb-3 p-2 bg-muted rounded">
+                  <label className="text-sm font-medium mb-1 block">Title</label>
+                  <input value={editingTitle} onChange={(e) => setEditingTitle(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" placeholder="Enter a title for this highlight" />
+                  <label className="text-sm font-medium mb-1 block">Edit note</label>
+                  <textarea value={editingNoteValue} onChange={(e) => setEditingNoteValue(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" rows={4} />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={saveEditingNote}
+                      className={`px-3 py-1 rounded text-sm ${isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-primary text-white'} reader-button hover:opacity-90 transform hover:-translate-y-0.5 transition-all`}
+                    >
+                      Save
+                    </button>
+                    <button onClick={cancelEditingNote} className="px-3 py-1 bg-card border border-border rounded text-sm reader-button hover:bg-accent transform hover:-translate-y-0.5 transition-all">Cancel</button>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+
+              {/* If we're editing the focused highlight, only show the editor pane (H_specific editing) */}
+              {!(focusedHighlightId && editingNoteId === focusedHighlightId) && (
+                <div className="space-y-3">
+                  {(focusedHighlightId ? highlights.filter(h => h.id === focusedHighlightId) : highlights).map(h => (
+                    <div
+                      key={h.id}
+                      className="p-2 bg-muted rounded hover:bg-muted/80 cursor-pointer transition-all hover:-translate-y-0.5"
+                      onClick={() => { setFocusedHighlightId(h.id); setShowHighlightsPanel(true); }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                          <strong className="text-sm">{h.title && h.title.length > 0 ? (h.title.length > 80 ? h.title.slice(0,80) + '…' : h.title) : 'No title yet'}</strong>
+                        <div className="flex gap-2">
+                          <button onClick={(e) => { e.stopPropagation(); scrollToHighlight(h.id); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Jump</button>
+                          <button onClick={(e) => { e.stopPropagation(); setFocusedHighlightId(h.id); setEditingNoteId(h.id); setEditingTitle(h.title || ''); setEditingNoteValue(h.note || ''); setShowHighlightsPanel(true); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); removeHighlight(h.id); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-destructive/10 text-destructive hover:text-destructive/90 transition-colors">Delete</button>
+                        </div>
+                      </div>
+                      <div className="text-[13px] text-muted-foreground">{h.note && h.note.length > 0 ? h.note : 'No annotation yet'}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </aside>
           )}
         </div>
@@ -439,9 +519,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           <div style={{ position: 'fixed', left: selection.rect.left + window.scrollX, top: selection.rect.top + window.scrollY - 40, zIndex: 60 }}>
             <div className="flex gap-1 bg-card border border-border rounded shadow p-1">
               {HIGHLIGHT_COLORS.map(c => (
-                <button key={c.value} onClick={() => applyHighlight(c.value)} title={c.name} style={{ background: c.light }} className="w-6 h-6 rounded" />
+                <button 
+                  key={c.value} 
+                  onClick={() => applyHighlight(c.value)} 
+                  title={c.name} 
+                  style={{ background: c.light }} 
+                  className="w-6 h-6 rounded reader-button hover:scale-110 transition-transform duration-200" 
+                />
               ))}
-              <button onClick={() => setSelection(null)} className="px-2">Cancel</button>
+              <button onClick={() => setSelection(null)} className="px-2 text-sm reader-button text-muted-foreground hover:text-foreground">Cancel</button>
             </div>
           </div>
         )}
