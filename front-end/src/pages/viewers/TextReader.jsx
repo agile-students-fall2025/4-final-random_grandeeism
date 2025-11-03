@@ -6,7 +6,7 @@ import CompletionModal from '../../components/CompletionModal.jsx';
 import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
 import TagManager from '../../components/TagManager.jsx';
 import * as highlightsStore from '../../data/mockHighlights';
-import { Star } from 'lucide-react';
+import { Star, Settings, StickyNote, RotateCcw, Archive } from 'lucide-react';
 import '../../styles/textReader.css';
 
 // small palette used by the selection toolbar
@@ -279,7 +279,29 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   const scrollToHighlight = (id) => {
     const el = document.querySelector(`[data-highlight-id="${id}"]`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!el) return;
+    
+    const container = contentRef.current;
+    if (!container) return;
+    
+    // Get positions relative to the scrollable container
+    const containerRect = container.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    
+    // Calculate the scroll position needed to center the highlight in the container
+    const scrollTop = container.scrollTop;
+    const elOffsetTop = elRect.top - containerRect.top + scrollTop;
+    const containerCenter = container.clientHeight / 2;
+    const targetScrollTop = elOffsetTop - containerCenter;
+    
+    // Scroll smoothly within the container
+    container.scrollTo({
+      top: targetScrollTop,
+      behavior: 'smooth'
+    });
+    
+    // Optionally close the highlights panel to give better view
+    setShowHighlightsPanel(false);
   };
 
   const appliedFavorite = current && overrides[current.id] && typeof overrides[current.id].isFavorite !== 'undefined'
@@ -383,22 +405,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background pt-6 pb-6 pl-6 pr-16 relative">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-start justify-between mb-4">
           <div>
             <button onClick={goBack} className="text-sm text-muted-foreground hover:text-foreground mr-3 reader-button">← Back</button>
-            {current && (
-              <button onClick={toggleFavorite} className="inline-flex items-center gap-2 text-sm">
-                <Star size={16} className={appliedFavorite ? 'fill-foreground text-foreground' : 'text-muted-foreground'} />
-                {appliedFavorite ? 'Favorited' : 'Favorite'}
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button onClick={() => setShowHighlightsPanel(s => !s)} className="text-sm px-2 py-1 bg-accent rounded reader-button">Highlights</button>
-            <button onClick={() => setSettingsOpen(true)} className="text-sm px-2 py-1 bg-accent rounded reader-button">Settings</button>
           </div>
         </div>
 
@@ -430,7 +441,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           )}
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-6 flex gap-6">
+        <div className="bg-card border border-border rounded-lg p-6 flex gap-6 relative">
           <div className="flex-1 overflow-y-auto max-h-[70vh]" ref={contentRef}>
             {current ? (
               <article
@@ -438,78 +449,142 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 style={{
                   fontSize: `${fontSizePx}px`,
                   fontFamily: fontFamilyCss,
-                  // keep article background transparent so parent `.bg-card` controls the background color
-                  // this avoids a bluish panel in dark mode and uses the app's dark grey background instead
                   backgroundColor: 'transparent',
                   color: isDark ? '#e6eef8' : undefined,
                   padding: '0',
                 }}
               >
-                {/* hide images when requested by toggling a small scoped style */}
                 {!showImages && (
                   <style>{`.text-reader-article img { display: none !important; }`}</style>
                 )}
-
                 {paragraphs.length > 0 ? paragraphs.map((p, i) => renderParagraph(p, i)) : <p className="text-muted-foreground">No readable content available for this article.</p>}
               </article>
             ) : (
               <div className="text-center py-12"><p className="text-muted-foreground">No article data. Select an article from a list to read it.</p></div>
             )}
           </div>
+        </div>
+        {/* Highlights sidebar for desktop and mobile */}
+        {/* Overlay for mobile when highlights panel is open */}
+        {showHighlightsPanel && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowHighlightsPanel(false)} />
+        )}
+        <div className="fixed top-0 right-0 h-full z-50 flex flex-col">
+          {/* Minimized bar (desktop only) */}
+          {!showHighlightsPanel && (
+            <div className="w-10 h-full bg-card border-l border-border flex flex-col items-center pt-3 justify-between">
+              <div className="flex flex-col items-center">
+                <button onClick={() => { setFocusedHighlightId(null); setShowHighlightsPanel(true); }} className="p-2 rounded bg-accent reader-button mb-2 hover:bg-accent/80" title="Show Highlights">
+                  <StickyNote size={18} className="text-foreground" />
+                </button>
+              </div>
 
+              <div className="flex flex-col items-center mb-3 space-y-2">
+                <button onClick={() => toggleFavorite()} className="p-2 rounded reader-button" title="Favorite">
+                  <Star size={16} className={appliedFavorite ? 'text-yellow-400' : 'text-muted-foreground'} />
+                </button>
+                <button onClick={() => changeStatus('rediscovery')} className="p-2 rounded reader-button" title="Rediscovery">
+                  <RotateCcw size={16} className="text-muted-foreground" />
+                </button>
+                <button onClick={() => changeStatus('archived')} className="p-2 rounded reader-button" title="Archive">
+                  <Archive size={16} className="text-muted-foreground" />
+                </button>
+                <button onClick={() => setSettingsOpen(true)} className="p-2 rounded reader-button" title="Settings">
+                  <Settings size={16} className="text-muted-foreground" />
+                </button>
+              </div>
+            </div>
+          )}
+          {/* Expanded highlights sidebar */}
           {showHighlightsPanel && (
-            <aside className="w-80 border-l border-border pl-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold">Highlights</h4>
-                  {focusedHighlightId && (
-                    <button onClick={() => setFocusedHighlightId(null)} className="text-xs px-2 py-1 bg-card border border-border rounded reader-button hover:bg-accent">Show all</button>
+            <aside className="fixed right-0 top-0 bottom-0 w-full max-w-[400px] bg-card border-l border-border z-50 overflow-y-auto shadow-xl flex flex-col justify-between">
+              <div>
+                <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <StickyNote size={20} className="text-foreground" />
+                    <div className="flex flex-col">
+                      <h3 className="font-semibold text-lg">
+                        {focusedHighlightId ? 'Highlight Details' : 'All Highlights'}
+                      </h3>
+                      {focusedHighlightId && highlights.length > 0 && (
+                        <button 
+                          onClick={() => setFocusedHighlightId(null)}
+                          className="text-xs text-muted-foreground hover:text-foreground mt-0.5 text-left"
+                        >
+                          ← Back to all highlights
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <button onClick={() => setShowHighlightsPanel(false)} className="p-2 hover:bg-accent rounded-lg transition-all reader-button" title="Close">
+                    <span aria-hidden="true">✕</span>
+                  </button>
+                </div>
+                <div className="p-4 space-y-4">
+                  {highlights.length === 0 && <p className="text-sm text-muted-foreground">No highlights yet</p>}
+                  {/* Inline annotation editor */}
+                  {editingNoteId && (
+                    <div className="mb-3 p-2 bg-muted rounded">
+                      <label className="text-sm font-medium mb-1 block">Title</label>
+                      <input value={editingTitle} onChange={(e) => setEditingTitle(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" placeholder="Enter a title for this highlight" />
+                      <label className="text-sm font-medium mb-1 block">Edit note</label>
+                      <textarea value={editingNoteValue} onChange={(e) => setEditingNoteValue(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" rows={4} />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={saveEditingNote}
+                          className={`px-3 py-1 rounded text-sm ${isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-primary text-white'} reader-button hover:opacity-90 transform hover:-translate-y-0.5 transition-all`}
+                        >
+                          Save
+                        </button>
+                        <button onClick={cancelEditingNote} className="px-3 py-1 bg-card border border-border rounded text-sm reader-button hover:bg-accent transform hover:-translate-y-0.5 transition-all">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                  {/* If we're editing the focused highlight, only show the editor pane (H_specific editing) */}
+                  {!(focusedHighlightId && editingNoteId === focusedHighlightId) && (
+                    <div className="space-y-3">
+                      {(focusedHighlightId ? highlights.filter(h => h.id === focusedHighlightId) : highlights).map(h => (
+                        <div
+                          key={h.id}
+                          className="p-2 bg-muted rounded hover:bg-muted/80 cursor-pointer transition-all hover:-translate-y-0.5"
+                          onClick={() => { setFocusedHighlightId(h.id); setShowHighlightsPanel(true); }}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                              <strong className="text-sm">{h.title && h.title.length > 0 ? (h.title.length > 80 ? h.title.slice(0,80) + '…' : h.title) : 'No title yet'}</strong>
+                            <div className="flex gap-2">
+                              <button onClick={(e) => { e.stopPropagation(); scrollToHighlight(h.id); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Jump</button>
+                              <button onClick={(e) => { e.stopPropagation(); setFocusedHighlightId(h.id); setEditingNoteId(h.id); setEditingTitle(h.title || ''); setEditingNoteValue(h.note || ''); setShowHighlightsPanel(true); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Edit</button>
+                              <button onClick={(e) => { e.stopPropagation(); removeHighlight(h.id); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-destructive/10 text-destructive hover:text-destructive/90 transition-colors">Delete</button>
+                            </div>
+                          </div>
+                          <div className="text-[13px] text-muted-foreground">{h.note && h.note.length > 0 ? h.note : 'No annotation yet'}</div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-              {highlights.length === 0 && <p className="text-sm text-muted-foreground">No highlights yet</p>}
-
-              {/* Inline annotation editor */}
-              {editingNoteId && (
-                <div className="mb-3 p-2 bg-muted rounded">
-                  <label className="text-sm font-medium mb-1 block">Title</label>
-                  <input value={editingTitle} onChange={(e) => setEditingTitle(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" placeholder="Enter a title for this highlight" />
-                  <label className="text-sm font-medium mb-1 block">Edit note</label>
-                  <textarea value={editingNoteValue} onChange={(e) => setEditingNoteValue(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" rows={4} />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={saveEditingNote}
-                      className={`px-3 py-1 rounded text-sm ${isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-primary text-white'} reader-button hover:opacity-90 transform hover:-translate-y-0.5 transition-all`}
-                    >
-                      Save
-                    </button>
-                    <button onClick={cancelEditingNote} className="px-3 py-1 bg-card border border-border rounded text-sm reader-button hover:bg-accent transform hover:-translate-y-0.5 transition-all">Cancel</button>
-                  </div>
+              </div>
+              {/* Bottom action group: Favorites, Rediscovery, Archive, Settings */}
+              <div className="p-4 border-t border-border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => toggleFavorite()} className="p-2 rounded reader-button" title="Favorite">
+                    <Star size={18} className={appliedFavorite ? 'text-yellow-400' : 'text-muted-foreground'} />
+                  </button>
+                  <button onClick={() => changeStatus('rediscovery')} className="p-2 rounded reader-button" title="Rediscovery">
+                    <RotateCcw size={18} className="text-muted-foreground" />
+                  </button>
+                  <button onClick={() => changeStatus('archived')} className="p-2 rounded reader-button" title="Archive">
+                    <Archive size={18} className="text-muted-foreground" />
+                  </button>
                 </div>
-              )}
-
-              {/* If we're editing the focused highlight, only show the editor pane (H_specific editing) */}
-              {!(focusedHighlightId && editingNoteId === focusedHighlightId) && (
-                <div className="space-y-3">
-                  {(focusedHighlightId ? highlights.filter(h => h.id === focusedHighlightId) : highlights).map(h => (
-                    <div
-                      key={h.id}
-                      className="p-2 bg-muted rounded hover:bg-muted/80 cursor-pointer transition-all hover:-translate-y-0.5"
-                      onClick={() => { setFocusedHighlightId(h.id); setShowHighlightsPanel(true); }}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                          <strong className="text-sm">{h.title && h.title.length > 0 ? (h.title.length > 80 ? h.title.slice(0,80) + '…' : h.title) : 'No title yet'}</strong>
-                        <div className="flex gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); scrollToHighlight(h.id); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Jump</button>
-                          <button onClick={(e) => { e.stopPropagation(); setFocusedHighlightId(h.id); setEditingNoteId(h.id); setEditingTitle(h.title || ''); setEditingNoteValue(h.note || ''); setShowHighlightsPanel(true); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Edit</button>
-                          <button onClick={(e) => { e.stopPropagation(); removeHighlight(h.id); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-destructive/10 text-destructive hover:text-destructive/90 transition-colors">Delete</button>
-                        </div>
-                      </div>
-                      <div className="text-[13px] text-muted-foreground">{h.note && h.note.length > 0 ? h.note : 'No annotation yet'}</div>
-                    </div>
-                  ))}
+                <div>
+                  <button onClick={() => setSettingsOpen(true)} className="p-2 rounded reader-button" title="Settings">
+                    <Settings size={18} className="text-muted-foreground" />
+                  </button>
                 </div>
-              )}
+              </div>
             </aside>
           )}
         </div>

@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Tag, X, Plus } from "lucide-react";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 /**
  * TagManager component for managing tags on individual articles
@@ -18,14 +19,92 @@ export default function TagManager({
   const [isOpen, setIsOpen] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [localTags, setLocalTags] = useState(currentTags);
+  const [position, setPosition] = useState({ top: null, left: 0, fixed: false, above: false });
   
   const popoverRef = useRef(null);
   const buttonRef = useRef(null);
+  const isMobile = useIsMobile();
 
   // Update local tags when currentTags prop changes
   useEffect(() => {
     setLocalTags(currentTags);
   }, [currentTags]);
+
+  // Function to calculate and set position
+  const calculatePosition = useCallback(() => {
+    if (!isOpen || !buttonRef.current) return;
+    
+    const buttonRect = buttonRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const modalWidth = 280; // w-[280px]
+    const modalHeight = 400; // approximate max height
+    // On mobile, assume sidebar could be open (400px) or closed (40px) - account for max width
+    // On desktop, sidebar is always 40px when minimized
+    const sidebarWidth = isMobile ? 400 : 40;
+    const padding = 16;
+    
+    // Calculate available space
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    const spaceAbove = buttonRect.top;
+    
+    // Determine vertical position (above or below)
+    const positionAbove = spaceBelow < modalHeight && spaceAbove > spaceBelow;
+    
+    if (isMobile) {
+      // On mobile, use fixed positioning
+      // Calculate horizontal position to avoid sidebar - keep modal visible within viewport
+      const maxLeft = Math.max(padding, viewportWidth - modalWidth - padding);
+      const calculatedLeft = Math.max(padding, Math.min(maxLeft, buttonRect.left));
+      const calculatedTop = positionAbove
+        ? Math.max(padding, buttonRect.top - modalHeight - 8)
+        : Math.min(viewportHeight - modalHeight - padding, buttonRect.bottom + 8);
+      
+      setPosition({ 
+        top: calculatedTop,
+        left: calculatedLeft,
+        fixed: true,
+        above: false
+      });
+    } else {
+      // On desktop, use absolute positioning relative to button
+      let leftOffset = 0;
+      
+      // Check if modal would go off right edge or behind sidebar
+      if (buttonRect.left + modalWidth > viewportWidth - sidebarWidth) {
+        // Shift left to avoid sidebar
+        leftOffset = viewportWidth - sidebarWidth - modalWidth - buttonRect.left - padding;
+      }
+      
+      // If button is too far left, align to left edge
+      if (buttonRect.left + leftOffset < padding) {
+        leftOffset = padding - buttonRect.left;
+      }
+      
+      setPosition({ 
+        top: null,
+        left: leftOffset,
+        fixed: false,
+        above: positionAbove
+      });
+    }
+  }, [isOpen, isMobile]);
+
+  // Calculate position when modal opens or when window resizes
+  useEffect(() => {
+    calculatePosition();
+    
+    if (isOpen && isMobile) {
+      // On mobile, recalculate on scroll/resize
+      window.addEventListener('resize', calculatePosition);
+      window.addEventListener('scroll', calculatePosition);
+      
+      return () => {
+        window.removeEventListener('resize', calculatePosition);
+        window.removeEventListener('scroll', calculatePosition);
+      };
+    }
+  }, [isOpen, isMobile, calculatePosition]);
 
   // Click outside detection
   useEffect(() => {
@@ -105,11 +184,25 @@ export default function TagManager({
       </button>
 
       {/* Popover Panel */}
-      {isOpen && (
+      {isOpen && buttonRef.current && (
         <div
           ref={popoverRef}
           onClick={handlePopoverClick}
-          className="absolute left-0 top-full mt-1 w-[280px] bg-card border border-border rounded-lg shadow-lg z-50 p-3"
+          className={`${position.fixed ? 'fixed' : 'absolute'} w-[280px] bg-card border border-border rounded-lg shadow-lg z-[60] p-3 max-h-[80vh] overflow-y-auto`}
+          style={
+            position.fixed
+              ? {
+                  left: `${position.left}px`,
+                  top: `${position.top}px`,
+                }
+              : {
+                  left: `${position.left}px`,
+                  top: position.above ? 'auto' : '100%',
+                  bottom: position.above ? '100%' : 'auto',
+                  marginTop: position.above ? '0' : '0.25rem',
+                  marginBottom: position.above ? '0.25rem' : '0',
+                }
+          }
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
