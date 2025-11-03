@@ -395,10 +395,10 @@ const TextReader = ({ onNavigate, article, articleId }) => {
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <button onClick={() => setShowHighlightsPanel(s => !s)} className="text-sm px-2 py-1 bg-accent rounded reader-button">Highlights</button>
-            <button onClick={() => setSettingsOpen(true)} className="text-sm px-2 py-1 bg-accent rounded reader-button">Settings</button>
-          </div>
+      <div className="flex items-center gap-3">
+        <button onClick={() => setShowHighlightsPanel(s => !s)} className="text-sm px-2 py-1 bg-accent rounded reader-button">Highlights</button>
+        <button onClick={() => setSettingsOpen(true)} className="text-sm px-2 py-1 bg-accent rounded reader-button">Settings</button>
+      </div>
         </div>
 
         <div className="mb-6">
@@ -429,7 +429,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           )}
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-6 flex gap-6">
+        <div className="bg-card border border-border rounded-lg p-6 flex gap-6 relative">
           <div className="flex-1 overflow-y-auto max-h-[70vh]" ref={contentRef}>
             {current ? (
               <article
@@ -437,27 +437,23 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 style={{
                   fontSize: `${fontSizePx}px`,
                   fontFamily: fontFamilyCss,
-                  // keep article background transparent so parent `.bg-card` controls the background color
-                  // this avoids a bluish panel in dark mode and uses the app's dark grey background instead
                   backgroundColor: 'transparent',
                   color: isDark ? '#e6eef8' : undefined,
                   padding: '0',
                 }}
               >
-                {/* hide images when requested by toggling a small scoped style */}
                 {!showImages && (
                   <style>{`.text-reader-article img { display: none !important; }`}</style>
                 )}
-
                 {paragraphs.length > 0 ? paragraphs.map((p, i) => renderParagraph(p, i)) : <p className="text-muted-foreground">No readable content available for this article.</p>}
               </article>
             ) : (
               <div className="text-center py-12"><p className="text-muted-foreground">No article data. Select an article from a list to read it.</p></div>
             )}
           </div>
-
+          {/* Highlights sidebar overlays the right side, visually separated from the article card */}
           {showHighlightsPanel && (
-            <aside className="w-80 border-l border-border pl-4">
+            <aside className="fixed top-0 right-0 h-full w-96 bg-card border-l border-border shadow-xl z-50 p-6 overflow-y-auto transition-transform duration-300" style={{maxWidth:'400px'}}>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-semibold">Highlights</h4>
                   {focusedHighlightId && (
