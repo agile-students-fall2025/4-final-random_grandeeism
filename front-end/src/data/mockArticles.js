@@ -276,7 +276,7 @@ This is the very last line of the article.`
   {
     id: '17',
     title: 'Intro to React Native - Video',
-    url: 'https://youtube.com/watch?v=example',
+    url: 'https://youtube.com/watch?v=TNhaISOUy6Q',
     author: 'React University',
     source: 'React Blog',
     feedId: 'feed-8',
@@ -288,7 +288,9 @@ This is the very last line of the article.`
     hasAnnotations: false,
     readProgress: 0,
     mediaType: 'video',
-    videoId: 'example'
+    videoId: 'TNhaISOUy6Q',
+    videoAnnotations: [],
+    transcript: []
   },
   {
     id: '18',

@@ -30,7 +30,8 @@ export default function MainLayout({
   onNavigate,
   
   // === DATA (Optional - kept for compatibility, counts now use mockArticles) ===
-  articles: _articles = [],
+  // eslint-disable-next-line no-unused-vars
+  articles, // Intentionally unused - counts now use mockArticles directly
   
   // === ACTIONS (Optional) ===
   onAddLink,
