@@ -53,7 +53,7 @@ const HomePage = ({ onNavigate }) => {
   // Article management functions
   const handleArticleClick = (article) => {
     // Navigate to the appropriate viewer based on media type
-    const destination = article.mediaType === 'video' ? 'video-player' : 'text-reader';
+    const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
     onNavigate && onNavigate(destination, { article });
   };
 

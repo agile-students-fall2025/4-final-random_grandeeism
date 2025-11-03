@@ -32,7 +32,7 @@ export default function FeedsPage({ onNavigate }) {
       };
       
       feedArticles.forEach(article => {
-        if (article.tags.includes('podcast') || article.mediaType === 'podcast') {
+        if (article.tags.includes('podcast') || article.mediaType === 'audio') {
           breakdown.podcasts++;
         } else if (article.tags.includes('video') || article.mediaType === 'video') {
           breakdown.videos++;

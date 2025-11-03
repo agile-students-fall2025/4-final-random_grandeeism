@@ -83,7 +83,7 @@ export const mockArticles = [
     dateAdded: new Date('2024-01-12'),
     hasAnnotations: true,
     readProgress: 35,
-    mediaType: 'podcast',
+    mediaType: 'audio',
     podcastUrl: 'https://example.com/podcast.mp3'
   },
   {

@@ -40,7 +40,7 @@ export function applyFiltersAndSort(articles = [], filters = {}) {
 
   if (mediaType && mediaType !== "all") {
     result = result.filter(a => {
-      const mt = a.mediaType || (a.videoId || a.podcastUrl ? (a.podcastUrl ? 'podcast' : 'video') : 'article');
+      const mt = a.mediaType || (a.videoId || a.podcastUrl ? (a.podcastUrl ? 'audio' : 'video') : 'article');
       if (mediaType === 'article') return mt === 'article';
       return mt === mediaType;
     });

@@ -125,9 +125,14 @@ function App() {
       // an `article` in the `view` object; store it so the player can render it.
       if (view && view.article) setSelectedArticle(view.article);
       setCurrentPage('video-player');
+    } else if (page === 'audio-player') {
+      // Support navigating directly to the audio player. The caller may provide
+      // an `article` in the `view` object; store it so the player can render it.
+      if (view && view.article) setSelectedArticle(view.article);
+      setCurrentPage('audio-player');
     } else if (page === 'videos') {
       setCurrentPage('videos');
-    } else if (page === 'podcasts') {
+    } else if (page === 'audio' || page === 'podcasts') {
       setCurrentPage('audio');
     } else if (page === 'feeds') {
       setCurrentPage('feeds');
@@ -189,7 +194,13 @@ function App() {
       case 'text-reader':
         return <TextReader onNavigate={handleNavigate} article={selectedArticle} />;
       case 'audio-player':
-        return <AudioPlayer onNavigate={handleNavigate} />;
+        return (
+          <AudioPlayer 
+            article={selectedArticle}
+            onUpdateArticle={(updatedArticle) => setSelectedArticle(updatedArticle)}
+            onClose={() => handleNavigate('audio')}
+          />
+        );
       case 'video-player':
         return (
           <VideoPlayer 

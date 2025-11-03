@@ -92,7 +92,7 @@ const TextPage = ({ onNavigate }) => {
                     key={article.id}
                     article={article}
                     onArticleClick={() => {
-                      const destination = article.mediaType === 'video' ? 'video-player' : 'text-reader';
+                      const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
                       onNavigate && onNavigate(destination, { article });
                     }}
                     onToggleFavorite={handleToggleFavorite}

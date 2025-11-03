@@ -18,7 +18,7 @@ const AudioPage = ({ onNavigate }) => {
   const [articles, setArticles] = useState(mockArticles);
   const [displayedArticles, setDisplayedArticles] = useState([]);
 
-  const baseLockedFilters = useMemo(() => ({ mediaType: 'podcast' }), []);
+  const baseLockedFilters = useMemo(() => ({ mediaType: 'audio' }), []);
 
   useEffect(() => {
     setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
@@ -66,8 +66,8 @@ const AudioPage = ({ onNavigate }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Podcast", "Tech", "Interview", "Education"]}
-      lockedFilters={{ mediaType: "podcast" }}
-      preAppliedFilters={{ mediaType: "podcast" }}
+      lockedFilters={{ mediaType: "audio" }}
+      preAppliedFilters={{ mediaType: "audio" }}
       onFilterChipRemoved={() => onNavigate("search")}
       showTimeFilter={true}
       showTagFilter={true}
@@ -92,7 +92,7 @@ const AudioPage = ({ onNavigate }) => {
                     key={article.id}
                     article={article}
                     onArticleClick={() => {
-                      const destination = article.mediaType === 'video' ? 'video-player' : 'text-reader';
+                      const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
                       onNavigate && onNavigate(destination, { article });
                     }}
                     onToggleFavorite={handleToggleFavorite}
