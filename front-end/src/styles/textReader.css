@@ -55,10 +55,11 @@
 .reader-button {
   cursor: pointer;
   transition: all 0.2s ease;
+  pointer-events: auto;
 }
 
 .reader-button:hover {
-  filter: brightness(0.95);
+  background-color: rgba(128, 128, 128, 0.2);
   transform: translateY(-1px);
 }
 
