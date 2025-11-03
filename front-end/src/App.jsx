@@ -5,7 +5,8 @@
  * Purpose: Root component that manages page navigation and renders the appropriate page
  */
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
+// import { useRef } from 'react'; // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
 
 // Import all pages
 import HomePage from './pages/HomePage.jsx';
@@ -43,25 +44,32 @@ import { Toaster } from './components/ui/sonner.jsx';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
-  const [isNavExpanded, setIsNavExpanded] = useState(false);
-  const [navPosition, setNavPosition] = useState({ x: 16, y: 16 });
-  const [isDragging, setIsDragging] = useState(false);
+  /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation state */
+  /* TODO: Uncomment when development resumes */
+  // const [isNavExpanded, setIsNavExpanded] = useState(false);
+  // const [navPosition, setNavPosition] = useState({ x: 16, y: 16 });
+  // const [isDragging, setIsDragging] = useState(false);
   const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
   const [currentTag, setCurrentTag] = useState(null);
   const [currentFeed, setCurrentFeed] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
-  const dragOffset = useRef({ x: 0, y: 0 });
+  // const dragOffset = useRef({ x: 0, y: 0 });
 
+  /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation drag handlers */
+  /* TODO: Uncomment when development resumes */
   // Drag handlers for movable navigation
-  const handleMouseDown = (e) => {
+  /* const handleMouseDown = (e) => {
     if (e.target.tagName === 'BUTTON') return; // Don't drag when clicking buttons
     setIsDragging(true);
     dragOffset.current = {
       x: e.clientX - navPosition.x,
       y: e.clientY - navPosition.y
     };
-  };
+  }; */
 
+  /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation mouse handlers */
+  /* TODO: Uncomment when development resumes */
+  /* 
   const handleMouseMove = (e) => {
     if (!isDragging) return;
     setNavPosition({
@@ -73,6 +81,7 @@ function App() {
   const handleMouseUp = () => {
     setIsDragging(false);
   };
+  */
 
   // Global navigation handler
   const handleNavigate = (page, view) => {
@@ -217,11 +226,13 @@ function App() {
   return (
     <div 
       className="app"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
+      /* onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp} */
     >
+      {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation */}
+      {/* TODO: Uncomment when development resumes */}
       {/* Simple navigation menu for testing */}
-      <div 
+      {/* <div 
         className="fixed z-100 bg-card border border-border rounded-lg shadow-lg"
         style={{
           left: `${navPosition.x}px`,
@@ -406,11 +417,13 @@ function App() {
           </button>
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* Render current page */}
       {renderPage()}
 
+      {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation (draggable dev menu) */}
+      {/* TODO: Uncomment when development resumes */}
       {/* Floating Add Button - Show on all pages except landing, auth, and viewer pages */}
       {currentPage !== 'landing' && 
        currentPage !== 'auth' && 

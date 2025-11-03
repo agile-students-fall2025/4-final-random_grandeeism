@@ -170,7 +170,9 @@ export default function NavigationSidebar({
       view: null, 
       action: () => onNavigate('feeds') 
     },
-    { 
+    /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Videos/Audio/Text pages (unimplemented) */
+    /* TODO: Uncomment when video/audio player implementation is complete */
+    /* { 
       name: "Videos", 
       icon: Video, 
       page: "videos", 
@@ -190,7 +192,7 @@ export default function NavigationSidebar({
       page: "text", 
       view: null, 
       action: () => onNavigate('text') 
-    }
+    } */
   ];
 
   const otherItems = [
