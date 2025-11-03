@@ -52,9 +52,9 @@ const HomePage = ({ onNavigate }) => {
 
   // Article management functions
   const handleArticleClick = (article) => {
-    // Navigate to the text reader and pass the whole article object via the
-    // view payload so the App can render it in the reader.
-    onNavigate && onNavigate('text-reader', { article });
+    // Navigate to the appropriate viewer based on media type
+    const destination = article.mediaType === 'video' ? 'video-player' : 'text-reader';
+    onNavigate && onNavigate(destination, { article });
   };
 
   const handleToggleFavorite = (articleId) => {

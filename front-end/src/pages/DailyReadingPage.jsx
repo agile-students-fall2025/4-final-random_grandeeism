@@ -87,17 +87,20 @@ const DailyReadingPage = ({ onNavigate }) => {
 
           <div className="min-h-[200px]">
             {displayedArticles.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {displayedArticles.map(article => (
-                  <ArticleCard
-                    key={article.id}
-                    article={article}
-                    onArticleClick={() => onNavigate && onNavigate('text-reader', { article })}
-                    onToggleFavorite={handleToggleFavorite}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDeleteArticle}
-                  />
-                ))}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {displayedArticles.map(article => (
+                    <ArticleCard
+                      key={article.id}
+                      article={article}
+                      onArticleClick={() => {
+                        const destination = article.mediaType === 'video' ? 'video-player' : 'text-reader';
+                        onNavigate && onNavigate(destination, { article });
+                      }}
+                      onToggleFavorite={handleToggleFavorite}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDeleteArticle}
+                    />
+                  ))}
               </div>
             ) : (
               <div className="bg-card border border-border rounded-lg p-8 text-center">

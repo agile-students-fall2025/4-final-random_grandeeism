@@ -92,7 +92,10 @@ const SearchPage = ({ onNavigate, initialTag }) => {
                   <ArticleCard
                     key={article.id}
                     article={article}
-                    onArticleClick={() => onNavigate && onNavigate('text-reader', { article })}
+                    onArticleClick={() => {
+                      const destination = article.mediaType === 'video' ? 'video-player' : 'text-reader';
+                      onNavigate && onNavigate(destination, { article });
+                    }}
                     onToggleFavorite={handleToggleFavorite}
                     onStatusChange={handleStatusChange}
                     onDelete={handleDeleteArticle}

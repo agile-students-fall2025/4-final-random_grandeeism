@@ -5,6 +5,21 @@
 
 import { STATUS } from "../constants/statuses.js";
 
+// Lorem Ipsum content for text articles
+const loremIpsum = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+
+Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.
+
+At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga.
+
+Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.
+
+Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.`;
+
 export const mockArticles = [
   {
     id: '1',
@@ -20,17 +35,7 @@ export const mockArticles = [
     dateAdded: new Date('2024-01-15'),
     hasAnnotations: false,
     readProgress: 0,
-    content: `This is the first paragraph. You can select this text to test highlighting.
-This is the second paragraph. The component logic splits text based on newlines, so this will appear as a separate paragraph.
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-Here is some more text.
-And more.
-And more.
-And more.
-And more.
-You can scroll down to test the completion modal.
-This is the very last line of the article.`
+    content: loremIpsum
   },
   {
     id: '2',
@@ -46,7 +51,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-14'),
     hasAnnotations: false,
     readProgress: 0,
-    content: 'The future of web development looks bright, with new technologies emerging...'
+    content: loremIpsum
   },
   {
     id: '3',
@@ -62,7 +67,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-13'),
     hasAnnotations: true,
     readProgress: 0,
-    content: 'Building better user interfaces requires a deep understanding of user needs.'
+    content: loremIpsum
   },
   {
     id: '4',
@@ -95,7 +100,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-11'),
     hasAnnotations: false,
     readProgress: 0,
-    content: 'CSS Grid and Flexbox are powerful tools, but they solve different problems.'
+    content: loremIpsum
   },
   {
     id: '6',
@@ -111,7 +116,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-10'),
     hasAnnotations: true,
     readProgress: 65,
-    content: 'Advanced patterns in TypeScript can significantly improve code quality.'
+    content: loremIpsum
   },
   {
     id: '7',
@@ -127,7 +132,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-09'),
     hasAnnotations: false,
     readProgress: 100,
-    content: 'Modern CSS offers amazing possibilities for styling websites.'
+    content: loremIpsum
   },
   {
     id: '8',
@@ -143,7 +148,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-08'),
     hasAnnotations: false,
     readProgress: 0,
-    content: 'Following best practices in TypeScript leads to maintainable code.'
+    content: loremIpsum
   },
   {
     id: '9',
@@ -159,7 +164,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-07'),
     hasAnnotations: false,
     readProgress: 0,
-    content: 'Good API design is crucial for a successful software product.'
+    content: loremIpsum
   },
   {
     id: '10',
@@ -175,7 +180,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-06'),
     hasAnnotations: true,
     readProgress: 0,
-    content: 'Database optimization can drastically improve application speed.'
+    content: loremIpsum
   },
   {
     id: '11',
@@ -191,7 +196,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-05'),
     hasAnnotations: true,
     readProgress: 0,
-    content: 'Learn about render props, hooks, and other advanced React patterns.'
+    content: loremIpsum
   },
   {
     id: '12',
@@ -207,7 +212,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-04'),
     hasAnnotations: true,
     readProgress: 0,
-    content: 'Microservices can improve scalability and maintainability, but come with trade-offs.'
+    content: loremIpsum
   },
   {
     id: '13',
@@ -223,7 +228,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-03'),
     hasAnnotations: true,
     readProgress: 100,
-    content: 'Use multi-stage builds and keep your Docker images small.'
+    content: loremIpsum
   },
   {
     id: '14',
@@ -239,7 +244,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-02'),
     hasAnnotations: true,
     readProgress: 100,
-    content: 'GraphQL offers flexibility, while REST provides simplicity and caching.'
+    content: loremIpsum
   },
   {
     id: '15',
@@ -255,7 +260,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-01'),
     hasAnnotations: true,
     readProgress: 100,
-    content: 'Supervised, unsupervised, and reinforcement learning are the main types.'
+    content: loremIpsum
   },
   {
     id: '16',
@@ -271,7 +276,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2024-01-15'),
     hasAnnotations: true,
     readProgress: 50,
-    content: 'Profile your Node.js applications to find performance bottlenecks.'
+    content: loremIpsum
   },
   {
     id: '17',
@@ -306,7 +311,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2023-12-20'),
     hasAnnotations: true,
     readProgress: 100,
-    content: 'Always validate user input, use HTTPS, implement CSP, and keep dependencies updated.'
+    content: loremIpsum
   },
   {
     id: '19',
@@ -322,7 +327,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2023-12-15'),
     hasAnnotations: true,
     readProgress: 100,
-    content: 'CSS Grid revolutionized web layouts with two-dimensional control.'
+    content: loremIpsum
   },
   {
     id: '20',
@@ -338,7 +343,7 @@ This is the very last line of the article.`
     dateAdded: new Date('2023-12-10'),
     hasAnnotations: true,
     readProgress: 100,
-    content: 'Module pattern, revealing module pattern, singleton, observer, and more design patterns in JavaScript.'
+    content: loremIpsum
   }
 ];
 

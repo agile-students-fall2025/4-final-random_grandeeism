@@ -46,8 +46,9 @@ export default function TagArticlesPage({ onNavigate, tag }) {
 
   // ArticleCard handlers
   const handleArticleClick = (article) => {
-    // Navigate to the text reader and provide the article object
-    onNavigate && onNavigate('text-reader', { article });
+    // Navigate to the appropriate viewer based on media type
+    const destination = article.mediaType === 'video' ? 'video-player' : 'text-reader';
+    onNavigate && onNavigate(destination, { article });
   };
 
   const handleToggleFavorite = (articleId) => {
