@@ -1,123 +1,93 @@
 /**
- * VideoPlayer.jsx
+ * VideoPlayer.jsx (VideoViewer)
  * 
- * Description: Full-featured video player with enhanced viewing controls
- * Purpose: Provides a rich video watching experience for video content
- * Features:
- *  - Custom video player controls (play, pause, seek, volume, fullscreen)
- *  - Playback speed adjustment
- *  - Quality selection (480p, 720p, 1080p, etc.)
- *  - Picture-in-picture mode
- *  - Closed captions/subtitles support
- *  - Keyboard shortcuts for navigation
- *  - Theater and fullscreen modes
- *  - Auto-play next video in queue
- *  - Video bookmarking and timestamps
+ * Description: Placeholder for YouTube video player
+ * Purpose: Informs users about upcoming video player implementation
  */
 
-const VideoPlayer = ({ onNavigate }) => {
+import { Video, ArrowLeft } from "lucide-react";
+
+const VideoPlayer = ({ article, onClose }) => {
+  const articleTitle = article?.title || "Video Article";
+
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <button 
-            onClick={() => onNavigate && onNavigate('home')}
-            className="text-sm text-muted-foreground hover:text-foreground mb-4"
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-background border-b border-border">
+        <div className="flex items-center gap-4 px-4 sm:px-6 py-3 sm:py-4">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-accent rounded-lg transition-colors"
           >
-            ← Back to Home
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-3xl font-bold mb-4">Video Player</h1>
-          <p className="text-muted-foreground">
-            Enhanced video viewing experience
-          </p>
+          <h1 className="text-[16px] sm:text-[20px] font-['New_Spirit:Medium',sans-serif] truncate">
+            {articleTitle}
+          </h1>
         </div>
+      </div>
 
-        {/* Video Player Card */}
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          {/* Video Display Area */}
-          <div className="relative w-full aspect-video bg-black flex items-center justify-center">
-            <div className="text-white text-center">
-              <div className="text-6xl mb-4">▶</div>
-              <p className="text-lg">Video Player Area</p>
-              <p className="text-sm text-gray-400">16:9 Aspect Ratio</p>
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full text-center">
+          {/* Icon */}
+          <div className="mb-6 flex justify-center">
+            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center">
+              <Video className="w-12 h-12 text-primary" />
             </div>
+          </div>
+
+          {/* Title */}
+          <h2 className="text-2xl sm:text-3xl font-['New_Spirit:Medium',sans-serif] mb-4">
+            Video Player Coming Soon
+          </h2>
+
+          {/* Description */}
+          <div className="space-y-4 text-muted-foreground">
+            <p className="text-[15px] sm:text-[16px] leading-relaxed">
+              The video player feature is currently under development and will be available in a future update.
+            </p>
             
-            {/* Player Controls Overlay (bottom) */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-              <div className="space-y-2">
-                {/* Progress Bar */}
-                <div className="w-full h-1 bg-white/30 rounded-full overflow-hidden">
-                  <div className="h-full w-1/4 bg-primary"></div>
-                </div>
-                
-                {/* Control Buttons */}
-                <div className="flex items-center justify-between text-white text-sm">
-                  <div className="flex items-center gap-4">
-                    <button className="hover:opacity-80">▶</button>
-                    <button className="hover:opacity-80">⏭</button>
-                    <span>5:30 / 20:00</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <button className="hover:opacity-80">CC</button>
-                    <button className="hover:opacity-80">⚙</button>
-                    <button className="hover:opacity-80">⛶</button>
-                  </div>
-                </div>
-              </div>
+            <div className="bg-accent/50 border border-border rounded-lg p-6 text-left">
+              <h3 className="font-semibold text-foreground mb-3 text-[14px] sm:text-[15px]">
+                Planned Features:
+              </h3>
+              <ul className="space-y-2 text-[13px] sm:text-[14px]">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>YouTube video integration with custom controls</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Timestamped notes and annotations</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Interactive transcript with click-to-seek</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Status management and progress tracking</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Mobile-optimized responsive design</span>
+                </li>
+              </ul>
             </div>
+
+            <p className="text-[13px] sm:text-[14px] mt-6">
+              Thank you for your patience as we work to bring you the best video watching experience.
+            </p>
           </div>
 
-          {/* Video Info */}
-          <div className="p-6">
-            <h2 className="text-2xl font-semibold mb-2">Sample Video Title</h2>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-              <span>Channel Name</span>
-              <span>•</span>
-              <span>1.2K views</span>
-              <span>•</span>
-              <span>March 18, 2024</span>
-            </div>
-
-            {/* Video Controls */}
-            <div className="flex flex-wrap gap-3 mb-6">
-              <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80 text-sm">
-                Theater Mode
-              </button>
-              <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80 text-sm">
-                PiP Mode
-              </button>
-              <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80 text-sm">
-                Quality: 1080p
-              </button>
-              <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80 text-sm">
-                Speed: 1.0x
-              </button>
-              <button className="px-4 py-2 bg-accent rounded hover:bg-accent/80 text-sm">
-                Subtitles
-              </button>
-            </div>
-
-            {/* Description */}
-            <div className="pt-6 border-t border-border">
-              <h3 className="font-semibold mb-3">Description</h3>
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p>Features will include:</p>
-                <ul className="space-y-1 ml-4">
-                  <li>• Custom video player with full controls</li>
-                  <li>• Playback speed adjustment (0.25x - 2x)</li>
-                  <li>• Quality selection (auto, 1080p, 720p, 480p)</li>
-                  <li>• Picture-in-picture mode for multitasking</li>
-                  <li>• Closed captions and subtitle support</li>
-                  <li>• Keyboard shortcuts (Space, Arrow keys, F, M, etc.)</li>
-                  <li>• Theater mode and fullscreen viewing</li>
-                  <li>• Video bookmarks and timestamp notes</li>
-                  <li>• Auto-play next video in queue</li>
-                  <li>• Frame-by-frame navigation</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          {/* Back Button */}
+          <button
+            onClick={onClose}
+            className="mt-8 px-6 py-3 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-[14px] font-medium transition-colors"
+          >
+            Go Back
+          </button>
         </div>
       </div>
     </div>

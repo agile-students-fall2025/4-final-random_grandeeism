@@ -129,7 +129,6 @@ const SettingsPage = ({ onNavigate }) => {
       currentView="Settings"
       onNavigate={onNavigate}
       articles={mockArticles}
-      pageTitle="Settings"
       showSearch={false}
     >
       <div className="p-6">
@@ -336,7 +335,7 @@ const SettingsPage = ({ onNavigate }) => {
             <div className="bg-card border border-border rounded-lg p-6">
               
               {/* PKM Integrations */}
-              <div className="mb-6">
+              {/* <div className="mb-6">
                 <h3 className="text-sm font-medium mb-3">PKM Integrations</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Connect fieldnotes. with your personal knowledge management tools to sync notes and highlights.
@@ -375,10 +374,10 @@ const SettingsPage = ({ onNavigate }) => {
                     <span className="text-xs text-muted-foreground">Not connected</span>
                   </button>
                 </div>
-              </div>
+              </div> */}
 
               {/* Export Options */}
-              <div className="pt-6 border-t border-border">
+              <div className="">
                 <h3 className="text-sm font-medium mb-3">Export Data</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Download your data in various formats for backup or migration.

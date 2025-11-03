@@ -21,6 +21,7 @@ import ArchivePage from './pages/ArchivePage.jsx';
 import StatisticsPage from './pages/StatisticsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import FeedsPage from './pages/FeedsPage.jsx';
+import FeedArticlesPage from './pages/FeedArticlesPage.jsx';
 import TagsPage from './pages/TagsPage.jsx';
 import TagArticlesPage from './pages/TagArticlesPage.jsx';
 import FavoritesPage from './pages/FavoritesPage.jsx';
@@ -47,6 +48,7 @@ function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
   const [currentTag, setCurrentTag] = useState(null);
+  const [currentFeed, setCurrentFeed] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const dragOffset = useRef({ x: 0, y: 0 });
 
@@ -81,6 +83,13 @@ function App() {
       setCurrentTag(null);
     }
     
+    // Handle feed filtering
+    if (view && view.feed) {
+      setCurrentFeed(view.feed);
+    } else {
+      setCurrentFeed(null);
+    }
+    
     // Map page/view combinations to route names
     if (page === 'landing') {
       setCurrentPage('landing');
@@ -111,12 +120,24 @@ function App() {
       // an `article` in the `view` object; store it so the reader can render it.
       if (view && view.article) setSelectedArticle(view.article);
       setCurrentPage('text-reader');
+    } else if (page === 'video-player') {
+      // Support navigating directly to the video player. The caller may provide
+      // an `article` in the `view` object; store it so the player can render it.
+      if (view && view.article) setSelectedArticle(view.article);
+      setCurrentPage('video-player');
+    } else if (page === 'audio-player') {
+      // Support navigating directly to the audio player. The caller may provide
+      // an `article` in the `view` object; store it so the player can render it.
+      if (view && view.article) setSelectedArticle(view.article);
+      setCurrentPage('audio-player');
     } else if (page === 'videos') {
       setCurrentPage('videos');
-    } else if (page === 'podcasts') {
+    } else if (page === 'audio' || page === 'podcasts') {
       setCurrentPage('audio');
     } else if (page === 'feeds') {
       setCurrentPage('feeds');
+    } else if (page === 'feed-articles') {
+      setCurrentPage('feed-articles');
     } else if (page === 'tags' || (page === 'articles' && view === 'Tags')) {
       setCurrentPage('tags');
     } else if (page === 'statistics') {
@@ -164,6 +185,8 @@ function App() {
         return <SettingsPage onNavigate={handleNavigate} />;
       case 'feeds':
         return <FeedsPage onNavigate={handleNavigate} />;
+      case 'feed-articles':
+        return <FeedArticlesPage onNavigate={handleNavigate} feed={currentFeed} />;
       case 'tags':
         return <TagsPage onNavigate={handleNavigate} />;
       case 'favorites':
@@ -171,9 +194,21 @@ function App() {
       case 'text-reader':
         return <TextReader onNavigate={handleNavigate} article={selectedArticle} />;
       case 'audio-player':
-        return <AudioPlayer onNavigate={handleNavigate} />;
+        return (
+          <AudioPlayer 
+            article={selectedArticle}
+            onUpdateArticle={(updatedArticle) => setSelectedArticle(updatedArticle)}
+            onClose={() => handleNavigate('audio')}
+          />
+        );
       case 'video-player':
-        return <VideoPlayer onNavigate={handleNavigate} />;
+        return (
+          <VideoPlayer 
+            article={selectedArticle}
+            onUpdateArticle={(updatedArticle) => setSelectedArticle(updatedArticle)}
+            onClose={() => handleNavigate('videos')}
+          />
+        );
       default:
         return <HomePage onNavigate={handleNavigate} />;
     }

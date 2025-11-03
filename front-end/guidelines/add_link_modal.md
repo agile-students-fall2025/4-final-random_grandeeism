@@ -182,28 +182,28 @@ const handleTagInputKeyDown = (e) => {
     
     {/* Daily Reading */}
     <button
-      onClick={() => setNewLinkStatus("dailyReading")}
+      onClick={() => setNewLinkStatus("daily")}
       className={`p-3 rounded border-2 transition-all ${
-        newLinkStatus === "dailyReading"
+        newLinkStatus === "daily"
           ? "border-blue-500 bg-blue-500/10"
           : "border-border bg-background hover:border-blue-500/50"
       }`}
     >
-      <Calendar size={20} className={`mx-auto mb-1 ${newLinkStatus === "dailyReading" ? "text-blue-500" : "text-muted-foreground"}`} />
-      <p className={`text-[12px] ${newLinkStatus === "dailyReading" ? "text-blue-500" : "text-foreground"}`}>Daily Reading</p>
+      <Calendar size={20} className={`mx-auto mb-1 ${newLinkStatus === "daily" ? "text-blue-500" : "text-muted-foreground"}`} />
+      <p className={`text-[12px] ${newLinkStatus === "daily" ? "text-blue-500" : "text-foreground"}`}>Daily Reading</p>
     </button>
     
     {/* Continue Reading */}
     <button
-      onClick={() => setNewLinkStatus("inProgress")}
+      onClick={() => setNewLinkStatus("continue")}
       className={`p-3 rounded border-2 transition-all ${
-        newLinkStatus === "inProgress"
+        newLinkStatus === "continue"
           ? "border-purple-500 bg-purple-500/10"
           : "border-border bg-background hover:border-purple-500/50"
       }`}
     >
-      <BookOpen size={20} className={`mx-auto mb-1 ${newLinkStatus === "inProgress" ? "text-purple-500" : "text-muted-foreground"}`} />
-      <p className={`text-[12px] ${newLinkStatus === "inProgress" ? "text-purple-500" : "text-foreground"}`}>Continue Reading</p>
+      <BookOpen size={20} className={`mx-auto mb-1 ${newLinkStatus === "continue" ? "text-purple-500" : "text-muted-foreground"}`} />
+      <p className={`text-[12px] ${newLinkStatus === "continue" ? "text-purple-500" : "text-foreground"}`}>Continue Reading</p>
     </button>
   </div>
   

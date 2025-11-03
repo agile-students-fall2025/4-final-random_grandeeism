@@ -154,14 +154,14 @@ const getStatusIconInfo = (status?: ArticleStatus) => {
         bgColor: "bg-foreground/10",
         label: "Inbox"
       };
-    case "dailyReading":
+  case "daily":
       return { 
         icon: Calendar, 
         color: "text-foreground", 
         bgColor: "bg-foreground/10",
         label: "Daily Reading"
       };
-    case "inProgress":
+  case "continue":
       return { 
         icon: BookOpen, 
         color: "text-foreground", 
@@ -273,7 +273,7 @@ const getShortenedUrl = () => {
 
 ### 4. Progress Bar (Continue Reading Only)
 
-For articles with `status === "inProgress"` and `readProgress` defined:
+For articles with `status === "continue"` and `readProgress` defined:
 - Show percentage text: "45% Complete"
 - Visual progress bar with grayscale colors
 - Bar container: `bg-accent rounded-full h-2`
@@ -281,7 +281,7 @@ For articles with `status === "inProgress"` and `readProgress` defined:
 - Smooth transitions: `transition-all duration-300`
 
 ```jsx
-{article.status === "inProgress" && article.readProgress !== undefined && (
+{article.status === "continue" && article.readProgress !== undefined && (
   <div className="mt-2">
     <div className="flex items-center justify-between mb-1">
       <span className="font-['Inter:Medium', sans-serif] text-[11px] text-foreground/80">
@@ -325,9 +325,9 @@ The bottom section contains two rows of actions:
 
 **Daily Reading Status:**
 - "Mark as Completed" button → Archives
-- "Continue Reading" button → Moves to inProgress
+- "Continue Reading" button → Moves to continue
 
-**Continue Reading (inProgress) Status:**
+**Continue Reading (continue) Status:**
 - "Mark as Completed" button → Archives
 
 **Rediscovery Queue Status:**
@@ -339,20 +339,20 @@ The bottom section contains two rows of actions:
 ```jsx
 const renderStatusButtons = () => {
   switch (article.status) {
-    case "dailyReading":
+  case "daily":
       return (
         <>
           <button onClick={() => onStatusChange(article.id, "archived")}>
             <Check size={14} />
             Mark as Completed
           </button>
-          <button onClick={() => onStatusChange(article.id, "inProgress")}>
+          <button onClick={() => onStatusChange(article.id, "continue")}>
             <BookOpen size={14} />
             Continue Reading
           </button>
         </>
       );
-    case "inProgress":
+  case "continue":
       return (
         <button onClick={() => onStatusChange(article.id, "archived")}>
           <Check size={14} />
@@ -513,9 +513,9 @@ The status icon should intelligently determine the next status in workflow:
 ```jsx
 const getNextStatus = () => {
   switch (article.status) {
-    case "inbox": return "dailyReading";
-    case "dailyReading": return "inProgress";
-    case "inProgress": return "rediscovery";
+    case "inbox": return "daily";
+    case "daily": return "continue";
+    case "continue": return "rediscovery";
     case "rediscovery": return "archived";
     case "archived": return null;
     default: return null;
@@ -590,7 +590,7 @@ Study these files for implementation details:
 7. **Don't** forget to pass `mediaType` to Favicon component
 8. **Don't** render status buttons for inbox (they use status icon)
 9. **Don't** forget conditional rendering for tags (only if tags exist)
-10. **Don't** forget conditional rendering for progress bar (only inProgress)
+10. **Don't** forget conditional rendering for progress bar (only continue)
 
 ## Future Enhancements (Not Required Initially)
 

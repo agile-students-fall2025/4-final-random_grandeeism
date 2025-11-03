@@ -60,14 +60,14 @@ These views represent the **article management workflow** - articles move throug
 
 ---
 
-### **4. DAILY READING** 📅
+-### **4. DAILY READING** 📅
 - **Icon:** Calendar icon
 - **View Name:** `"Daily Reading"`
-- **Filter:** `status: "dailyReading"`
+- **Filter:** `status: "daily"`
 - **Count Badge:** Shows number of scheduled articles
 - **Purpose:** Articles scheduled for today's reading session
 - **Features:**
-  - Status filter is **locked** to "dailyReading"
+  - Status filter is **locked** to "daily"
   - Articles get a `scheduledDate` when moved here
   - Designed for daily review workflow
 
@@ -76,11 +76,11 @@ These views represent the **article management workflow** - articles move throug
 ### **5. CONTINUE READING** 📖
 - **Icon:** BookOpen icon
 - **View Name:** `"Continue Reading"`
-- **Filter:** `status: "inProgress"`
+- **Filter:** `status: "continue"`
 - **Count Badge:** Shows number of in-progress articles
 - **Purpose:** Articles you've started but haven't finished
 - **Features:**
-  - Status filter is **locked** to "inProgress"
+  - Status filter is **locked** to "continue"
   - Shows `readProgress` percentage if available
   - Tracks `lastReadDate`
 
@@ -211,8 +211,8 @@ currentFilters: {
 
 ### **Locked Filters** (Cannot be changed in TopBar):
 - **Inbox** → `status: "inbox"`
-- **Daily Reading** → `status: "dailyReading"`
-- **Continue Reading** → `status: "inProgress"`
+- **Daily Reading** → `status: "daily"`
+- **Continue Reading** → `status: "continue"`
 - **Rediscovery** → `status: "rediscovery"`
 - **Archive** → `status: "archived"`
 - **Favorites** → `favoritesFilter: "favorites"`
@@ -363,8 +363,8 @@ Real-time counts displayed in sidebar:
 
 ```javascript
 const inboxCount = articles.filter(a => !a.isHidden && a.status === "inbox").length;
-const dailyReadingCount = articles.filter(a => !a.isHidden && a.status === "dailyReading").length;
-const inProgressCount = articles.filter(a => !a.isHidden && a.status === "inProgress").length;
+const dailyReadingCount = articles.filter(a => !a.isHidden && a.status === "daily").length;
+const inProgressCount = articles.filter(a => !a.isHidden && a.status === "continue").length;
 const rediscoveryCount = articles.filter(a => !a.isHidden && a.status === "rediscovery").length;
 const favoriteCount = articles.filter(a => !a.isHidden && a.isFavorite).length;
 ```
@@ -385,8 +385,8 @@ Displayed as:
 | Home | Page | N/A | ❌ | Dashboard overview |
 | Search | View | None | ❌ | Save as Stack, full filters |
 | Inbox | View | status="inbox" | ✅ | Workflow entry point |
-| Daily Reading | View | status="dailyReading" | ✅ | Scheduled reading |
-| Continue Reading | View | status="inProgress" | ✅ | Progress tracking |
+| Daily Reading | View | status="daily" | ✅ | Scheduled reading |
+| Continue Reading | View | status="continue" | ✅ | Progress tracking |
 | Rediscovery | View | status="rediscovery" | ✅ | Requires notes, spaced repetition |
 | Archive | View | status="archived" | ❌ | Long-term storage |
 | Favorites | View | favorites=true | ❌ | Cross-status favorites |
