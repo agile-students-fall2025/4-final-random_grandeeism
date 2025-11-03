@@ -5,22 +5,55 @@
  * Purpose: Shows articles in the inbox queue waiting to be organized or read
  */
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
+import ArticleCard from "../components/ArticleCard.jsx";
+import { mockArticles } from "../data/mockArticles.js";
+import { mockFeeds } from "../data/mockFeeds.js";
+import applyFiltersAndSort from "../utils/searchUtils.js";
+import { STATUS } from "../constants/statuses.js";
 
 const InboxPage = ({ onNavigate }) => {
-  const mockArticles = [];
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
+  const [articles, setArticles] = useState(mockArticles);
+  const [displayedArticles, setDisplayedArticles] = useState([]);
+
+  const baseLockedFilters = useMemo(() => ({ status: STATUS.INBOX }), []);
+
+  useEffect(() => {
+    // Initialize view with locked filters applied
+    setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
+  }, [articles, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
-    console.log('Search inbox:', query, filters);
-    setCurrentFilters(filters);
+    const merged = { ...baseLockedFilters, ...(filters || {}), query };
+    setCurrentFilters(merged);
+    setDisplayedArticles(applyFiltersAndSort(articles, merged));
+  };
+
+  const handleStatusChange = (articleId, newStatus) => {
+    setArticles(prev => prev.map(article => 
+      article.id === articleId 
+        ? { ...article, status: newStatus }
+        : article
+    ));
+  };
+
+  const handleToggleFavorite = (articleId) => {
+    setArticles(prev => prev.map(article => 
+      article.id === articleId 
+        ? { ...article, isFavorite: !article.isFavorite }
+        : article
+    ));
+  };
+
+  const handleDeleteArticle = (articleId) => {
+    setArticles(prev => prev.filter(article => article.id !== articleId));
   };
 
   const handleSaveSearch = () => {
-    console.log('Save current search as a Stack');
     setShowSaveStackModal(true);
   };
 
@@ -34,43 +67,57 @@ const InboxPage = ({ onNavigate }) => {
       currentPage="articles"
       currentView="Inbox"
       onNavigate={onNavigate}
-      articles={mockArticles}
-      pageTitle="Inbox"
+      articles={articles}
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
-      availableFeeds={["TechCrunch", "Medium", "Dev.to"]}
-      lockedFilters={{ status: "inbox" }}
-      preAppliedFilters={{ status: "inbox" }}
+      availableFeeds={mockFeeds}
+      lockedFilters={{ status: STATUS.INBOX }}
+      preAppliedFilters={{ status: STATUS.INBOX }}
       onFilterChipRemoved={() => onNavigate("search")}
       showTimeFilter={true}
       showMediaFilter={true}
       showTagFilter={true}
+      showStatusFilter={true}
       showFavoritesFilter={true}
+      showAnnotationsFilter={true}
       showFeedFilter={true}
       showSortOptions={true}
     >
-      <div className="p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-card border border-border rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Inbox</h2>
-            <p className="text-muted-foreground mb-6">
-              This page will display:
-            </p>
-            <ul className="space-y-2 text-left max-w-md mx-auto">
-              <li>• All newly saved articles in your inbox</li>
-              <li>• Full search and advanced filtering capabilities</li>
-              <li>• Sort by date added, title, or reading time</li>
-              <li>• Filter by tags, media type, and feeds</li>
-              <li>• Quick actions: add to Daily Reading, Archive, or Delete</li>
-              <li>• Bulk selection and organization tools</li>
-              <li>• Mark as read or move to other queues</li>
-              <li>• Add tags and notes to articles</li>
-            </ul>
+        <div className="p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">Inbox</h1>
+              <p className="text-muted-foreground">Articles in your inbox (filtered by Search).</p>
+            </div>
+
+            <div className="min-h-[200px]">
+              {displayedArticles.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {displayedArticles.map(article => (
+                    <ArticleCard
+                      key={article.id}
+                      article={article}
+                      onArticleClick={() => {
+                        const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
+                        onNavigate && onNavigate(destination, { article });
+                      }}
+                      onToggleFavorite={handleToggleFavorite}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDeleteArticle}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-card border border-border rounded-lg p-8 text-center">
+                  <p className="text-lg font-medium mb-2">No articles found</p>
+                  <p className="text-sm text-muted-foreground">Try clearing filters or adjusting your search.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Save Stack Modal */}
       <SaveStackModal

@@ -70,7 +70,7 @@ This component provides a context-sensitive action bar for performing bulk opera
 - Icon: RotateCcw (16px)
 - Label: "Move to Next Queue"
 - Function: Advances each item to next status in workflow
-- Workflow: inbox → dailyReading → inProgress → rediscovery → archived
+- Workflow: inbox → daily → continue → rediscovery → archived
 
 **Move to Inbox**
 - Icon: Inbox (16px)
@@ -80,12 +80,12 @@ This component provides a context-sensitive action bar for performing bulk opera
 **Move to Daily Reading**
 - Icon: Calendar (16px)
 - Label: "Move to Daily Reading"
-- Function: Moves all selected items to dailyReading status
+- Function: Moves all selected items to daily status
 
 **Move to Continue Reading**
 - Icon: BookOpen (16px)
 - Label: "Move to Continue Reading"
-- Function: Moves all selected items to inProgress status
+- Function: Moves all selected items to continue status
 
 **Move to Rediscovery**
 - Icon: RotateCcw (16px)
@@ -207,7 +207,7 @@ interface BulkActionsBarProps {
 
 ### ArticleStatus Type
 ```jsx
-type ArticleStatus = "inbox" | "dailyReading" | "inProgress" | "rediscovery" | "archived";
+type ArticleStatus = "inbox" | "daily" | "continue" | "rediscovery" | "archived";
 ```
 
 ## Behavior & Interactions
@@ -324,7 +324,7 @@ const handleBulkStatusChange = (newStatus: ArticleStatus) => {
         updates.dateRead = new Date();
         updates.isRead = true;
       }
-      if (newStatus === "dailyReading" && !article.scheduledDate) {
+  if (newStatus === "daily" && !article.scheduledDate) {
         updates.scheduledDate = new Date();
       }
       if (newStatus === "rediscovery") {
@@ -345,9 +345,9 @@ const handleBulkStatusChange = (newStatus: ArticleStatus) => {
 const handleBulkAdvanceStatus = () => {
   const getNextStatus = (current: ArticleStatus): ArticleStatus | null => {
     switch (current) {
-      case "inbox": return "dailyReading";
-      case "dailyReading": return "inProgress";
-      case "inProgress": return "rediscovery";
+  case "inbox": return "daily";
+  case "daily": return "continue";
+  case "continue": return "rediscovery";
       case "rediscovery": return "archived";
       case "archived": return null;
       default: return null;
@@ -492,7 +492,7 @@ When changing status, update these fields:
 ### Moving to Daily Reading
 ```jsx
 {
-  status: "dailyReading",
+  status: "daily",
   scheduledDate: new Date() // Only if not already set
 }
 ```

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } from 'react';
+import { STATUS } from '../../constants/statuses.js';
 import { ThemeContext } from '../../contexts/ThemeContext.jsx';
 import { mockArticles } from '../../data/mockArticles';
 import CompletionModal from '../../components/CompletionModal.jsx';
@@ -302,7 +303,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   const handleCompletion = (reflection) => {
     if (!current) return;
-    changeStatus('archived');
+  changeStatus(STATUS.REDISCOVERY);
     try {
       const notesKey = 'article_reflections_v1';
       const raw = localStorage.getItem(notesKey);
@@ -388,8 +389,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           <div>
             <button onClick={goBack} className="text-sm text-muted-foreground hover:text-foreground mr-3 reader-button">← Back</button>
             {current && (
-              <button onClick={toggleFavorite} className="inline-flex items-center gap-2 text-sm reader-button">
-                <Star size={16} className={appliedFavorite ? 'text-yellow-400' : 'text-muted-foreground'} />
+              <button onClick={toggleFavorite} className="inline-flex items-center gap-2 text-sm">
+                <Star size={16} className={appliedFavorite ? 'fill-foreground text-foreground' : 'text-muted-foreground'} />
                 {appliedFavorite ? 'Favorited' : 'Favorite'}
               </button>
             )}

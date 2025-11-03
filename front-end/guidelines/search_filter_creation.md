@@ -101,7 +101,7 @@ export default function SearchFilter({
   timeFilter: string,         // "all" | "short" | "medium" | "long"
   mediaType: string,          // "all" | "article" | "video" | "podcast"
   sortBy: string,             // "dateAdded" | "timeAsc" | "timeDesc" | "none"
-  status: string,             // "all" | "inbox" | "dailyReading" | "inProgress" | "rediscovery" | "archived"
+  status: string,             // "all" | "inbox" | "daily" | "continue" | "rediscovery" | "archived"
   favoritesFilter: string,    // "all" | "favorites" | "nonFavorites"
   feedFilter: string          // Feed ID or ""
 }
@@ -221,8 +221,8 @@ const sortLabels = {
 const statusFilterLabels = {
   all: "All Status",
   inbox: "Inbox",
-  dailyReading: "Daily Reading",
-  inProgress: "Continue Reading",
+  daily: "Daily Reading",
+  continue: "Continue Reading",
   rediscovery: "Rediscovery",
   archived: "Archived"
 };
@@ -1214,7 +1214,7 @@ selectedTags       // string[]
 timeFilter         // "all" | "short" | "medium" | "long"
 mediaType          // "all" | "article" | "video" | "podcast"
 sortBy             // "dateAdded" | "timeAsc" | "timeDesc" | "none"
-statusFilter       // "all" | "inbox" | "dailyReading" | etc.
+statusFilter       // "all" | "inbox" | "daily" | etc.
 favoritesFilter    // "all" | "favorites" | "nonFavorites"
 feedFilter         // string (feed ID)
 ```

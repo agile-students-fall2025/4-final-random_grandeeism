@@ -159,7 +159,11 @@ export default function LandingPage({ onNavigate }) {
                             </div>
                         </div>
                         <div className="relative">
-                            <div className="aspect-[16/10] w-full rounded-xl border border-border bg-card shadow-sm" />
+                            <img 
+                                src="https://images.unsplash.com/photo-1517842645767-c639042777db?w=800&h=500&fit=crop&q=80&auto=format&cs=tinysrgb&sat=-100" 
+                                alt="Field notebook with tabs"
+                                className="aspect-[16/10] w-full rounded-xl border border-border shadow-sm object-cover"
+                            />
                             <p className="mt-3 text-xs text-muted-foreground">Product preview — organize with tags, filter fast, and keep focus.</p>
                         </div>
                     </div>

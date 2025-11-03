@@ -11,6 +11,14 @@ export function ThemeProvider({ children }) {
 
   const [effectiveTheme, setEffectiveTheme] = useState("light");
 
+  // Update favicon based on theme
+  const updateFavicon = (isDark) => {
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) {
+      favicon.href = isDark ? '/favicon-dark.svg' : '/favicon-light.svg';
+    }
+  };
+
   useEffect(() => {
     // Save theme to localStorage
     localStorage.setItem("theme", theme);
@@ -34,6 +42,9 @@ export function ThemeProvider({ children }) {
     } else {
       document.documentElement.classList.remove("dark");
     }
+
+    // Update favicon
+    updateFavicon(newEffectiveTheme === "dark");
   }, [theme]);
 
   // Listen for system theme changes when in auto mode
@@ -51,6 +62,9 @@ export function ThemeProvider({ children }) {
       } else {
         document.documentElement.classList.remove("dark");
       }
+
+      // Update favicon when system theme changes
+      updateFavicon(e.matches);
     };
 
     mediaQuery.addEventListener("change", handleChange);
