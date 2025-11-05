@@ -2,6 +2,18 @@
 
 Express.js REST API for the Fieldnotes read-it-later application.
 
+## 📚 Documentation & Guidelines
+
+For detailed project documentation, see the `guidelines/` folder:
+
+- **[TEAM_ONBOARDING.md](guidelines/TEAM_ONBOARDING.md)** - Complete onboarding guide for new team members and LLM agents. Includes project overview, architecture, individual assignments, testing requirements, and code examples.
+
+- **[SPRINT_CHECKLIST.md](guidelines/SPRINT_CHECKLIST.md)** - Sprint 2 task breakdown with individual developer assignments. Tracks progress on routes, testing, and front-end integration.
+
+- **[TODO-CONTENT-EXTRACTION.md](guidelines/TODO-CONTENT-EXTRACTION.md)** - Implementation guide for content extraction feature (Mozilla Readability). Explains how to activate real content extraction in Sprint 3+.
+
+- **[IMPLEMENTATION-SUMMARY.md](guidelines/IMPLEMENTATION-SUMMARY.md)** - Summary of completed content extraction implementation using utility function pattern. Includes architecture decisions and testing instructions.
+
 ## Tech Stack
 
 - **Express.js** v5.1.0 - Web framework

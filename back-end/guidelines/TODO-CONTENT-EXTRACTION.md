@@ -1,43 +1,62 @@
-# Future Enhancements TODO
+# Content Extraction Implementation Guide
 
-## Content Extraction Feature (Sprint 3+)
+## Status: Structure Complete ✅ (Sprint 2) | Real Extraction Pending (Sprint 3+)
 
 ### Overview
-Implement automatic content extraction when users add articles via URL. This will auto-populate title, author, content, and reading time instead of requiring manual entry.
+Content extraction allows users to save web articles by simply pasting a URL. The extraction logic is implemented in a reusable utility function that returns clean article data.
 
-### Dependencies to Install
+**Current State:** 
+- ✅ Utility function created (`utils/contentExtractor.js`)
+- ✅ Route updated to use utility (`routes/extract.js`)
+- ✅ Error handling implemented
+- ⏳ Real extraction disabled (returns mock data until dependencies installed)
+
+### Implementation Architecture
+The content extraction uses a **utility function** pattern:
+- **Route** (`routes/extract.js`): Handles HTTP requests, validation, error responses
+- **Utility** (`utils/contentExtractor.js`): Contains extraction logic, reusable across the app
+- **Separation of concerns**: Business logic separated from route handling
+
+### Dependencies to Install (Sprint 3+)
 ```bash
+cd back-end
 npm install @mozilla/readability jsdom axios
 ```
 
-### Files to Update
+### Files Already Updated
 
-#### 1. `routes/articles.js`
-- Look for `POST /api/articles` route
-- See detailed TODO comment in function
-- Add extraction logic before creating article object
+#### ✅ `utils/contentExtractor.js` (NEW)
+- Contains `extractContent(url)` function
+- Handles fetching, parsing, and extracting article data
+- Returns consistent data structure
+- Has mock mode (current) and real mode (commented out)
 
-#### 2. `routes/extract.js`
-- Complete endpoint for standalone extraction
-- Replace mock logic with real Mozilla Readability implementation
-- See detailed TODO comment at top of route
+#### ✅ `routes/extract.js` (UPDATED)
+- Uses `extractContent()` from utility
+- Validates URL format
+- Handles errors properly
+- Clean, simple route handler
 
-### Implementation Steps
+### Enabling Real Content Extraction (Sprint 3+)
 
-1. **Install packages** (when ready to implement)
+**To activate real extraction (only 2 steps!):**
+
+1. **Install dependencies:**
    ```bash
    cd back-end
    npm install @mozilla/readability jsdom axios
    ```
 
-2. **Import libraries** in routes that need extraction:
-   ```javascript
-   const { Readability } = require('@mozilla/readability');
-   const { JSDOM } = require('jsdom');
-   const axios = require('axios');
-   ```
+2. **Uncomment code in `utils/contentExtractor.js`:**
+   - Find the `extractContent()` function
+   - Uncomment the real implementation (lines with `/*` and `*/`)
+   - Comment out or remove the mock data section
+   
+   That's it! The extraction will work immediately.
 
-3. **Add extraction function**:
+### How It Works (Technical Details)
+
+The extraction process:
    ```javascript
    async function extractContentFromUrl(url) {
      try {

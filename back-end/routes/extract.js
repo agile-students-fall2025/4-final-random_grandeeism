@@ -1,38 +1,17 @@
 const express = require('express');
 const router = express.Router();
+const { extractContent } = require('../utils/contentExtractor');
 
 /**
  * POST /api/extract
  * Extract metadata and content from a URL
  * 
+ * This endpoint uses utils/contentExtractor.js to extract article content.
+ * 
  * FUTURE ENHANCEMENT (Sprint 3+)
  * ================================
- * This endpoint provides URL content extraction for the "Add Link" feature.
- * Currently returns mock data based on URL parsing.
- * 
- * To implement real content extraction:
- * 
- * 1. Install dependencies:
+ * To enable real content extraction, install dependencies in contentExtractor.js:
  *    npm install @mozilla/readability jsdom axios
- * 
- * 2. Add imports at top of file:
- *    const { Readability } = require('@mozilla/readability');
- *    const { JSDOM } = require('jsdom');
- *    const axios = require('axios');
- * 
- * 3. Replace mock extraction logic with:
- *    const response = await axios.get(url, {
- *      headers: { 'User-Agent': 'Mozilla/5.0' }
- *    });
- *    const dom = new JSDOM(response.data, { url });
- *    const reader = new Readability(dom.window.document);
- *    const article = reader.parse();
- * 
- * 4. Return extracted data:
- *    title: article.title
- *    content: article.textContent
- *    author: article.byline
- *    excerpt: article.excerpt
  * 
  * Front-End Usage:
  *   1. User pastes URL in "Add Link" modal
@@ -60,56 +39,48 @@ router.post('/extract', async (req, res) => {
     if (!url) {
       return res.status(400).json({
         success: false,
-        error: 'URL is required'
+        message: 'URL is required'
       });
     }
 
-    // TODO: In Sprint 3+, implement real metadata extraction
-    // For now, return mock metadata based on URL
-    const mockMetadata = {
-      url: url,
-      title: extractTitleFromUrl(url),
-      author: 'Unknown Author',
-      source: extractDomainFromUrl(url),
-      description: 'Article description will be extracted here',
-      image: null,
-      readingTime: '5 min',
-      publishedDate: new Date().toISOString(),
-      content: 'Full content will be extracted here'
-    };
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid URL format'
+      });
+    }
 
-    res.json({
-      success: true,
-      data: mockMetadata
-    });
+    // Use utility function to extract content
+    const result = await extractContent(url);
+    
+    return res.json(result);
+
   } catch (error) {
-    res.status(500).json({
+    // Handle different error types
+    if (error.message.includes('Invalid URL')) {
+      return res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+    
+    if (error.message.includes('timed out')) {
+      return res.status(408).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    console.error('Content extraction error:', error);
+    return res.status(500).json({
       success: false,
-      error: 'Failed to extract metadata',
-      message: error.message
+      message: 'Failed to extract content',
+      error: error.message
     });
   }
-});
-
-// Helper functions
-function extractTitleFromUrl(url) {
-  try {
-    const path = new URL(url).pathname;
-    const slug = path.split('/').filter(Boolean).pop() || 'Untitled';
-    return slug
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase());
-  } catch {
-    return 'Untitled Article';
-  }
-}
-
-function extractDomainFromUrl(url) {
-  try {
-    return new URL(url).hostname.replace('www.', '');
-  } catch {
-    return 'Unknown Source';
-  }
-}
+})
 
 module.exports = router;

@@ -12,6 +12,7 @@ const mockArticles = [
     source: 'Dev.to',
     feedId: 'feed-4',
     readingTime: '1 min',
+    wordCount: 200,
     status: 'inbox',
     isFavorite: false,
     tags: ['welcome', 'test'],
