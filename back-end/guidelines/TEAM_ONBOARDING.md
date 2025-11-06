@@ -7,6 +7,20 @@
 
 ---
 
+## 👤 WHO ARE YOU?
+
+**Please identify yourself to see your specific assignments:**
+
+- 🔵 **Shaurya** → Person 1 - Articles API & Tests
+- 🟢 **Jeffrey** → Person 2 - Feeds API & Tests
+- 🟡 **Anas** → Person 3 - Tags & Highlights API, API Service Layer
+- 🟣 **Saad** → Person 4 - Users & Auth API, Front-End Integration
+- 🔴 **Zeba** → Person 5 - Integration Testing & Team Coverage Lead
+
+**Once you know your role, scroll to your assignment section below.**
+
+---
+
 ## 🎯 Project Overview
 
 **Fieldnotes** is a FOSS read-it-later web application. This sprint focuses on:
@@ -114,7 +128,7 @@ curl http://localhost:7001/api/articles
 
 ## 👥 Team Assignments
 
-### Person 1: Articles API Testing
+### Shaurya: Articles API Testing
 **Routes:** `routes/articles.js` (8 endpoints)  
 **Your Tasks:**
 1. Create `test/articles.test.js`
@@ -151,7 +165,7 @@ describe('Articles API', () => {
 
 ---
 
-### Person 2: Feeds API Testing
+### Jeffrey: Feeds API Testing
 **Routes:** `routes/feeds.js` (6 endpoints)  
 **Your Tasks:**
 1. Create `test/feeds.test.js`
@@ -170,7 +184,7 @@ describe('Articles API', () => {
 
 ---
 
-### Person 3: Tags & Highlights API Testing
+### Anas: Tags & Highlights API Testing
 **Routes:** `routes/tags.js`, `routes/highlights.js` (11 endpoints)  
 **Your Tasks:**
 1. Create `test/tags.test.js` 
@@ -213,7 +227,7 @@ export const articlesAPI = {
 
 ---
 
-### Person 4: Users & Auth API Testing
+### Saad: Users & Auth API Testing
 **Routes:** `routes/users.js`, `routes/auth.js` (10 endpoints)  
 **Your Tasks:**
 1. Create `test/users.test.js`
@@ -248,7 +262,7 @@ useEffect(() => {
 
 ---
 
-### Person 5: Integration Testing & Server Setup
+### Zeba: Integration Testing & Server Setup
 **Routes:** Integration scenarios  
 **Your Tasks:**
 1. Create `test/integration.test.js`

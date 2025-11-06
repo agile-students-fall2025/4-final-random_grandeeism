@@ -65,7 +65,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 
 **IMPORTANT: Each developer must write tests achieving 10% code coverage for their assigned routes.**
 
-#### Person 1: Articles API Tests
+#### Shaurya: Articles API Tests
 - [ ] Install and configure Mocha, Chai, and chai-http
 - [ ] Write unit tests for all 8 Articles endpoints
 - [ ] Test query parameters (status, tag, favorite, untagged)
@@ -73,7 +73,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [ ] Achieve 10%+ coverage for `routes/articles.js`
 - [ ] Run `npm run coverage` to verify your coverage
 
-#### Person 2: Feeds API Tests
+#### Jeffrey: Feeds API Tests
 - [ ] Write unit tests for all 6 Feeds endpoints
 - [ ] Test feed creation, updates, deletion
 - [ ] Test GET /api/feeds/:id/articles
@@ -81,7 +81,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [ ] Achieve 10%+ coverage for `routes/feeds.js`
 - [ ] Run `npm run coverage` to verify your coverage
 
-#### Person 3: Tags & Highlights API Tests
+#### Anas: Tags & Highlights API Tests
 - [ ] Write unit tests for Tags endpoints (6 endpoints)
 - [ ] Write unit tests for Highlights endpoints (5 endpoints)
 - [ ] Test tag-article relationships
@@ -89,7 +89,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [ ] Achieve 10%+ coverage for `routes/tags.js` and `routes/highlights.js`
 - [ ] Run `npm run coverage` to verify your coverage
 
-#### Person 4: Users & Auth API Tests
+#### Saad: Users & Auth API Tests
 - [ ] Write unit tests for Users endpoints (5 endpoints)
 - [ ] Write unit tests for Auth endpoints (5 endpoints)
 - [ ] Test JWT token generation and verification
@@ -98,7 +98,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [ ] Achieve 10%+ coverage for `routes/users.js` and `routes/auth.js`
 - [ ] Run `npm run coverage` to verify your coverage
 
-#### Person 5: Integration Tests & Coverage Verification
+#### Zeba: Integration Tests & Coverage Verification
 - [ ] Write integration tests for full API flows
 - [ ] Test article creation → tagging → highlighting → reading
 - [ ] Test user registration → login → profile update
@@ -115,9 +115,9 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 
 ### 3. Front-End Integration
 
-**Person 3 & Person 4 lead this effort with support from all team members**
+**Anas & Saad lead this effort with support from all team members**
 
-#### Create API Service Layer (Person 3)
+#### Create API Service Layer (Anas)
 - [ ] Create `front-end/src/services/api.js`
 - [ ] Implement articlesAPI functions (getAll, getById, create, update, delete)
 - [ ] Implement feedsAPI functions
@@ -128,7 +128,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [ ] Add error handling and loading states
 - [ ] Document API service usage
 
-#### Update Pages to Use API (Person 4)
+#### Update Pages to Use API (Saad)
 - [ ] Remove all mock data imports from pages
 - [ ] Update HomePage to fetch from back-end
 - [ ] Update InboxPage to fetch from back-end  
@@ -234,31 +234,31 @@ npm start
 
 ## Individual Developer Responsibilities
 
-### Person 1: Articles API
+### Shaurya: Articles API
 - Routes: `routes/articles.js` (8 endpoints)
 - Tests: `test/articles.test.js`
 - Coverage: 10%+ on articles routes
 - Front-end: HomePage, InboxPage integration
 
-### Person 2: Feeds API
+### Jeffrey: Feeds API
 - Routes: `routes/feeds.js` (6 endpoints)
 - Tests: `test/feeds.test.js`
 - Coverage: 10%+ on feeds routes
 - Front-end: FeedsPage integration
 
-### Person 3: Tags & Highlights API
+### Anas: Tags & Highlights API
 - Routes: `routes/tags.js`, `routes/highlights.js` (11 endpoints)
 - Tests: `test/tags.test.js`, `test/highlights.test.js`
 - Coverage: 10%+ on tags and highlights routes
 - Front-end: API service layer creation
 
-### Person 4: Users & Auth API
+### Saad: Users & Auth API
 - Routes: `routes/users.js`, `routes/auth.js` (10 endpoints)
 - Tests: `test/users.test.js`, `test/auth.test.js`
 - Coverage: 10%+ on users and auth routes
 - Front-end: Page integration (TagsPage, others)
 
-### Person 5: Integration & Enhancement
+### Zeba: Integration & Enhancement
 - Tests: `test/integration.test.js`
 - Coverage: 10%+ on integration flows
 - Responsibilities: Server setup, CORS, final testing, help team with bugs
