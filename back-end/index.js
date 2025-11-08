@@ -20,6 +20,12 @@ mongoose.connect(process.env.DB_CONNECTION_STRING || 'mongodb://admin:secret@loc
     console.error('MongoDB connection error:', error);
   });
 
+// Import routes
+const apiRoutes = require('./routes');
+
+// Mount API routes
+app.use('/api', apiRoutes);
+
 // Basic route
 app.get('/', (req, res) => {
   res.json({ message: 'Fieldnotes Backend API is running!' });
