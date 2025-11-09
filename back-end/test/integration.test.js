@@ -8,12 +8,13 @@
  * Coverage Goal: 10%+ for integration scenarios
  */
 
-// TODO: Import required testing libraries
-// const chai = require('chai');
-// const chaiHttp = require('chai-http');
-// const app = require('../index');
-// const expect = chai.expect;
-// chai.use(chaiHttp);
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+const app = require('../index');
+const expect = chai.expect;
+
+// Configure chai to use chai-http plugin
+chai.use(chaiHttp);
 
 // ============================================================================
 // INTEGRATION TEST 1: Article Creation → Tagging → Highlighting → Reading
