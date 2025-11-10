@@ -1,9 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Plus, Rss, ArrowUpDown, X } from "lucide-react";
 import FeedCard from "../components/FeedCard";
 import MainLayout from "../components/MainLayout";
-import { mockArticles } from "../data/mockArticles";
-import { mockFeeds } from "../data/mockFeeds";
+import { feedsAPI, articlesAPI, handleAPIError } from "../services/api";
 import { STATUS } from "../constants/statuses.js";
 import { Button } from "../components/ui/button.jsx";
 import { Input } from "../components/ui/input.jsx";
@@ -17,8 +16,47 @@ export default function FeedsPage({ onNavigate }) {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isCreateFeedModalOpen, setIsCreateFeedModalOpen] = useState(false);
   const [newFeedName, setNewFeedName] = useState("");
-  const [articles, setArticles] = useState(mockArticles);
-  const [feeds, setFeeds] = useState(mockFeeds);
+  const [articles, setArticles] = useState([]);
+  const [feeds, setFeeds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch feeds and articles from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch feeds and articles in parallel
+        const [feedsResponse, articlesResponse] = await Promise.all([
+          feedsAPI.getAll(),
+          articlesAPI.getAll()
+        ]);
+        
+        if (feedsResponse.success) {
+          setFeeds(feedsResponse.data);
+        } else {
+          throw new Error('Failed to fetch feeds');
+        }
+        
+        if (articlesResponse.success) {
+          setArticles(articlesResponse.data);
+        } else {
+          throw new Error('Failed to fetch articles');
+        }
+        
+      } catch (err) {
+        const errorResult = handleAPIError(err, 'fetching feeds and articles');
+        setError(errorResult.error);
+        console.error('Failed to fetch data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Calculate feed statistics from articles
   const feedStats = useMemo(() => {
@@ -73,51 +111,103 @@ export default function FeedsPage({ onNavigate }) {
     onNavigate('feed-articles', { feed: feed });
   };
 
-  const handleRename = (oldFeedName, newFeedName) => {
-    console.log(`Renaming feed "${oldFeedName}" to "${newFeedName}"`);
-    // Update the feed
-    setFeeds(feeds.map(f => 
-      f.name === oldFeedName ? { ...f, name: newFeedName } : f
-    ));
-    // Update all articles with the renamed feed
-    setArticles(articles.map(article => ({
-      ...article,
-      source: article.source === oldFeedName ? newFeedName : article.source
-    })));
+  const handleRename = async (oldFeedName, newFeedName) => {
+    try {
+      // Find the feed to rename
+      const feedToRename = feeds.find(f => f.name === oldFeedName);
+      if (!feedToRename) {
+        console.error('Feed not found:', oldFeedName);
+        return;
+      }
+
+      // Update the feed via API
+      const response = await feedsAPI.update(feedToRename.id, { name: newFeedName });
+      
+      if (response.success) {
+        // Update local state
+        setFeeds(feeds.map(f => 
+          f.name === oldFeedName ? { ...f, name: newFeedName } : f
+        ));
+        
+        // Note: In a real implementation, articles might be updated via their own endpoint
+        // For now, we'll update them locally to maintain UI consistency
+        setArticles(articles.map(article => ({
+          ...article,
+          source: article.source === oldFeedName ? newFeedName : article.source
+        })));
+        
+        console.log(`Successfully renamed feed "${oldFeedName}" to "${newFeedName}"`);
+      } else {
+        throw new Error('Failed to rename feed');
+      }
+    } catch (err) {
+      const errorResult = handleAPIError(err, 'renaming feed');
+      console.error('Failed to rename feed:', errorResult.error);
+      // Optionally show user-friendly error message
+    }
   };
 
-  const handleDelete = (feedName) => {
-    console.log(`Deleting feed: ${feedName}`);
-    // Remove the feed
-    setFeeds(feeds.filter(f => f.name !== feedName));
-    // Remove articles from this feed
-    setArticles(articles.filter(article => article.source !== feedName));
+  const handleDelete = async (feedName) => {
+    try {
+      // Find the feed to delete
+      const feedToDelete = feeds.find(f => f.name === feedName);
+      if (!feedToDelete) {
+        console.error('Feed not found:', feedName);
+        return;
+      }
+
+      // Delete the feed via API
+      const response = await feedsAPI.delete(feedToDelete.id);
+      
+      if (response.success) {
+        // Update local state
+        setFeeds(feeds.filter(f => f.name !== feedName));
+        // Remove articles from this feed
+        setArticles(articles.filter(article => article.source !== feedName));
+        
+        console.log(`Successfully deleted feed: ${feedName}`);
+      } else {
+        throw new Error('Failed to delete feed');
+      }
+    } catch (err) {
+      const errorResult = handleAPIError(err, 'deleting feed');
+      console.error('Failed to delete feed:', errorResult.error);
+      // Optionally show user-friendly error message
+    }
   };
 
-  const handleCreateFeed = () => {
+  const handleCreateFeed = async () => {
     const trimmedFeed = newFeedName.trim();
     if (trimmedFeed && !feeds.some(f => f.name === trimmedFeed)) {
-      // Create a new feed
-      const newFeed = {
-        id: `feed-${Date.now()}`,
-        name: trimmedFeed,
-        url: `https://example.com/${trimmedFeed.toLowerCase().replace(/\s+/g, '-')}/feed/`,
-        feedType: 'rss',
-        favicon: 'https://example.com/favicon.ico',
-        category: 'Uncategorized',
-        description: `Feed for ${trimmedFeed}`,
-        website: 'https://example.com',
-        lastFetched: new Date(),
-        lastUpdated: new Date(),
-        refreshFrequency: 'daily',
-        status: 'success',
-        errorMessage: null,
-        createdAt: new Date()
-      };
-      
-      setFeeds([...feeds, newFeed]);
-      setNewFeedName("");
-      setIsCreateFeedModalOpen(false);
+      try {
+        // Create a new feed
+        const newFeedData = {
+          name: trimmedFeed,
+          url: `https://example.com/${trimmedFeed.toLowerCase().replace(/\s+/g, '-')}/feed/`,
+          feedType: 'rss',
+          favicon: 'https://example.com/favicon.ico',
+          category: 'Uncategorized',
+          description: `Feed for ${trimmedFeed}`,
+          website: 'https://example.com',
+          refreshFrequency: 'daily'
+        };
+        
+        const response = await feedsAPI.create(newFeedData);
+        
+        if (response.success) {
+          // Add the new feed to local state
+          setFeeds([...feeds, response.data]);
+          setNewFeedName("");
+          setIsCreateFeedModalOpen(false);
+          console.log(`Successfully created feed: ${trimmedFeed}`);
+        } else {
+          throw new Error('Failed to create feed');
+        }
+      } catch (err) {
+        const errorResult = handleAPIError(err, 'creating feed');
+        console.error('Failed to create feed:', errorResult.error);
+        // Optionally show user-friendly error message
+      }
     }
   };
 
@@ -256,8 +346,39 @@ export default function FeedsPage({ onNavigate }) {
             </div>
           </div>
 
-          {/* Feeds Grid */}
-          {filteredAndSortedFeeds.length === 0 ? (
+          {/* Loading State */}
+          {loading ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 px-6">
+                <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4 animate-spin">
+                  <Rss className="size-8 text-muted-foreground" />
+                </div>
+                <CardTitle className="text-xl mb-2">Loading feeds...</CardTitle>
+                <CardDescription className="text-center max-w-md">
+                  Please wait while we fetch your RSS feeds.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          ) : error ? (
+            /* Error State */
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 px-6">
+                <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                  <X className="size-8 text-destructive" />
+                </div>
+                <CardTitle className="text-xl mb-2">Error loading feeds</CardTitle>
+                <CardDescription className="text-center max-w-md mb-4">
+                  {error}
+                </CardDescription>
+                <Button 
+                  onClick={() => window.location.reload()}
+                  variant="outline"
+                >
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          ) : filteredAndSortedFeeds.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 px-6">
                 <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">

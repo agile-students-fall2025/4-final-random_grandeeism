@@ -10,7 +10,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 
 #### Articles API
 
-- [ ] `GET /api/articles` - Retrieve all articles (with filtering support)
+- [] `GET /api/articles` - Retrieve all articles (with filtering support)
 - [ ] `GET /api/articles/:id` - Retrieve single article by ID
 - [ ] `POST /api/articles` - Create new article
 - [ ] `PUT /api/articles/:id` - Update article
@@ -66,12 +66,12 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 **IMPORTANT: Each developer must write tests achieving 10% code coverage for their assigned routes.**
 
 #### Shaurya: Articles API Tests
-- [ ] Install and configure Mocha, Chai, and chai-http
-- [ ] Write unit tests for all 8 Articles endpoints
-- [ ] Test query parameters (status, tag, favorite, untagged)
-- [ ] Test error cases (404, 400, 500)
-- [ ] Achieve 10%+ coverage for `routes/articles.js`
-- [ ] Run `npm run coverage` to verify your coverage
+- [x] Install and configure Mocha, Chai, and chai-http
+- [x] Write unit tests for all 8 Articles endpoints
+- [x] Test query parameters (status, tag, favorite, untagged)
+- [x] Test error cases (404, 400, 500)
+- [x] Achieve 10%+ coverage for `routes/articles.js`
+- [x] Run `npm run coverage` to verify your coverage
 
 #### Jeffrey: Feeds API Tests
 - [ ] Write unit tests for all 6 Feeds endpoints

@@ -112,10 +112,19 @@ router.get('/:id', (req, res) => {
  * Reference: See routes/extract.js for standalone extraction endpoint example
  * ============================================
  */
+
 router.post('/', (req, res) => {
   try {
-    // TODO: Add content extraction logic here (see comment above)
-    
+    const { title, url } = req.body;
+
+    // Validation: Check if required fields are present
+    if (!title || !url) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title and URL are required fields.'
+      });
+    }
+
     const newArticle = {
       id: String(mockArticles.length + 1),
       ...req.body,
@@ -124,11 +133,10 @@ router.post('/', (req, res) => {
       isFavorite: false,
       hasAnnotations: false,
       readProgress: 0,
-      tags: req.body.tags || []  // Default to empty array if no tags provided
+      tags: req.body.tags || [] // Default to empty array if no tags provided
     };
 
-    // In a real implementation, this would save to database
-    // For now, we just return the created article
+    // In a real implementation, this would save to a database
     res.status(201).json({
       success: true,
       data: newArticle,
