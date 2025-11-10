@@ -782,12 +782,212 @@ describe('Integration: Tag Management Across Articles', function() {
 // ============================================================================
 // INTEGRATION TEST 5: Error Handling & Edge Cases
 // ============================================================================
-// TODO: Test error scenarios across the API
-// - Test authentication failures (invalid credentials)
-// - Test accessing protected routes without token
-// - Test 404 errors (requesting non-existent resources)
-// - Test validation errors (missing required fields)
-// - Test duplicate data handling (same username/email)
+describe('Integration: Error Handling & Edge Cases', function() {
+  
+  it('should return 401 for invalid login credentials', function(done) {
+    chai.request(app)
+      .post('/api/auth/login')
+      .send({
+        username: 'nonexistentuser',
+        password: 'wrongpassword'
+      })
+      .end((err, res) => {
+        expect(res).to.have.status(401);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Invalid credentials');
+        done();
+      });
+  });
+
+  it('should return 400 for missing login credentials', function(done) {
+    chai.request(app)
+      .post('/api/auth/login')
+      .send({
+        username: 'testuser'
+        // Missing password
+      })
+      .end((err, res) => {
+        expect(res).to.have.status(400);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Username and password are required');
+        done();
+      });
+  });
+
+  it('should return 400 for missing registration fields', function(done) {
+    chai.request(app)
+      .post('/api/auth/register')
+      .send({
+        username: 'testuser'
+        // Missing email and password
+      })
+      .end((err, res) => {
+        expect(res).to.have.status(400);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Username, email, and password are required');
+        done();
+      });
+  });
+
+  it('should return 404 for non-existent article', function(done) {
+    chai.request(app)
+      .get('/api/articles/nonexistent-article-id-999')
+      .end((err, res) => {
+        expect(res).to.have.status(404);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Article not found');
+        done();
+      });
+  });
+
+  it('should return 404 for non-existent feed', function(done) {
+    chai.request(app)
+      .get('/api/feeds/nonexistent-feed-id-999')
+      .end((err, res) => {
+        expect(res).to.have.status(404);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Feed not found');
+        done();
+      });
+  });
+
+  it('should return 404 for non-existent tag', function(done) {
+    chai.request(app)
+      .get('/api/tags/nonexistent-tag-id-999')
+      .end((err, res) => {
+        expect(res).to.have.status(404);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Tag not found');
+        done();
+      });
+  });
+
+  it('should return 404 for non-existent user', function(done) {
+    chai.request(app)
+      .get('/api/users/profile/nonexistent-user-id-999')
+      .end((err, res) => {
+        expect(res).to.have.status(404);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'User not found');
+        done();
+      });
+  });
+
+  it('should return 400 for missing required highlight fields', function(done) {
+    chai.request(app)
+      .post('/api/highlights')
+      .send({
+        articleId: 'article-1',
+        userId: 'user-1'
+        // Missing text and position
+      })
+      .end((err, res) => {
+        expect(res).to.have.status(400);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body.error).to.include('Missing required fields');
+        done();
+      });
+  });
+
+  it('should return 400 for invalid highlight position', function(done) {
+    chai.request(app)
+      .post('/api/highlights')
+      .send({
+        articleId: 'article-1',
+        userId: 'user-1',
+        text: 'test highlight',
+        position: {
+          start: 0
+          // Missing end
+        }
+      })
+      .end((err, res) => {
+        expect(res).to.have.status(400);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body.error).to.include('Position must include start and end');
+        done();
+      });
+  });
+
+  it('should return 400 for missing tag name', function(done) {
+    chai.request(app)
+      .post('/api/tags')
+      .send({
+        color: '#ff0000'
+        // Missing name
+      })
+      .end((err, res) => {
+        expect(res).to.have.status(400);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Tag name is required');
+        done();
+      });
+  });
+
+  it('should return 404 when deleting non-existent article', function(done) {
+    chai.request(app)
+      .delete('/api/articles/nonexistent-article-999')
+      .end((err, res) => {
+        expect(res).to.have.status(404);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Article not found');
+        done();
+      });
+  });
+
+  it('should return 404 when updating non-existent feed', function(done) {
+    chai.request(app)
+      .put('/api/feeds/nonexistent-feed-999')
+      .send({
+        name: 'Updated Feed'
+      })
+      .end((err, res) => {
+        expect(res).to.have.status(404);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Feed not found');
+        done();
+      });
+  });
+
+  it('should return 404 when deleting non-existent tag', function(done) {
+    chai.request(app)
+      .delete('/api/tags/nonexistent-tag-999')
+      .end((err, res) => {
+        expect(res).to.have.status(404);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Tag not found');
+        done();
+      });
+  });
+
+  it('should handle wrong password for existing user', function(done) {
+    chai.request(app)
+      .post('/api/auth/login')
+      .send({
+        username: 'alice',
+        password: 'wrongpassword123'
+      })
+      .end((err, res) => {
+        expect(res).to.have.status(401);
+        expect(res.body).to.have.property('success', false);
+        expect(res.body).to.have.property('error', 'Invalid credentials');
+        done();
+      });
+  });
+
+  it('should return error response format consistently', function(done) {
+    chai.request(app)
+      .get('/api/articles/nonexistent-999')
+      .end((err, res) => {
+        // Verify consistent error response structure
+        expect(res.body).to.have.property('success');
+        expect(res.body).to.have.property('error');
+        expect(res.body.success).to.be.false;
+        expect(res.body.error).to.be.a('string');
+        done();
+      });
+  });
+});
 
 // ============================================================================
 // INTEGRATION TEST 6: Multi-Step Article Filtering & Search
