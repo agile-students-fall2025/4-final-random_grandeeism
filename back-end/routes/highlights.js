@@ -58,7 +58,7 @@ const buildNewHighlight = ({ articleId, userId, text, color, position, annotatio
  * Returns { updated, error } where updated is the new object (not persisted)
  */
 const buildUpdatedHighlight = (highlight, body) => {
-  const { annotations: newAnnotations, text: newText, color: newColor, position: newPosition } = body;
+  const { annotations: newAnnotations, text: newText, color: newColor} = body;
 
   // Do not allow changing the highlighted text
   if (newText !== undefined && newText !== highlight.text) {
@@ -82,13 +82,16 @@ const buildUpdatedHighlight = (highlight, body) => {
     }
   }
 
+  if (newColor !== undefined) {
+    updatedHighlight.color = newColor;
+  }
+
   // preserve id/articleId/userId, update updatedAt
   updatedHighlight.id = highlight.id;
   updatedHighlight.articleId = highlight.articleId;
   updatedHighlight.userId = highlight.userId;
   updatedHighlight.updatedAt = new Date();
-  // keep color/position unchanged (current behavior)
-  updatedHighlight.color = highlight.color;
+  // keep position unchanged (current behavior)
   updatedHighlight.position = highlight.position;
 
   return { updated: updatedHighlight };

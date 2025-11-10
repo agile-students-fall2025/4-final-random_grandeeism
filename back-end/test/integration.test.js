@@ -79,7 +79,7 @@ describe('Integration: Article Lifecycle', function() {
         articleId: createdArticleId,
         userId: 'test-user-1',
         text: 'This is test content',
-        note: 'Important test highlight',
+        annotations: { note: 'Important test highlight' },
         color: '#fef08a',
         position: {
           start: 0,
@@ -1223,7 +1223,7 @@ describe('Integration: Highlights & Article Interaction', function() {
         articleId: testArticleId,
         userId: 'test-user-1',
         text: 'important content',
-        note: 'This is a key point to remember',
+        annotations: { note: 'This is a key point to remember' },
         color: '#fef08a',
         position: {
           start: 20,
@@ -1235,8 +1235,8 @@ describe('Integration: Highlights & Article Interaction', function() {
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.have.property('id');
         expect(res.body.data).to.have.property('articleId', testArticleId);
-        expect(res.body.data).to.have.property('text', 'important content');
-        expect(res.body.data).to.have.property('note', 'This is a key point to remember');
+  expect(res.body.data).to.have.property('text', 'important content');
+  expect(res.body.data.annotations).to.have.property('note', 'This is a key point to remember');
         highlight1Id = res.body.data.id;
         done();
       });
@@ -1249,7 +1249,7 @@ describe('Integration: Highlights & Article Interaction', function() {
         articleId: testArticleId,
         userId: 'test-user-1',
         text: 'we want to highlight',
-        note: 'Another important section',
+        annotations: { note: 'Another important section' },
         color: '#bfdbfe',
         position: {
           start: 45,
@@ -1271,7 +1271,7 @@ describe('Integration: Highlights & Article Interaction', function() {
         articleId: testArticleId,
         userId: 'test-user-1',
         text: 'later reference',
-        note: 'Useful for future',
+        annotations: { note: 'Useful for future' },
         color: '#fecaca',
         position: {
           start: 90,
@@ -1322,13 +1322,13 @@ describe('Integration: Highlights & Article Interaction', function() {
     chai.request(app)
       .put('/api/highlights/highlight-1')
       .send({
-        note: 'Updated note for this highlight',
+        annotations: { note: 'Updated note for this highlight' },
         color: '#c7d2fe'
       })
       .end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
-        expect(res.body.data).to.have.property('note', 'Updated note for this highlight');
+        expect(res.body.data.annotations).to.have.property('note', 'Updated note for this highlight');
         expect(res.body.data).to.have.property('color', '#c7d2fe');
         // Should preserve original fields
         expect(res.body.data).to.have.property('id', 'highlight-1');
@@ -1341,11 +1341,11 @@ describe('Integration: Highlights & Article Interaction', function() {
       .put('/api/highlights/highlight-1')
       .send({
         articleId: 'different-article-id', // This should be ignored
-        note: 'Testing immutable fields'
+        annotations: { note: 'Testing immutable fields' }
       })
       .end((err, res) => {
         expect(res).to.have.status(200);
-        expect(res.body.data).to.have.property('note', 'Testing immutable fields');
+        expect(res.body.data.annotations).to.have.property('note', 'Testing immutable fields');
         // articleId should remain unchanged
         expect(res.body.data.articleId).to.not.equal('different-article-id');
         done();
@@ -1369,7 +1369,7 @@ describe('Integration: Highlights & Article Interaction', function() {
     chai.request(app)
       .put('/api/highlights/nonexistent-highlight-999')
       .send({
-        note: 'This should fail'
+        annotations: { note: 'This should fail' }
       })
       .end((err, res) => {
         expect(res).to.have.status(404);
@@ -1410,7 +1410,7 @@ describe('Integration: Highlights & Article Interaction', function() {
         articleId: 'article-test',
         userId: 'user-test',
         text: 'test highlight text',
-        note: 'test note',
+        annotations: { note: 'test note' },
         color: '#ffffff',
         position: {
           start: 10,
@@ -1422,8 +1422,8 @@ describe('Integration: Highlights & Article Interaction', function() {
         expect(res.body.data).to.have.property('id');
         expect(res.body.data).to.have.property('articleId');
         expect(res.body.data).to.have.property('userId');
-        expect(res.body.data).to.have.property('text');
-        expect(res.body.data).to.have.property('note');
+  expect(res.body.data).to.have.property('text');
+  expect(res.body.data.annotations).to.have.property('note');
         expect(res.body.data).to.have.property('color');
         expect(res.body.data).to.have.property('position');
         expect(res.body.data).to.have.property('createdAt');
