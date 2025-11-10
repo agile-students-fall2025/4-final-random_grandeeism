@@ -2,6 +2,103 @@ const express = require('express');
 const router = express.Router();
 const { mockHighlights } = require('../data/mockHighlights');
 
+// --- Helpers (exposed on router for easier testing) ----------------------
+
+/**
+ * Generate a short title from the highlighted text (used when no title provided)
+ */
+const generateTitle = txt => {
+  if (!txt) return '';
+  const words = txt.trim().split(/\s+/).slice(0, 6);
+  let t = words.join(' ');
+  if (t.length < txt.trim().length) t = `${t}...`;
+  return t;
+};
+
+/**
+ * Validate the annotations payload. Returns { valid: bool, error?: string }
+ * Allowed values:
+ *  - undefined => not provided
+ *  - null => explicit remove annotations
+ *  - object => single annotation (not array)
+ */
+const validateAnnotationsPayload = annotations => {
+  if (annotations === undefined) return { valid: true };
+  if (annotations === null) return { valid: true };
+  if (Array.isArray(annotations)) return { valid: false, error: '`annotations` must be a single object, not an array' };
+  if (typeof annotations !== 'object') return { valid: false, error: '`annotations` must be an object with `title` and/or `note` when provided' };
+  return { valid: true };
+};
+
+/** Build a new highlight object (does not persist) */
+const buildNewHighlight = ({ articleId, userId, text, color, position, annotations }) => {
+  const providedTitle = annotations && annotations.title ? annotations.title : null;
+  const providedNote = annotations && annotations.note !== undefined ? annotations.note : '';
+
+  return {
+    id: `highlight-${mockHighlights.length + 1}`,
+    articleId,
+    userId,
+    text,
+    annotations: {
+      title: providedTitle || generateTitle(text),
+      note: providedNote || ''
+    },
+    color: color || '#fef08a',
+    position: {
+      start: position.start,
+      end: position.end
+    },
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+};
+
+/** Build an updated highlight object based on an existing highlight and request body.
+ * Returns { updated, error } where updated is the new object (not persisted)
+ */
+const buildUpdatedHighlight = (highlight, body) => {
+  const { annotations: newAnnotations, text: newText, color: newColor, position: newPosition } = body;
+
+  // Do not allow changing the highlighted text
+  if (newText !== undefined && newText !== highlight.text) {
+    return { error: { status: 400, message: 'Highlighted text cannot be modified. To remove the highlight, delete it instead.' } };
+  }
+
+  // Validate annotations payload
+  const validation = validateAnnotationsPayload(newAnnotations);
+  if (!validation.valid) return { error: { status: 400, message: validation.error } };
+
+  const updatedHighlight = { ...highlight };
+
+  if (newAnnotations !== undefined) {
+    if (newAnnotations === null) {
+      updatedHighlight.annotations = null;
+    } else {
+      const { title: naTitle, note: naNote } = newAnnotations;
+      updatedHighlight.annotations = { ...(highlight.annotations || {}) };
+      if (naTitle !== undefined) updatedHighlight.annotations.title = naTitle;
+      if (naNote !== undefined) updatedHighlight.annotations.note = naNote;
+    }
+  }
+
+  // preserve id/articleId/userId, update updatedAt
+  updatedHighlight.id = highlight.id;
+  updatedHighlight.articleId = highlight.articleId;
+  updatedHighlight.userId = highlight.userId;
+  updatedHighlight.updatedAt = new Date();
+  // keep color/position unchanged (current behavior)
+  updatedHighlight.color = highlight.color;
+  updatedHighlight.position = highlight.position;
+
+  return { updated: updatedHighlight };
+};
+
+// Attach helpers to router for tests to import via router._helpers
+router._helpers = { generateTitle, validateAnnotationsPayload, buildNewHighlight, buildUpdatedHighlight };
+
+// -------------------------------------------------------------------------
+
 /**
  * GET /api/highlights
  * Retrieve all highlights (optionally filtered by userId)
@@ -67,7 +164,7 @@ router.get('/article/:articleId', (req, res) => {
  */
 router.post('/', (req, res) => {
   try {
-    const { articleId, userId, text, note, color, position } = req.body;
+    const { articleId, userId, text, color, position, annotations } = req.body;
 
     // Validate required fields
     if (!articleId || !userId || !text || !position) {
@@ -84,20 +181,13 @@ router.post('/', (req, res) => {
       });
     }
 
-    const newHighlight = {
-      id: `highlight-${mockHighlights.length + 1}`,
-      articleId,
-      userId,
-      text,
-      note: note || '',
-      color: color || '#fef08a',
-      position: {
-        start: position.start,
-        end: position.end
-      },
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    // Validate annotations and build the new highlight using helper
+    const validation = router._helpers.validateAnnotationsPayload(annotations);
+    if (!validation.valid) {
+      return res.status(400).json({ success: false, error: validation.error });
+    }
+
+    const newHighlight = router._helpers.buildNewHighlight({ articleId, userId, text, color, position, annotations });
 
     res.status(201).json({
       success: true,
@@ -127,21 +217,30 @@ router.put('/:id', (req, res) => {
         error: 'Highlight not found'
       });
     }
+    // Build updated object carefully to support nested `annotations` while
+    // preserving id/articleId/userId and updatedAt.
+    const {annotations: newAnnotations} = req.body;
 
-    const updatedHighlight = {
-      ...highlight,
-      ...req.body,
-      id: req.params.id, // Ensure ID doesn't change
-      articleId: highlight.articleId, // Ensure articleId doesn't change
-      userId: highlight.userId, // Ensure userId doesn't change
-      updatedAt: new Date()
-    };
+    // Validate annotations payload: only accept a single object (or null to remove annotations)
+    if (newAnnotations !== undefined && newAnnotations !== null && typeof newAnnotations !== 'object') {
+      return res.status(400).json({
+        success: false,
+        error: '`annotations` must be an object with `title` and/or `note`, or null to remove annotations'
+      });
+    }
+    if (Array.isArray(newAnnotations)) {
+      return res.status(400).json({
+        success: false,
+        error: '`annotations` must be a single object, not an array'
+      });
+    }
 
-    res.json({
-      success: true,
-      data: updatedHighlight,
-      message: 'Highlight updated successfully'
-    });
+    const result = router._helpers.buildUpdatedHighlight(highlight, req.body);
+    if (result.error) {
+      return res.status(result.error.status).json({ success: false, error: result.error.message });
+    }
+
+    res.json({ success: true, data: result.updated, message: 'Highlight updated successfully' });
   } catch (error) {
     res.status(500).json({
       success: false,
