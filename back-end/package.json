@@ -6,7 +6,26 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "mocha",
-    "coverage": "c8 mocha"
+    "coverage": "c8 --include='routes/**' --include='utils/**' --include='index.js' --reporter=text --reporter=html mocha"
+  },
+  "c8": {
+    "include": [
+      "routes/**",
+      "utils/**",
+      "index.js"
+    ],
+    "exclude": [
+      "test/**",
+      "data/**",
+      "coverage/**",
+      "node_modules/**"
+    ],
+    "reporter": [
+      "text",
+      "html",
+      "json-summary"
+    ],
+    "all": true
   },
   "keywords": [],
   "author": "",
@@ -22,9 +41,9 @@
   },
   "devDependencies": {
     "c8": "^10.1.3",
-    "chai": "^4.5.0",
+    "chai": "^4.3.10",
     "chai-http": "^4.4.0",
-    "mocha": "^11.7.5",
+    "mocha": "^11.7.4",
     "nodemon": "^3.1.10"
   },
   "node": ">=20.0.0"

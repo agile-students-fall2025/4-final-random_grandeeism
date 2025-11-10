@@ -11,14 +11,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB
-mongoose.connect(process.env.DB_CONNECTION_STRING || 'mongodb://admin:secret@localhost:27017/example-mern-stack-app?authSource=admin')
-  .then(() => {
-    console.log('Connected to MongoDB');
-  })
-  .catch((error) => {
-    console.error('MongoDB connection error:', error);
-  });
+// Connect to MongoDB (disabled for testing)
+// mongoose.connect(process.env.DB_CONNECTION_STRING || 'mongodb://admin:secret@localhost:27017/example-mern-stack-app?authSource=admin')
+//   .then(() => {
+//     console.log('Connected to MongoDB');
+//   })
+//   .catch((error) => {
+//     console.error('MongoDB connection error:', error);
+//   });
 
 // Import routes
 const apiRoutes = require('./routes');
@@ -40,9 +40,11 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+// Start server only if not being required (e.g., not in tests)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;

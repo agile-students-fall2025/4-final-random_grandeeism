@@ -77,7 +77,7 @@ router.post('/', (req, res) => {
       });
     }
 
-    if (!position.start || !position.end) {
+    if (position.start === undefined || position.end === undefined) {
       return res.status(400).json({
         success: false,
         error: 'Position must include start and end character positions'
