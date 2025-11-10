@@ -6,7 +6,26 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "mocha",
-    "coverage": "c8 mocha"
+    "coverage": "c8 --include='routes/**' --include='utils/**' --include='index.js' --reporter=text --reporter=html mocha"
+  },
+  "c8": {
+    "include": [
+      "routes/**",
+      "utils/**",
+      "index.js"
+    ],
+    "exclude": [
+      "test/**",
+      "data/**",
+      "coverage/**",
+      "node_modules/**"
+    ],
+    "reporter": [
+      "text",
+      "html",
+      "json-summary"
+    ],
+    "all": true
   },
   "keywords": [],
   "author": "",
