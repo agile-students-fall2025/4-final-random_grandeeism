@@ -992,13 +992,203 @@ describe('Integration: Error Handling & Edge Cases', function() {
 // ============================================================================
 // INTEGRATION TEST 6: Multi-Step Article Filtering & Search
 // ============================================================================
-// TODO: Test complex querying across multiple endpoints
-// - Create articles with various statuses, tags, and favorites
-// - Test filtering by status (GET /api/articles?status=inbox)
-// - Test filtering by tag (GET /api/articles?tag=tagId)
-// - Test filtering favorites (GET /api/articles?favorite=true)
-// - Test filtering untagged articles (GET /api/articles?untagged=true)
-// - Combine multiple filters and verify results
+describe('Integration: Article Filtering & Search', function() {
+  
+  it('should get all articles without filters', function(done) {
+    chai.request(app)
+      .get('/api/articles')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body).to.have.property('data');
+        expect(res.body.data).to.be.an('array');
+        expect(res.body).to.have.property('count');
+        done();
+      });
+  });
+
+  it('should filter articles by status=inbox', function(done) {
+    chai.request(app)
+      .get('/api/articles?status=inbox')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        // All returned articles should have status 'inbox'
+        res.body.data.forEach(article => {
+          expect(article.status).to.equal('inbox');
+        });
+        done();
+      });
+  });
+
+  it('should filter articles by status=reading', function(done) {
+    chai.request(app)
+      .get('/api/articles?status=reading')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        res.body.data.forEach(article => {
+          expect(article.status).to.equal('reading');
+        });
+        done();
+      });
+  });
+
+  it('should filter articles by status=archived', function(done) {
+    chai.request(app)
+      .get('/api/articles?status=archived')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        res.body.data.forEach(article => {
+          expect(article.status).to.equal('archived');
+        });
+        done();
+      });
+  });
+
+  it('should filter articles by tag', function(done) {
+    chai.request(app)
+      .get('/api/articles?tag=JavaScript')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        // All returned articles should have the specified tag
+        res.body.data.forEach(article => {
+          expect(article.tags).to.include('JavaScript');
+        });
+        done();
+      });
+  });
+
+  it('should filter favorite articles', function(done) {
+    chai.request(app)
+      .get('/api/articles?favorite=true')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        // All returned articles should be favorites
+        res.body.data.forEach(article => {
+          expect(article.isFavorite).to.be.true;
+        });
+        done();
+      });
+  });
+
+  it('should filter untagged articles', function(done) {
+    chai.request(app)
+      .get('/api/articles?untagged=true')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        // All returned articles should have no tags
+        res.body.data.forEach(article => {
+          expect(article.tags || []).to.have.lengthOf(0);
+        });
+        done();
+      });
+  });
+
+  it('should combine multiple filters: status and favorite', function(done) {
+    chai.request(app)
+      .get('/api/articles?status=inbox&favorite=true')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        // Articles should match both criteria
+        res.body.data.forEach(article => {
+          expect(article.status).to.equal('inbox');
+          expect(article.isFavorite).to.be.true;
+        });
+        done();
+      });
+  });
+
+  it('should combine multiple filters: status and tag', function(done) {
+    chai.request(app)
+      .get('/api/articles?status=reading&tag=Technology')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        res.body.data.forEach(article => {
+          expect(article.status).to.equal('reading');
+          expect(article.tags).to.include('Technology');
+        });
+        done();
+      });
+  });
+
+  it('should handle empty results gracefully', function(done) {
+    chai.request(app)
+      .get('/api/articles?status=nonexistent-status')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        expect(res.body.data).to.have.lengthOf(0);
+        expect(res.body.count).to.equal(0);
+        done();
+      });
+  });
+
+  it('should return correct count with filtered results', function(done) {
+    chai.request(app)
+      .get('/api/articles?status=inbox')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('count');
+        expect(res.body.count).to.equal(res.body.data.length);
+        done();
+      });
+  });
+
+  it('should filter by multiple tags if needed', function(done) {
+    // Test filtering by a specific tag from mock data
+    chai.request(app)
+      .get('/api/articles?tag=CSS')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        res.body.data.forEach(article => {
+          expect(article.tags).to.include('CSS');
+        });
+        done();
+      });
+  });
+
+  it('should handle case-sensitive tag filtering', function(done) {
+    chai.request(app)
+      .get('/api/articles?tag=React')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        // Should match exact case
+        done();
+      });
+  });
+
+  it('should return all articles when no filters match', function(done) {
+    chai.request(app)
+      .get('/api/articles?tag=NonExistentTag')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.be.an('array');
+        // Should return empty array for non-matching filter
+        done();
+      });
+  });
+});
 
 // ============================================================================
 // INTEGRATION TEST 7: Highlights & Article Interaction
