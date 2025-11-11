@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { mockArticles } = require('../data/mockArticles');
+const { mockTags } = require('../data/mockTags');
 
 /**
  * GET /api/articles
@@ -17,9 +18,10 @@ router.get('/', (req, res) => {
     }
 
     if (tag) {
-      filteredArticles = filteredArticles.filter(article => 
-        article.tags && article.tags.includes(tag)
-      );
+      // Filter by tag ID (articles reference tag IDs)
+      filteredArticles = filteredArticles.filter(article => {
+        return article.tags && article.tags.includes(tag);
+      });
     }
 
     if (untagged === 'true') {
@@ -313,6 +315,80 @@ router.patch('/:id/favorite', (req, res) => {
       error: 'Server Error',
       message: error.message
     });
+  }
+});
+
+/**
+ * POST /api/articles/:id/tags
+ * Add a tag to an article by tag ID (mock - doesn't persist)
+ */
+router.post('/:id/tags', (req, res) => {
+  try {
+    const article = mockArticles.find(a => a.id === req.params.id);
+    if (!article) {
+      return res.status(404).json({ success: false, error: 'Article not found' });
+    }
+
+    const { tagId: requestedTagId } = req.body;
+    if (!requestedTagId) {
+      return res.status(400).json({ success: false, error: 'tagId is required' });
+    }
+
+    const tag = mockTags.find(t => t.id === requestedTagId);
+    if (!tag) {
+      return res.status(404).json({ success: false, error: 'Tag not found' });
+    }
+
+
+    const tagId = tag.id;
+    const existingTags = (article.tags || []).map(t => String(t).toLowerCase());
+
+    if (existingTags.includes(tagId.toLowerCase())) {
+      return res.status(409).json({ success: false, error: 'Tag already on article' });
+    }
+
+    const updatedArticle = {
+      ...article,
+      tags: [ ...(article.tags || []), tagId ]
+    };
+
+    return res.json({ success: true, data: updatedArticle, message: 'Tag added to article successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Server Error', message: error.message });
+  }
+});
+
+/**
+ * DELETE /api/articles/:id/tags/:tagId
+ * Remove a tag from an article by tag ID (mock - doesn't persist)
+ */
+router.delete('/:id/tags/:tagId', (req, res) => {
+  try {
+    const article = mockArticles.find(a => a.id === req.params.id);
+    if (!article) {
+      return res.status(404).json({ success: false, error: 'Article not found' });
+    }
+
+    const tag = mockTags.find(t => t.id === req.params.tagId);
+    if (!tag) {
+      return res.status(404).json({ success: false, error: 'Tag not found' });
+    }
+
+    const tagId = tag.id;
+    const existingTags = (article.tags || []).map(t => String(t).toLowerCase());
+
+    if (!existingTags.includes(tagId.toLowerCase())) {
+      return res.status(404).json({ success: false, error: 'Tag not found on article' });
+    }
+
+    const updatedArticle = {
+      ...article,
+      tags: (article.tags || []).filter(t => String(t).toLowerCase() !== tagId.toLowerCase())
+    };
+
+    return res.json({ success: true, data: updatedArticle, message: 'Tag removed from article successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Server Error', message: error.message });
   }
 });
 

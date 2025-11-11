@@ -215,4 +215,82 @@ describe('Articles API', () => {
         });
     });
   });
+
+  // Tag management on articles
+  describe('Tag management on articles', () => {
+    it('should add a tag to an article', (done) => {
+      // article 1 does not originally include 'javascript'
+      chai.request(app)
+        .post('/api/articles/1/tags')
+        .send({ tagId: 'tag-1' })
+        .end((err, res) => {
+          expect(res).to.have.status(200);
+          expect(res.body).to.have.property('success', true);
+          const lowered = res.body.data.tags.map(t => String(t).toLowerCase());
+          expect(lowered.includes('tag-1') || lowered.includes('javascript')).to.equal(true);
+          done();
+        });
+    });
+
+    it('should not add a duplicate tag to an article', (done) => {
+      // article 4 already has 'javascript' in mockArticles
+      chai.request(app)
+        .post('/api/articles/4/tags')
+        .send({ tagId: 'tag-1' })
+        .end((err, res) => {
+          expect(res).to.have.status(409);
+          expect(res.body).to.have.property('success', false);
+          expect(res.body).to.have.property('error', 'Tag already on article');
+          done();
+        });
+    });
+
+    it('should return 404 when adding a tag to a non-existent article', (done) => {
+      chai.request(app)
+        .post('/api/articles/9999/tags')
+        .send({ tagId: 'tag-1' })
+        .end((err, res) => {
+          expect(res).to.have.status(404);
+          expect(res.body).to.have.property('success', false);
+          done();
+        });
+    });
+
+    it('should return 404 when adding a non-existent tag to an article', (done) => {
+      chai.request(app)
+        .post('/api/articles/1/tags')
+        .send({ tagId: 'tag-999' })
+        .end((err, res) => {
+          expect(res).to.have.status(404);
+          expect(res.body).to.have.property('success', false);
+          expect(res.body).to.have.property('error', 'Tag not found');
+          done();
+        });
+    });
+
+    it('should remove a tag from an article', (done) => {
+      // article 4 has 'javascript'
+      chai.request(app)
+        .delete('/api/articles/4/tags/tag-1')
+        .end((err, res) => {
+          expect(res).to.have.status(200);
+          expect(res.body).to.have.property('success', true);
+          const lowered = res.body.data.tags.map(t => String(t).toLowerCase());
+          expect(lowered.includes('tag-1') || lowered.includes('javascript')).to.equal(false);
+          done();
+        });
+    });
+
+    it('should return 404 when removing a tag that is not on the article', (done) => {
+      // article 1 does not have 'react'
+      chai.request(app)
+        .delete('/api/articles/1/tags/tag-2')
+        .end((err, res) => {
+          expect(res).to.have.status(404);
+          expect(res.body).to.have.property('success', false);
+          expect(res.body).to.have.property('error', 'Tag not found on article');
+          done();
+        });
+    });
+  });
 });
