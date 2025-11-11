@@ -18,13 +18,9 @@ router.get('/', (req, res) => {
     }
 
     if (tag) {
-      const tagLower = String(tag).toLowerCase();
+      // Filter by tag ID (articles reference tag IDs)
       filteredArticles = filteredArticles.filter(article => {
-        if (!article.tags) return false;
-        // If article stores tag IDs, check direct match
-        if (article.tags.includes(tag)) return true;
-        // Otherwise, check case-insensitive name match
-        return article.tags.map(t => String(t).toLowerCase()).includes(tagLower);
+        return article.tags && article.tags.includes(tag);
       });
     }
 

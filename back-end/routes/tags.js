@@ -192,13 +192,9 @@ router.get('/:id/articles', (req, res) => {
       });
     }
 
-    // Find articles that have this tag (prefer ID matching, fall back to case-insensitive name match)
+    // Find articles that have this tag (match by tag ID only)
     const taggedArticles = mockArticles.filter(article => {
-      if (!article.tags) return false;
-      // Direct ID match
-      if (article.tags.includes(tag.id)) return true;
-      // Case-insensitive name match for backwards compatibility
-      return article.tags.map(t => String(t).toLowerCase()).includes(String(tag.name).toLowerCase());
+      return article.tags && article.tags.includes(tag.id);
     });
 
     res.json({
