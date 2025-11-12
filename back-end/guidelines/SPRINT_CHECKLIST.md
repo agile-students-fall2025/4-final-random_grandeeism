@@ -155,6 +155,37 @@ Complete these tasks before switching the front-end from local/mock imports to t
 
 See the API contract for canonical endpoints and payloads: [`back-end/guidelines/API-CONTRACT.md`](API-CONTRACT.md)
 
+## Extractor & Ingestion (recommended order)
+
+Follow this order to add reliable ingestion without blocking front-end integration. Each step is small and testable so teammates can work in parallel.
+
+1. Add DAO abstraction and mock DAO
+	- Quick tip: implement `lib/daoFactory.js` and `lib/*Dao.mock.js` first so routes can import the DAO and `USE_MOCK_DB=true` works for front-end devs.
+	- Why: unblocks front-end and gives tests deterministic state.
+
+2. Define extractor contract and tests
+	- Quick tip: create `back-end/lib/contentExtractor.js` with two exported async functions: `extractContent(url)` and `extractFeed(url)` and unit tests that mock network responses.
+	- Contract: `extractContent(url)` returns { url, canonicalUrl?, title?, contentHtml?, excerpt?, images?:[], published?, wordCount? }.
+	- Contract: `extractFeed(url)` returns { feedTitle?, feedUrl, entries: [{ id, title?, url, excerpt?, contentHtml?, published? }] }.
+
+3. Implement extractor adapter(s)
+	- Quick tip: HTML extraction can use `axios + jsdom + @mozilla/readability`. RSS extraction can use `axios + fast-xml-parser` or a small RSS parser.
+	- Recommendation: return the contract shape and avoid persistence logic inside the extractor.
+
+4. Implement feed worker (idempotent upsert)
+	- Quick tip: implement `back-end/workers/feedWorker.js` that calls `contentExtractor.extractFeed`, maps entries to article records and calls `dao.upsertByUrl()`.
+	- Recommendation: make upsert idempotent by using canonical URL or GUID and content hashes to detect changes.
+
+5. Implement production DAO (Mongoose-backed)
+	- Quick tip: after mock DAOs and worker validated, implement `lib/*Dao.mongo.js` and wire to `daoFactory` when `USE_MOCK_DB=false`.
+
+6. Add integration tests and CI steps
+	- Quick tip: use `mongodb-memory-server` for a small integration job in CI that validates DAO+worker end-to-end.
+	- Recommendation: keep most unit tests using mock DAOs for speed; run a smaller integration suite for persistence checks.
+
+7. Document seeding and runbooks
+	- Quick tip: add `back-end/README-mocking.md` and `npm run seed:mock` / `npm run seed:mongo` scripts.
+
 ### 3. Front-End Integration
 
 **Anas & Saad lead this effort with support from all team members**
