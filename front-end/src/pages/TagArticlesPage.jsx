@@ -3,7 +3,7 @@ import { ChevronLeft, Tag as TagIcon, FileText } from "lucide-react";
 import ArticleCard from "../components/ArticleCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
-import { feedsAPI, articlesAPI } from "../services/api.js";
+import { feedsAPI, articlesAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
@@ -25,25 +25,51 @@ const getAllAvailableTags = (articles) =>
 export default function TagArticlesPage({ onNavigate, tag }) {
   const [articles, setArticles] = useState([]);
   const [feeds, setFeeds] = useState([]);
+  const [tags, setTags] = useState([]);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Use 'tag' for backend filtering, not 'tags'
-  const baseLockedFilters = useMemo(() => (tag ? { tag } : {}), [tag]);
+  // Helper function to find tag ID by tag name
+  const getTagIdByName = (tagName, tagsArray) => {
+    if (!tagName || !Array.isArray(tagsArray)) return tagName;
+    const foundTag = tagsArray.find(t => t.name === tagName);
+    return foundTag ? foundTag.id : tagName;
+  };
 
-  // Fetch articles and feeds from backend on mount or when tag changes
+  // Create base filters for search functionality (will use resolved tag ID)
+  const baseLockedFilters = useMemo(() => {
+    if (!tag) return {};
+    const tagId = getTagIdByName(tag, tags);
+    return { tag: tagId };
+  }, [tag, tags]);
+
+  // Fetch tags first, then articles and feeds
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // Fetch articles and feeds in parallel
+        // First, fetch tags to resolve tag name to ID
+        const tagsResponse = await tagsAPI.getAll();
+        let tagId = tag;
+        
+        if (tagsResponse.success && tagsResponse.data) {
+          setTags(tagsResponse.data);
+          // Convert tag name to tag ID if needed
+          if (tag) {
+            const foundTag = tagsResponse.data.find(t => t.name === tag);
+            tagId = foundTag ? foundTag.id : tag;
+          }
+        }
+        
+        // Now fetch articles and feeds with the resolved tag ID
+        const filters = tagId ? { tag: tagId } : {};
         const [articlesResponse, feedsResponse] = await Promise.all([
-          articlesAPI.getAll(baseLockedFilters),
+          articlesAPI.getAll(filters),
           feedsAPI.getAll()
         ]);
         
@@ -66,7 +92,7 @@ export default function TagArticlesPage({ onNavigate, tag }) {
     };
 
     fetchData();
-  }, [baseLockedFilters]);
+  }, [tag]);
 
   const allAvailableTags = useMemo(() => getAllAvailableTags(articles), [articles]);
 
