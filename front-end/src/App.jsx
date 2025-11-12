@@ -39,9 +39,6 @@ import FloatingAddButton from './components/FloatingAddButton.jsx';
 import AddLinkModal from './components/AddLinkModal.jsx';
 import { Toaster } from './components/ui/sonner.jsx';
 
-// Import API services
-import { articlesAPI, handleAPIError } from './services/api.js';
-
 // Import data
 // import { mockArticles } from './data/mockArticles'; // Adjust path if needed
 
@@ -441,23 +438,10 @@ function App() {
         isOpen={isAddLinkModalOpen} 
         onClose={() => setIsAddLinkModalOpen(false)}
         articles={[]}
-        onAddLink={async (newArticle) => {
-          try {
-            console.log('Adding new article:', newArticle);
-            const response = await articlesAPI.create(newArticle);
-            
-            if (response.success) {
-              console.log('Article created successfully:', response.data);
-              setIsAddLinkModalOpen(false);
-              // Optionally show success toast or refresh current page data
-            } else {
-              throw new Error('Failed to create article');
-            }
-          } catch (err) {
-            const errorResult = handleAPIError(err, 'creating article');
-            console.error('Failed to create article:', errorResult.error);
-            // Optionally show error toast to user
-          }
+        onAddLink={(newArticle) => {
+          console.log('New article added:', newArticle);
+          // TODO: Send to backend API
+          setIsAddLinkModalOpen(false);
         }}
       />
 

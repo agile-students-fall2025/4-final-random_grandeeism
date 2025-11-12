@@ -9,7 +9,8 @@ import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { articlesAPI, feedsAPI } from "../services/api.js";
+import { articlesAPI } from "../services/api.js";
+import { mockFeeds } from "../data/mockFeeds.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
 
@@ -17,7 +18,6 @@ const InboxPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [articles, setArticles] = useState([]);
-  const [feeds, setFeeds] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,43 +25,23 @@ const InboxPage = ({ onNavigate }) => {
   const baseLockedFilters = useMemo(() => ({ status: STATUS.INBOX }), []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Fetch articles and feeds in parallel
-        const [articlesResponse, feedsResponse] = await Promise.all([
-          articlesAPI.getAll(baseLockedFilters),
-          feedsAPI.getAll()
-        ]);
-        
-        // Handle articles response
-        let articlesData = articlesResponse;
-        if (Array.isArray(articlesResponse)) {
-          articlesData = articlesResponse;
-        } else if (articlesResponse.data) {
-          articlesData = articlesResponse.data;
-        } else if (articlesResponse.articles) {
-          articlesData = articlesResponse.articles;
-        }
-        
-        setArticles(articlesData);
-        setDisplayedArticles(applyFiltersAndSort(articlesData, baseLockedFilters));
-        
-        // Handle feeds response
-        if (feedsResponse.success && feedsResponse.data) {
-          setFeeds(feedsResponse.data);
-        }
-        
+    setLoading(true);
+    setError(null);
+    articlesAPI.getAll(baseLockedFilters)
+      .then(res => {
+        // Normalize response
+        let data = res;
+        if (Array.isArray(res)) data = res;
+        else if (res.data) data = res.data;
+        else if (res.articles) data = res.articles;
+        setArticles(data);
+        setDisplayedArticles(applyFiltersAndSort(data, baseLockedFilters));
         setLoading(false);
-      } catch (err) {
-        setError(err.message || "Failed to load data");
+      })
+      .catch(err => {
+        setError(err.message || "Failed to load articles");
         setLoading(false);
-      }
-    };
-
-    fetchData();
+      });
   }, [baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
@@ -111,7 +91,7 @@ const InboxPage = ({ onNavigate }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
-      availableFeeds={feeds}
+      availableFeeds={mockFeeds}
       lockedFilters={{ status: STATUS.INBOX }}
       preAppliedFilters={{ status: STATUS.INBOX }}
       onFilterChipRemoved={() => onNavigate("search")}
