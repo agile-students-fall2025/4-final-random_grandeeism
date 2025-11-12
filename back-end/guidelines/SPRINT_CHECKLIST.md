@@ -129,6 +129,32 @@ NOTE: Auth is implemented and uses `mockUsers` (no persistent DB write on regist
 - [ ] No failing tests in main branch
 - [ ] Coverage report committed to repo
 
+## Pre-Integration: Backend readiness checklist (required before front-end integration)
+
+Complete these tasks before switching the front-end from local/mock imports to the live API. They make the back-end swappable and tests reliable for CI.
+
+- [x] Decide mocking strategy — in-memory mocks, DAO adapter, or mongodb-memory-server for tests
+- [ ] Add DAO abstraction (`lib/daoFactory.js`)
+	- Quick tip: the factory should return `articlesDao`, `feedsDao`, `tagsDao`, `usersDao`, `highlightsDao` based on `process.env.USE_MOCK_DB`.
+	- Recommendation: keep the DAO API small and consistent (getAll, getById, create, update, delete, query) so routes and tests are simple.
+- [ ] Create mock implementation (`lib/*Dao.mock.js`)
+	- Quick tip: implement array-backed DAOs and seed them from `data/mock*.js`. Export a `reset()` helper for tests.
+	- Recommendation: make mock DAOs deterministic and provide simple helpers to populate common test states.
+- [ ] Implement production DAO (`lib/*Dao.mongo.js`)
+	- Quick tip: implement minimal Mongoose models and map DAO functions to Mongoose calls.
+	- Recommendation: implement mongo DAO after mock DAO so the route/DAO contract is stable.
+- [ ] Test strategy for DAOs
+	- Quick tip: unit tests should stub the DAO (fast) and integration tests should use `mongodb-memory-server` (ephemeral DB) in CI.
+	- Recommendation: prefer DAO stubs for most unit tests; reserve a small integration suite for end-to-end DB validation.
+- [ ] Document and seed
+	- Quick tip: add `back-end/README-mocking.md` describing `USE_MOCK_DB`, how to seed mock data, and how to run tests in mock vs mongo mode.
+	- Recommendation: add `npm run seed:mock` and `npm run seed:mongo` scripts to simplify developer setup.
+- [ ] CI hooks for tests & coverage
+	- Quick tip: CI should run unit tests (mock DAO or stubs) and a short integration job against `mongodb-memory-server` to validate the mongo DAO.
+	- Recommendation: cache node_modules, run `npm test` and `npm run coverage`, and fail the job on coverage regressions.
+
+See the API contract for canonical endpoints and payloads: [`back-end/guidelines/API-CONTRACT.md`](API-CONTRACT.md)
+
 ### 3. Front-End Integration
 
 **Anas & Saad lead this effort with support from all team members**
