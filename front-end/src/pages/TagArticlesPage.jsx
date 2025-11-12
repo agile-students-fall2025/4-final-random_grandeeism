@@ -3,29 +3,57 @@ import { ChevronLeft, Tag as TagIcon, FileText } from "lucide-react";
 import ArticleCard from "../components/ArticleCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
-import { mockArticles } from "../data/mockArticles";
 import { mockFeeds } from "../data/mockFeeds";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
+import { articlesAPI } from "../services/api.js";
 
-// Get all available tags from mockArticles
-const allAvailableTags = Array.from(new Set(mockArticles.flatMap(article => article.tags)));
+// Utility to normalize backend response to an array
+const normalizeArticles = (data) => {
+  // Accepts { data: [...] } or { articles: [...] } or [...]
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.articles)) return data.articles;
+  return [];
+};
+
+// Get all available tags from articles (will be recalculated after fetch)
+const getAllAvailableTags = (articles) =>
+  Array.from(new Set((Array.isArray(articles) ? articles : []).flatMap(article => Array.isArray(article.tags) ? article.tags : [])));
 
 export default function TagArticlesPage({ onNavigate, tag }) {
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Base locked filters - always include the tag
-  const baseLockedFilters = useMemo(() => ({ tags: tag ? [tag] : [] }), [tag]);
+  // Use 'tag' for backend filtering, not 'tags'
+  const baseLockedFilters = useMemo(() => (tag ? { tag } : {}), [tag]);
 
-  // Initial load with locked filters
+  // Fetch articles from backend on mount or when tag changes
   useEffect(() => {
-    setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
-  }, [articles, baseLockedFilters]);
+    setLoading(true);
+    setError(null);
+    articlesAPI.getAll(baseLockedFilters)
+      .then((data) => {
+        const normalized = normalizeArticles(data);
+        setArticles(normalized);
+        setDisplayedArticles(normalized); // Use backend-filtered result directly
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError("Failed to load articles");
+        setArticles([]);
+        setDisplayedArticles([]);
+        setLoading(false);
+      });
+  }, [tag]);
+
+  const allAvailableTags = useMemo(() => getAllAvailableTags(articles), [articles]);
 
   const handleSearchWithFilters = (query, filters) => {
     // Merge locked filters with search filters

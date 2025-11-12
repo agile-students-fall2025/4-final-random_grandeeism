@@ -1,14 +1,22 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Search, Plus, Tag as TagIcon, ArrowUpDown, X } from "lucide-react";
 import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
-import { mockArticles } from "../data/mockArticles";
 import { STATUS } from "../constants/statuses.js";
 import { Button } from "../components/ui/button.jsx";
 import { Input } from "../components/ui/input.jsx";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
+import { articlesAPI } from "../services/api.js";
+
+// Utility to normalize backend response to an array
+const normalizeArticles = (data) => {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.articles)) return data.articles;
+  return [];
+};
 
 export default function TagsPage({ onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,7 +24,24 @@ export default function TagsPage({ onNavigate }) {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isCreateTagModalOpen, setIsCreateTagModalOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    articlesAPI.getAll()
+      .then((data) => {
+        setArticles(normalizeArticles(data));
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError("Failed to load articles");
+        setArticles([]);
+        setLoading(false);
+      });
+  }, []);
 
   // Calculate tag statistics
   const tagStats = useMemo(() => {
@@ -129,6 +154,43 @@ export default function TagsPage({ onNavigate }) {
     usage: "Sort by Usage",
     alphabetical: "Sort Alphabetically"
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 px-8">
+            <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4 animate-pulse">
+              <TagIcon className="size-8 text-muted-foreground" />
+            </div>
+            <CardTitle className="text-xl mb-2">Loading tags…</CardTitle>
+            <CardDescription className="text-center max-w-md">
+              Please wait while we load your tags and articles.
+            </CardDescription>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 px-8">
+            <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+              <TagIcon className="size-8 text-destructive" />
+            </div>
+            <CardTitle className="text-xl mb-2 text-destructive">Error loading tags</CardTitle>
+            <CardDescription className="text-center max-w-md text-destructive">
+              {error}<br />
+              <span className="text-muted-foreground">Please try refreshing the page.</span>
+            </CardDescription>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <MainLayout

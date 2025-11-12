@@ -15,7 +15,7 @@ import { Inbox, Calendar, BookOpen, RotateCcw } from "lucide-react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { mockArticles, getArticleCounts } from "../data/mockArticles.js";
+import { articlesAPI } from "../services/api.js";
 import { STATUS } from "../constants/statuses.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 
@@ -28,11 +28,13 @@ const tabs = [
 ];
 
 const HomePage = ({ onNavigate }) => {
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [activeTab, setActiveTab] = useState("Inbox");
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Get current tab's status value
   const currentStatus = tabs.find(t => t.name === activeTab)?.status || STATUS.INBOX;
@@ -40,14 +42,38 @@ const HomePage = ({ onNavigate }) => {
   // Base locked filters based on active tab
   const baseLockedFilters = useMemo(() => ({ status: currentStatus }), [currentStatus]);
 
-  // Initialize displayed articles with locked filters
+  // Fetch articles from backend on mount
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    articlesAPI.getAll({})
+      .then(res => {
+        let data = res;
+        if (Array.isArray(res)) data = res;
+        else if (res.data) data = res.data;
+        else if (res.articles) data = res.articles;
+        setArticles(data);
+        setDisplayedArticles(applyFiltersAndSort(data, baseLockedFilters));
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message || "Failed to load articles");
+        setLoading(false);
+      });
+  }, []);
+
+  // Update displayed articles when tab or articles change
   useEffect(() => {
     setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
   }, [articles, baseLockedFilters]);
 
   // Get article counts for display
   const articleCounts = useMemo(() => {
-    return getArticleCounts(articles);
+    const counts = {};
+    for (const tab of tabs) {
+      counts[tab.status] = articles.filter(a => a.status === tab.status).length;
+    }
+    return counts;
   }, [articles]);
 
   // Article management functions
@@ -57,6 +83,7 @@ const HomePage = ({ onNavigate }) => {
     onNavigate && onNavigate(destination, { article });
   };
 
+  // The following handlers would need to call backend APIs for full integration
   const handleToggleFavorite = (articleId) => {
     setArticles(prev => prev.map(article => 
       article.id === articleId 
@@ -125,7 +152,6 @@ const HomePage = ({ onNavigate }) => {
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome back</h1>
             <p className="text-muted-foreground">Here's your reading overview</p>
           </div>
-          
           {/* Tab Navigation */}
           <div className="border-b border-border mb-6">
             <div className="flex">
@@ -155,10 +181,18 @@ const HomePage = ({ onNavigate }) => {
               ))}
             </div>
           </div>
-
           {/* Tab Content */}
           <div className="min-h-[400px]">
-            {displayedArticles.length > 0 ? (
+            {loading ? (
+              <div className="flex justify-center items-center min-h-[120px]">
+                <span className="animate-spin mr-2">🌀</span> Loading articles...
+              </div>
+            ) : error ? (
+              <div className="bg-destructive/10 border border-destructive rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2 text-destructive">{error}</p>
+                <p className="text-sm text-muted-foreground">Could not load articles.</p>
+              </div>
+            ) : displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {displayedArticles.map((article) => (
                   <ArticleCard
@@ -185,7 +219,6 @@ const HomePage = ({ onNavigate }) => {
           </div>
         </div>
       </div>
-
       {/* Save Stack Modal */}
       <SaveStackModal
         isOpen={showSaveStackModal}

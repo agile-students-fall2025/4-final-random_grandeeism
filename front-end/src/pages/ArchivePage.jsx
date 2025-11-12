@@ -9,21 +9,46 @@ import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { mockArticles } from "../data/mockArticles.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
+import { articlesAPI } from "../services/api.js";
+import { Card, CardContent, CardTitle, CardDescription } from "../components/ui/card.jsx";
+
+// Utility to normalize backend response to an array
+const normalizeArticles = (data) => {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.articles)) return data.articles;
+  return [];
+};
 
 const ArchivePage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const baseLockedFilters = useMemo(() => ({ status: STATUS.ARCHIVED }), []);
 
   useEffect(() => {
-    setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
-  }, [articles, baseLockedFilters]);
+    setLoading(true);
+    setError(null);
+    articlesAPI.getAll({ status: STATUS.ARCHIVED })
+      .then((data) => {
+        const normalized = normalizeArticles(data);
+        setArticles(normalized);
+        setDisplayedArticles(applyFiltersAndSort(normalized, baseLockedFilters));
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError("Failed to load archived articles");
+        setArticles([]);
+        setDisplayedArticles([]);
+        setLoading(false);
+      });
+  }, []);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
@@ -59,6 +84,43 @@ const ArchivePage = ({ onNavigate }) => {
   const handleDeleteArticle = (articleId) => {
     setArticles(prev => prev.filter(article => article.id !== articleId));
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 px-8">
+            <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4 animate-pulse">
+              <span className="text-3xl">📦</span>
+            </div>
+            <CardTitle className="text-xl mb-2">Loading archived articles…</CardTitle>
+            <CardDescription className="text-center max-w-md">
+              Please wait while we load your archived articles.
+            </CardDescription>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 px-8">
+            <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+              <span className="text-3xl text-destructive">⚠️</span>
+            </div>
+            <CardTitle className="text-xl mb-2 text-destructive">Error loading archived articles</CardTitle>
+            <CardDescription className="text-center max-w-md text-destructive">
+              {error}<br />
+              <span className="text-muted-foreground">Please try refreshing the page.</span>
+            </CardDescription>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <MainLayout
