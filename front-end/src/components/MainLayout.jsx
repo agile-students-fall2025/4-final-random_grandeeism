@@ -29,8 +29,9 @@ export default function MainLayout({
   currentView,
   onNavigate,
   
-  // === DATA (Optional - counts use articles prop if provided, otherwise mockArticles) ===
-  articles = mockArticles, // Use passed articles or fall back to mockArticles for compatibility
+  // === DATA (Optional - kept for compatibility, counts now use mockArticles) ===
+  // eslint-disable-next-line no-unused-vars
+  articles, // Intentionally unused - counts now use mockArticles directly
   
   // === ACTIONS (Optional) ===
   onAddLink,
@@ -79,10 +80,10 @@ export default function MainLayout({
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Auto-calculate counts for sidebar from full article list (not filtered view)
-  const inboxCount = articles.filter(a => a.status === STATUS.INBOX && !a.isHidden).length;
-  const dailyReadingCount = articles.filter(a => a.status === STATUS.DAILY && !a.isHidden).length;
-  const inProgressCount = articles.filter(a => a.status === STATUS.CONTINUE && !a.isHidden).length;
-  const rediscoveryCount = articles.filter(a => a.status === STATUS.REDISCOVERY && !a.isHidden).length;
+  const inboxCount = mockArticles.filter(a => a.status === STATUS.INBOX && !a.isHidden).length;
+  const dailyReadingCount = mockArticles.filter(a => a.status === STATUS.DAILY && !a.isHidden).length;
+  const inProgressCount = mockArticles.filter(a => a.status === STATUS.CONTINUE && !a.isHidden).length;
+  const rediscoveryCount = mockArticles.filter(a => a.status === STATUS.REDISCOVERY && !a.isHidden).length;
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">

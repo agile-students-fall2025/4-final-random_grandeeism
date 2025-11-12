@@ -11,7 +11,7 @@ import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
-import { articlesAPI, feedsAPI } from "../services/api.js";
+import { articlesAPI } from "../services/api.js";
 import { Card, CardContent, CardTitle, CardDescription } from "../components/ui/card.jsx";
 
 // Utility to normalize backend response to an array
@@ -26,7 +26,6 @@ const ArchivePage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [articles, setArticles] = useState([]);
-  const [feeds, setFeeds] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,37 +33,21 @@ const ArchivePage = ({ onNavigate }) => {
   const baseLockedFilters = useMemo(() => ({ status: STATUS.ARCHIVED }), []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Fetch articles and feeds in parallel
-        const [articlesResponse, feedsResponse] = await Promise.all([
-          articlesAPI.getAll({ status: STATUS.ARCHIVED }),
-          feedsAPI.getAll()
-        ]);
-        
-        // Handle articles response
-        const normalized = normalizeArticles(articlesResponse);
+    setLoading(true);
+    setError(null);
+    articlesAPI.getAll({ status: STATUS.ARCHIVED })
+      .then((data) => {
+        const normalized = normalizeArticles(data);
         setArticles(normalized);
         setDisplayedArticles(applyFiltersAndSort(normalized, baseLockedFilters));
-        
-        // Handle feeds response
-        if (feedsResponse.success && feedsResponse.data) {
-          setFeeds(feedsResponse.data);
-        }
-        
         setLoading(false);
-      } catch (err) {
+      })
+      .catch((err) => {
         setError("Failed to load archived articles");
         setArticles([]);
         setDisplayedArticles([]);
         setLoading(false);
-      }
-    };
-
-    fetchData();
+      });
   }, []);
 
   const handleSearchWithFilters = (query, filters) => {
@@ -113,7 +96,7 @@ const ArchivePage = ({ onNavigate }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
-      availableFeeds={feeds}
+      availableFeeds={["TechCrunch", "Medium", "Dev.to"]}
       lockedFilters={{ status: STATUS.ARCHIVED }}
       preAppliedFilters={{ status: STATUS.ARCHIVED }}
       onFilterChipRemoved={() => onNavigate("search")}

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const daoFactory = require('../lib/daoFactory');
+const { mockHighlights } = require('../data/mockHighlights');
 
 // --- Helpers (exposed on router for easier testing) ----------------------
 
