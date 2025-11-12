@@ -8,7 +8,7 @@ import { Input } from "../components/ui/input.jsx";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
-import { articlesAPI } from "../services/api.js";
+import { articlesAPI, tagsAPI } from "../services/api.js";
 
 // Utility to normalize backend response to an array
 const normalizeArticles = (data) => {
@@ -24,122 +24,133 @@ export default function TagsPage({ onNavigate }) {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isCreateTagModalOpen, setIsCreateTagModalOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
-  const [articles, setArticles] = useState([]);
+  const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    articlesAPI.getAll()
-      .then((data) => {
-        setArticles(normalizeArticles(data));
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError("Failed to load articles");
-        setArticles([]);
-        setLoading(false);
-      });
-  }, []);
-
-  // Calculate tag statistics
-  const tagStats = useMemo(() => {
-    const stats = new Map();
-    
-    articles.forEach(article => {
-      article.tags.forEach(tag => {
-        const existing = stats.get(tag) || { count: 0, articles: 0, videos: 0, podcasts: 0 };
-        existing.count++;
+    const fetchTags = async () => {
+      try {
+        setLoading(true);
+        setError(null);
         
-        // Infer media type from tags
-        if (article.tags.includes('podcast')) {
-          existing.podcasts++;
-        } else if (article.tags.includes('video')) {
-          existing.videos++;
+        // Get sort parameter for API
+        let sortParam = 'popular';
+        if (sortBy === 'alphabetical') sortParam = 'alphabetical';
+        else if (sortBy === 'recent') sortParam = 'recent';
+        
+        const response = await tagsAPI.getAll({ sort: sortParam });
+        
+        if (response.success && response.data) {
+          setTags(response.data);
         } else {
-          existing.articles++;
+          throw new Error('Failed to fetch tags');
         }
         
-        stats.set(tag, existing);
-      });
-    });
-    
-    return Array.from(stats.entries())
-      .map(([tag, data]) => ({
-        tag,
-        articleCount: data.count,
-        mediaBreakdown: {
-          articles: data.articles,
-          videos: data.videos,
-          podcasts: data.podcasts,
-        },
-      }))
-      .sort((a, b) => b.articleCount - a.articleCount);
-  }, [articles]);
+        setLoading(false);
+      } catch (err) {
+        setError("Failed to load tags");
+        setTags([]);
+        setLoading(false);
+      }
+    };
 
-  // Filter and sort tags
-  const filteredAndSortedTags = useMemo(() => {
-    let filtered = tagStats.filter(tagData => 
-      tagData.tag.toLowerCase().includes(searchQuery.toLowerCase())
+    fetchTags();
+  }, [sortBy]);
+
+  // Filter tags based on search query (API already handles sorting)
+  const filteredTags = useMemo(() => {
+    return tags.filter(tag => 
+      tag.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+  }, [tags, searchQuery]);
 
-    switch (sortBy) {
-      case 'usage':
-        return filtered.sort((a, b) => b.articleCount - a.articleCount);
-      case 'alphabetical':
-        return filtered.sort((a, b) => a.tag.localeCompare(b.tag));
-      default:
-        return filtered;
-    }
-  }, [tagStats, searchQuery, sortBy]);
+  const maxCount = Math.max(...tags.map(t => t.articleCount), 1);
 
-  const maxCount = Math.max(...tagStats.map(t => t.articleCount), 1);
-
-  const handleTagClick = (tag) => {
+  const handleTagClick = (tagName) => {
     // Navigate to search results filtered by this tag
-    onNavigate('search', { tag: tag });
+    onNavigate('search', { tag: tagName });
   };
 
-  const handleRename = (oldTag, newTag) => {
-    console.log(`Renaming tag "${oldTag}" to "${newTag}"`);
-    // Update all articles with the renamed tag
-    setArticles(articles.map(article => ({
-      ...article,
-      tags: article.tags.map(tag => tag === oldTag ? newTag : tag)
-    })));
-  };
+  const handleRename = async (oldTagName, newTagName) => {
+    try {
+      // Find the tag to rename
+      const tagToRename = tags.find(t => t.name === oldTagName);
+      if (!tagToRename) {
+        console.error('Tag not found:', oldTagName);
+        return;
+      }
 
-  const handleDelete = (tag) => {
-    console.log(`Deleting tag: ${tag}`);
-    // Remove tag from all articles
-    setArticles(articles.map(article => ({
-      ...article,
-      tags: article.tags.filter(t => t !== tag)
-    })));
-  };
-
-  const handleCreateTag = () => {
-    const trimmedTag = newTagName.trim();
-    if (trimmedTag && !tagStats.some(t => t.tag === trimmedTag)) {
-      // Create a new article with this tag to demonstrate the functionality
-      const newArticle = {
-        id: `new-${Date.now()}`,
-        title: `Sample Article with ${trimmedTag}`,
-        url: "https://example.com",
-        author: "User",
-        readingTime: "5 min",
-        status: STATUS.INBOX,
-        isFavorite: false,
-        tags: [trimmedTag],
-        dateAdded: new Date(),
-        hasAnnotations: false,
-        readProgress: 0
-      };
+      // Update the tag via API
+      const response = await tagsAPI.update(tagToRename.id, { name: newTagName });
       
-      setArticles([...articles, newArticle]);
-      setNewTagName("");
-      setIsCreateTagModalOpen(false);
+      if (response.success) {
+        // Update local state
+        setTags(tags.map(t => 
+          t.name === oldTagName ? { ...t, name: newTagName } : t
+        ));
+        console.log(`Successfully renamed tag "${oldTagName}" to "${newTagName}"`);
+      } else {
+        throw new Error('Failed to rename tag');
+      }
+    } catch (err) {
+      console.error('Failed to rename tag:', err.message);
+      // Optionally show user-friendly error message
+    }
+  };
+
+  const handleDelete = async (tagName) => {
+    try {
+      // Find the tag to delete
+      const tagToDelete = tags.find(t => t.name === tagName);
+      if (!tagToDelete) {
+        console.error('Tag not found:', tagName);
+        return;
+      }
+
+      // Delete the tag via API
+      const response = await tagsAPI.delete(tagToDelete.id);
+      
+      if (response.success) {
+        // Update local state
+        setTags(tags.filter(t => t.name !== tagName));
+        console.log(`Successfully deleted tag: ${tagName}`);
+      } else {
+        throw new Error('Failed to delete tag');
+      }
+    } catch (err) {
+      console.error('Failed to delete tag:', err.message);
+      // Optionally show user-friendly error message
+    }
+  };
+
+  const handleCreateTag = async () => {
+    const trimmedTag = newTagName.trim();
+    if (trimmedTag && !tags.some(t => t.name === trimmedTag)) {
+      try {
+        // Create new tag via API
+        const newTagData = {
+          name: trimmedTag,
+          color: '#666666', // Default color
+          description: `Tag for ${trimmedTag}`,
+          articleCount: 0
+        };
+        
+        const response = await tagsAPI.create(newTagData);
+        
+        if (response.success) {
+          // Add the new tag to local state
+          setTags([...tags, response.data]);
+          setNewTagName("");
+          setIsCreateTagModalOpen(false);
+          console.log(`Successfully created tag: ${trimmedTag}`);
+        } else {
+          throw new Error('Failed to create tag');
+        }
+      } catch (err) {
+        console.error('Failed to create tag:', err.message);
+        // Optionally show user-friendly error message
+      }
     }
   };
 
@@ -158,7 +169,17 @@ export default function TagsPage({ onNavigate }) {
   if (loading) {
     return (
       <MainLayout currentPage="articles" currentView="Tags">
-        <div className="p-6"><div className="max-w-7xl mx-auto"></div></div>
+        <div className="p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="text-center">
+                <TagIcon className="size-8 mx-auto mb-4 animate-pulse" />
+                <div className="text-lg font-medium">Loading tags...</div>
+                <div className="text-sm text-muted-foreground mt-2">Please wait while we fetch your tags</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </MainLayout>
     );
   }
@@ -187,7 +208,6 @@ export default function TagsPage({ onNavigate }) {
       currentPage="articles"
       currentView="Tags"
       onNavigate={onNavigate}
-      articles={articles}
       showSearch={true}
       customSearchContent={
         <>
@@ -283,7 +303,7 @@ export default function TagsPage({ onNavigate }) {
                         autoFocus
                       />
                     </div>
-                    {newTagName.trim() && tagStats.some(t => t.tag === newTagName.trim()) && (
+                                        {newTagName.trim() && tags.some(t => t.name === newTagName.trim()) && (
                       <p className="text-sm text-destructive">
                         A tag with this name already exists.
                       </p>
@@ -295,7 +315,7 @@ export default function TagsPage({ onNavigate }) {
                     </DialogClose>
                     <Button 
                       onClick={handleCreateTag}
-                      disabled={!newTagName.trim() || tagStats.some(t => t.tag === newTagName.trim())}
+                      disabled={!newTagName.trim() || tags.some(t => t.name === newTagName.trim())}
                     >
                       Create Tag
                     </Button>
@@ -306,7 +326,7 @@ export default function TagsPage({ onNavigate }) {
           </div>
 
           {/* Tags Grid */}
-          {filteredAndSortedTags.length === 0 ? (
+          {filteredTags.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 px-6">
                 <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -334,19 +354,19 @@ export default function TagsPage({ onNavigate }) {
               {/* Stats Summary */}
               <div className="mb-6">
                 <p className="text-sm text-muted-foreground">
-                  Showing <span className="font-medium text-foreground">{filteredAndSortedTags.length}</span> of <span className="font-medium text-foreground">{tagStats.length}</span> tags
+                  Showing <span className="font-medium text-foreground">{filteredTags.length}</span> of <span className="font-medium text-foreground">{tags.length}</span> tags
                 </p>
               </div>
 
               {/* Tags Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredAndSortedTags.map(({ tag, articleCount, mediaBreakdown }) => (
+                {filteredTags.map((tag) => (
                   <TagCard
-                    key={tag}
-                    tag={tag}
-                    articleCount={articleCount}
+                    key={tag.id}
+                    tag={tag.name}
+                    articleCount={tag.articleCount}
                     maxCount={maxCount}
-                    mediaBreakdown={mediaBreakdown}
+                    mediaBreakdown={{ articles: tag.articleCount, videos: 0, podcasts: 0 }} // Default breakdown since API doesn't provide this
                     onTagClick={handleTagClick}
                     onRename={handleRename}
                     onDelete={handleDelete}

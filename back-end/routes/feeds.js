@@ -1,31 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const { mockFeeds } = require('../data/mockFeeds');
-const { mockArticles } = require('../data/mockArticles');
+const { feedsDao, articlesDao } = require('../lib/daoFactory');
 
 /**
  * GET /api/feeds
  * Retrieve all feeds with optional filtering
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { category, status } = req.query;
-    let filteredFeeds = [...mockFeeds];
+    const userId = 'user-1'; // TODO: Get from authenticated user
+    
+    
+    const filters = { userId };
 
     if (category) {
-      filteredFeeds = filteredFeeds.filter(feed => 
-        feed.category.toLowerCase() === category.toLowerCase()
-      );
+      filters.category = category;
     }
 
-    if (status) {
-      filteredFeeds = filteredFeeds.filter(feed => feed.status === status);
+    if (status === 'active') {
+      filters.isActive = true;
+    } else if (status === 'inactive') {
+      filters.isActive = false;
     }
+
+    const feeds = await feedsDao.getAll(filters);
 
     res.json({
       success: true,
-      count: filteredFeeds.length,
-      data: filteredFeeds
+      count: feeds.length,
+      data: feeds
     });
   } catch (error) {
     res.status(500).json({
@@ -40,9 +44,12 @@ router.get('/', (req, res) => {
  * GET /api/feeds/:id
  * Retrieve a single feed by ID
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const feed = mockFeeds.find(f => f.id === req.params.id);
+    const userId = 'user-1'; // TODO: Get from authenticated user
+    
+    
+    const feed = await feedsDao.getById(req.params.id, userId);
     
     if (!feed) {
       return res.status(404).json({
@@ -66,21 +73,23 @@ router.get('/:id', (req, res) => {
 
 /**
  * POST /api/feeds
- * Create a new feed (mock - doesn't persist)
+ * Create a new feed
  */
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const newFeed = {
-      id: `feed-${mockFeeds.length + 1}`,
+    const userId = 'user-1'; // TODO: Get from authenticated user
+    
+    
+    const feedData = {
       ...req.body,
+      userId,
       lastFetched: new Date(),
       lastUpdated: new Date(),
-      status: 'success',
-      errorMessage: null,
-      createdAt: new Date()
+      addedDate: new Date()
     };
 
-    // In a real implementation, this would save to database
+    const newFeed = await feedsDao.create(feedData);
+
     res.status(201).json({
       success: true,
       data: newFeed,
@@ -97,25 +106,24 @@ router.post('/', (req, res) => {
 
 /**
  * PUT /api/feeds/:id
- * Update a feed (mock - doesn't persist)
+ * Update a feed
  */
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
-    const feed = mockFeeds.find(f => f.id === req.params.id);
+    const userId = 'user-1'; // TODO: Get from authenticated user
     
-    if (!feed) {
+    
+    const updatedFeed = await feedsDao.update(req.params.id, {
+      ...req.body,
+      lastUpdated: new Date()
+    }, userId);
+    
+    if (!updatedFeed) {
       return res.status(404).json({
         success: false,
         error: 'Feed not found'
       });
     }
-
-    const updatedFeed = {
-      ...feed,
-      ...req.body,
-      id: req.params.id, // Ensure ID doesn't change
-      lastUpdated: new Date()
-    };
 
     res.json({
       success: true,
@@ -135,11 +143,14 @@ router.put('/:id', (req, res) => {
  * DELETE /api/feeds/:id
  * Delete a feed (mock - doesn't persist)
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const feed = mockFeeds.find(f => f.id === req.params.id);
+    const userId = 'user-1'; // TODO: Get from authenticated user
     
-    if (!feed) {
+    
+    const deleted = await feedsDao.delete(req.params.id, userId);
+    
+    if (!deleted) {
       return res.status(404).json({
         success: false,
         error: 'Feed not found'
@@ -163,9 +174,13 @@ router.delete('/:id', (req, res) => {
  * GET /api/feeds/:id/articles
  * Get all articles from a specific feed
  */
-router.get('/:id/articles', (req, res) => {
+router.get('/:id/articles', async (req, res) => {
   try {
-    const feed = mockFeeds.find(f => f.id === req.params.id);
+    const userId = 'user-1'; // TODO: Get from authenticated user
+    
+    
+    
+    const feed = await feedsDao.getById(req.params.id, userId);
     
     if (!feed) {
       return res.status(404).json({
@@ -175,7 +190,7 @@ router.get('/:id/articles', (req, res) => {
     }
 
     // Get articles that belong to this feed
-    const feedArticles = mockArticles.filter(article => article.feedId === req.params.id);
+    const feedArticles = await articlesDao.getByFeedId(req.params.id, userId);
 
     res.json({
       success: true,

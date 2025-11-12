@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const { mockUsers } = require('../data/mockUsers');
+const daoFactory = require('../lib/daoFactory');
 
 /**
  * GET /api/users/profile/:id
