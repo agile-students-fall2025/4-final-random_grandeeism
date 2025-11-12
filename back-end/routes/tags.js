@@ -192,10 +192,10 @@ router.get('/:id/articles', (req, res) => {
       });
     }
 
-    // Find articles that have this tag
-    const taggedArticles = mockArticles.filter(article => 
-      article.tags && article.tags.includes(tag.name)
-    );
+    // Find articles that have this tag (match by tag ID only)
+    const taggedArticles = mockArticles.filter(article => {
+      return article.tags && article.tags.includes(tag.id);
+    });
 
     res.json({
       success: true,
