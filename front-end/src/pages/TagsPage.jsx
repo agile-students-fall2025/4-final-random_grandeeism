@@ -157,19 +157,9 @@ export default function TagsPage({ onNavigate }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 px-8">
-            <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4 animate-pulse">
-              <TagIcon className="size-8 text-muted-foreground" />
-            </div>
-            <CardTitle className="text-xl mb-2">Loading tags…</CardTitle>
-            <CardDescription className="text-center max-w-md">
-              Please wait while we load your tags and articles.
-            </CardDescription>
-          </CardContent>
-        </Card>
-      </div>
+      <MainLayout currentPage="articles" currentView="Tags">
+        <div className="p-6"><div className="max-w-7xl mx-auto"></div></div>
+      </MainLayout>
     );
   }
 

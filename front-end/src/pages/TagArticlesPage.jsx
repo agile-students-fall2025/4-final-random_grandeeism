@@ -136,7 +136,6 @@ export default function TagArticlesPage({ onNavigate, tag }) {
               <ChevronLeft className="size-4" />
               Back to Tags
             </Button>
-            
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -155,7 +154,6 @@ export default function TagArticlesPage({ onNavigate, tag }) {
                   </div>
                 </div>
               </div>
-              
               {/* Tag Badge */}
               {tag && (
                 <div>
@@ -167,9 +165,20 @@ export default function TagArticlesPage({ onNavigate, tag }) {
               )}
             </div>
           </div>
-
           {/* Articles Grid */}
-          {displayedArticles.length === 0 ? (
+          {error ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 px-6">
+                <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                  <FileText className="size-8 text-destructive" />
+                </div>
+                <CardTitle className="text-xl mb-2 text-destructive">{error}</CardTitle>
+                <CardDescription className="text-center max-w-md text-destructive">
+                  Could not load tagged articles.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          ) : loading ? null : displayedArticles.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16 px-6">
                 <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -201,7 +210,6 @@ export default function TagArticlesPage({ onNavigate, tag }) {
                   Showing <span className="font-medium text-foreground">{displayedArticles.length}</span> {displayedArticles.length === 1 ? 'article' : 'articles'} tagged with "{tag}"
                 </p>
               </div>
-
               {/* Articles Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {displayedArticles.map((article) => (
@@ -219,7 +227,6 @@ export default function TagArticlesPage({ onNavigate, tag }) {
           )}
         </div>
       </div>
-
       {/* Save Stack Modal */}
       <SaveStackModal
         isOpen={showSaveStackModal}

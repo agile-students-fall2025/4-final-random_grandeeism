@@ -85,43 +85,7 @@ const ArchivePage = ({ onNavigate }) => {
     setArticles(prev => prev.filter(article => article.id !== articleId));
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 px-8">
-            <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4 animate-pulse">
-              <span className="text-3xl">📦</span>
-            </div>
-            <CardTitle className="text-xl mb-2">Loading archived articles…</CardTitle>
-            <CardDescription className="text-center max-w-md">
-              Please wait while we load your archived articles.
-            </CardDescription>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 px-8">
-            <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-              <span className="text-3xl text-destructive">⚠️</span>
-            </div>
-            <CardTitle className="text-xl mb-2 text-destructive">Error loading archived articles</CardTitle>
-            <CardDescription className="text-center max-w-md text-destructive">
-              {error}<br />
-              <span className="text-muted-foreground">Please try refreshing the page.</span>
-            </CardDescription>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
+  // Only show error if present; otherwise, always render the layout
   return (
     <MainLayout
       currentPage="articles"
@@ -150,9 +114,13 @@ const ArchivePage = ({ onNavigate }) => {
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Archive</h1>
             <p className="text-muted-foreground">Archived articles (filtered view).</p>
           </div>
-
           <div className="min-h-[200px]">
-            {displayedArticles.length > 0 ? (
+            {error ? (
+              <div className="bg-destructive/10 border border-destructive rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2 text-destructive">{error}</p>
+                <p className="text-sm text-muted-foreground">Could not load archived articles.</p>
+              </div>
+            ) : loading ? null : displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {displayedArticles.map(article => (
                   <ArticleCard
@@ -177,7 +145,6 @@ const ArchivePage = ({ onNavigate }) => {
           </div>
         </div>
       </div>
-
       {/* Save Stack Modal */}
       <SaveStackModal
         isOpen={showSaveStackModal}

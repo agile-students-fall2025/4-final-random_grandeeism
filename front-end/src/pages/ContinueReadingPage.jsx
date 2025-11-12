@@ -103,16 +103,12 @@ const ContinueReadingPage = ({ onNavigate }) => {
             <p className="text-muted-foreground">Resume where you left off.</p>
           </div>
           <div className="min-h-[200px]">
-            {loading ? (
-              <div className="flex justify-center items-center min-h-[120px]">
-                <span className="animate-spin mr-2">🌀</span> Loading articles...
-              </div>
-            ) : error ? (
+            {error ? (
               <div className="bg-destructive/10 border border-destructive rounded-lg p-8 text-center">
                 <p className="text-lg font-medium mb-2 text-destructive">{error}</p>
                 <p className="text-sm text-muted-foreground">Could not load continue reading articles.</p>
               </div>
-            ) : displayedArticles.length > 0 ? (
+            ) : loading ? null : displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {displayedArticles.map(article => (
                   <ArticleCard
