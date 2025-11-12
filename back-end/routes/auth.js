@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { mockUsers } = require('../data/mockUsers');
+const daoFactory = require('../lib/daoFactory');
 
 // Get JWT secret from environment or use default for development
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';

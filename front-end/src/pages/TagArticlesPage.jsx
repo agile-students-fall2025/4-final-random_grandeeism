@@ -3,12 +3,11 @@ import { ChevronLeft, Tag as TagIcon, FileText } from "lucide-react";
 import ArticleCard from "../components/ArticleCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
-import { mockFeeds } from "../data/mockFeeds";
+import { feedsAPI, articlesAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
-import { articlesAPI } from "../services/api.js";
 
 // Utility to normalize backend response to an array
 const normalizeArticles = (data) => {
@@ -25,6 +24,7 @@ const getAllAvailableTags = (articles) =>
 
 export default function TagArticlesPage({ onNavigate, tag }) {
   const [articles, setArticles] = useState([]);
+  const [feeds, setFeeds] = useState([]);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [displayedArticles, setDisplayedArticles] = useState([]);
@@ -34,24 +34,39 @@ export default function TagArticlesPage({ onNavigate, tag }) {
   // Use 'tag' for backend filtering, not 'tags'
   const baseLockedFilters = useMemo(() => (tag ? { tag } : {}), [tag]);
 
-  // Fetch articles from backend on mount or when tag changes
+  // Fetch articles and feeds from backend on mount or when tag changes
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    articlesAPI.getAll(baseLockedFilters)
-      .then((data) => {
-        const normalized = normalizeArticles(data);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch articles and feeds in parallel
+        const [articlesResponse, feedsResponse] = await Promise.all([
+          articlesAPI.getAll(baseLockedFilters),
+          feedsAPI.getAll()
+        ]);
+        
+        const normalized = normalizeArticles(articlesResponse);
         setArticles(normalized);
         setDisplayedArticles(normalized); // Use backend-filtered result directly
+        
+        // Handle feeds response
+        if (feedsResponse.success && feedsResponse.data) {
+          setFeeds(feedsResponse.data);
+        }
+        
         setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         setError("Failed to load articles");
         setArticles([]);
         setDisplayedArticles([]);
         setLoading(false);
-      });
-  }, [tag]);
+      }
+    };
+
+    fetchData();
+  }, [baseLockedFilters]);
 
   const allAvailableTags = useMemo(() => getAllAvailableTags(articles), [articles]);
 
@@ -111,7 +126,7 @@ export default function TagArticlesPage({ onNavigate, tag }) {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={allAvailableTags}
-      availableFeeds={mockFeeds}
+              availableFeeds={feeds}
       lockedFilters={baseLockedFilters}
       preAppliedFilters={baseLockedFilters}
       onFilterChipRemoved={() => onNavigate('search')}

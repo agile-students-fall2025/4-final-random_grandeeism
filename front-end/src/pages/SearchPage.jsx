@@ -9,36 +9,58 @@ import { useState, useEffect } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { articlesAPI } from "../services/api.js";
-import { mockFeeds } from "../data/mockFeeds.js";
+import { articlesAPI, feedsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 
 const SearchPage = ({ onNavigate, initialTag }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(initialTag ? { tags: [initialTag] } : {});
   const [articles, setArticles] = useState([]);
+  const [feeds, setFeeds] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    const filters = initialTag ? { tag: initialTag } : {};
-    articlesAPI.getAll(filters)
-      .then(res => {
-        let data = res;
-        if (Array.isArray(res)) data = res;
-        else if (res.data) data = res.data;
-        else if (res.articles) data = res.articles;
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const filters = initialTag ? { tag: initialTag } : {};
+        
+        // Fetch articles and feeds in parallel
+        const [articlesResponse, feedsResponse] = await Promise.all([
+          articlesAPI.getAll(filters),
+          feedsAPI.getAll()
+        ]);
+        
+        // Handle articles response
+        let data = articlesResponse;
+        if (Array.isArray(articlesResponse)) {
+          data = articlesResponse;
+        } else if (articlesResponse.data) {
+          data = articlesResponse.data;
+        } else if (articlesResponse.articles) {
+          data = articlesResponse.articles;
+        }
+        
         setArticles(data);
         setDisplayedArticles(applyFiltersAndSort(data, filters));
+        
+        // Handle feeds response
+        if (feedsResponse.success && feedsResponse.data) {
+          setFeeds(feedsResponse.data);
+        }
+        
         setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message || "Failed to load articles");
+      } catch (err) {
+        setError(err.message || "Failed to load data");
         setLoading(false);
-      });
+      }
+    };
+
+    fetchData();
   }, [initialTag]);
 
   const handleSearchWithFilters = (query, filters) => {
@@ -85,7 +107,7 @@ const SearchPage = ({ onNavigate, initialTag }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
-      availableFeeds={mockFeeds}
+      availableFeeds={feeds}
       showTimeFilter={true}
       showMediaFilter={true}
       showTagFilter={true}
