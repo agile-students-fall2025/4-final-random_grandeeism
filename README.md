@@ -20,6 +20,81 @@ After the shutdown of the FOSS project Omnivore, we found ourselves searching fo
 Therefore for our  
 [Agile Software Development and DevOps](https://knowledge.kitchen/content/courses/agile-development-and-devops/syllabus/) course taught at NYU by [Professor Amos Bloomberg](https://knowledge.kitchen/me/cv/), we decided to work on **fieldnotes.** We hope that our project proves as useful to you in actively, and thoughfully reading in the face of the immense information landscape of the digital age.
 
+## Back-End Setup Instructions
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repo/fieldnotes.git
+   cd fieldnotes
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env` file in the root directory and configure the environment variables (see the "Environment Variables" section below).
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+5. The back-end will run on `http://localhost:7001` by default.
+
+## API Endpoints
+
+### Articles API
+- `GET /api/articles` - Retrieve all articles
+- `GET /api/articles/:id` - Retrieve a single article by ID
+- `POST /api/articles` - Create a new article
+- ... (list all endpoints as in the checklist)
+
+### Feeds API
+- `GET /api/feeds` - Retrieve all feeds
+- ... (list all endpoints as in the checklist)
+
+### Authentication API
+- `POST /api/auth/register` - User registration
+- ... (list all endpoints as in the checklist)
+
+_For detailed request/response formats, refer to the API documentation in the `docs` folder._
+
+## Environment Variables
+
+The following environment variables are required:
+
+- `JWT_SECRET`: Secret key for signing JWT tokens.
+- `PORT`: Port number for the back-end server (default: 7001).
+- `NODE_ENV`: Set to `development` or `production`.
+
+Create a `.env` file in the root directory and populate it with these variables. Use `.env.example` as a template.
+
+## Testing Procedures
+
+1. Run all tests:
+   ```bash
+   npm test
+   ```
+
+2. Check code coverage:
+   ```bash
+   npm run coverage
+   ```
+
+3. Ensure all tests pass before committing changes.
+
+## Troubleshooting
+
+- **Issue**: Server does not start.
+  - **Solution**: Check if all dependencies are installed and the `.env` file is correctly configured.
+
+- **Issue**: API requests fail with CORS errors.
+  - **Solution**: Ensure the front-end and back-end servers are running on the correct ports and CORS is configured.
+
+- **Issue**: Tests fail unexpectedly.
+  - **Solution**: Verify that the test database or mock data is correctly set up.
+
 ## Want to contribute?
 
  Read our rules about [contributing](CONTRIBUTING.md#contributing-rules) as well as instructions on [setting up the local development environment](CONTRIBUTING.md#instructions-for-setting-up-the-local-environment) and [building and testing](CONTRIBUTING.md#build-and-test-instructions)
