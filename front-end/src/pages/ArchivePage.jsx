@@ -9,21 +9,46 @@ import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { mockArticles } from "../data/mockArticles.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
+import { articlesAPI } from "../services/api.js";
+import { Card, CardContent, CardTitle, CardDescription } from "../components/ui/card.jsx";
+
+// Utility to normalize backend response to an array
+const normalizeArticles = (data) => {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.articles)) return data.articles;
+  return [];
+};
 
 const ArchivePage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const baseLockedFilters = useMemo(() => ({ status: STATUS.ARCHIVED }), []);
 
   useEffect(() => {
-    setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
-  }, [articles, baseLockedFilters]);
+    setLoading(true);
+    setError(null);
+    articlesAPI.getAll({ status: STATUS.ARCHIVED })
+      .then((data) => {
+        const normalized = normalizeArticles(data);
+        setArticles(normalized);
+        setDisplayedArticles(applyFiltersAndSort(normalized, baseLockedFilters));
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError("Failed to load archived articles");
+        setArticles([]);
+        setDisplayedArticles([]);
+        setLoading(false);
+      });
+  }, []);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
@@ -60,6 +85,7 @@ const ArchivePage = ({ onNavigate }) => {
     setArticles(prev => prev.filter(article => article.id !== articleId));
   };
 
+  // Only show error if present; otherwise, always render the layout
   return (
     <MainLayout
       currentPage="articles"
@@ -88,9 +114,13 @@ const ArchivePage = ({ onNavigate }) => {
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Archive</h1>
             <p className="text-muted-foreground">Archived articles (filtered view).</p>
           </div>
-
           <div className="min-h-[200px]">
-            {displayedArticles.length > 0 ? (
+            {error ? (
+              <div className="bg-destructive/10 border border-destructive rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2 text-destructive">{error}</p>
+                <p className="text-sm text-muted-foreground">Could not load archived articles.</p>
+              </div>
+            ) : loading ? null : displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {displayedArticles.map(article => (
                   <ArticleCard
@@ -115,7 +145,6 @@ const ArchivePage = ({ onNavigate }) => {
           </div>
         </div>
       </div>
-
       {/* Save Stack Modal */}
       <SaveStackModal
         isOpen={showSaveStackModal}

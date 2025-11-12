@@ -9,21 +9,38 @@ import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { mockArticles } from "../data/mockArticles.js";
+import { articlesAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
 
 const RediscoveryPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const baseLockedFilters = useMemo(() => ({ status: STATUS.REDISCOVERY }), []);
 
   useEffect(() => {
-    setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
-  }, [articles, baseLockedFilters]);
+    setLoading(true);
+    setError(null);
+    articlesAPI.getAll(baseLockedFilters)
+      .then(res => {
+        let data = res;
+        if (Array.isArray(res)) data = res;
+        else if (res.data) data = res.data;
+        else if (res.articles) data = res.articles;
+        setArticles(data);
+        setDisplayedArticles(applyFiltersAndSort(data, baseLockedFilters));
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message || "Failed to load articles");
+        setLoading(false);
+      });
+  }, [baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
@@ -38,6 +55,7 @@ const RediscoveryPage = ({ onNavigate }) => {
     alert(`Stack "${stackData.name}" saved successfully!`);
   };
 
+  // The following handlers would need to call backend APIs for full integration
   const handleStatusChange = (articleId, newStatus) => {
     setArticles(prevArticles => 
       prevArticles.map(article => 
@@ -84,9 +102,13 @@ const RediscoveryPage = ({ onNavigate }) => {
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Rediscovery Queue</h1>
             <p className="text-muted-foreground">Older saved content surfaced for rediscovery (filtered view).</p>
           </div>
-
           <div className="min-h-[200px]">
-            {displayedArticles.length > 0 ? (
+            {error ? (
+              <div className="bg-destructive/10 border border-destructive rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2 text-destructive">{error}</p>
+                <p className="text-sm text-muted-foreground">Could not load rediscovery articles.</p>
+              </div>
+            ) : loading ? null : displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {displayedArticles.map(article => (
                   <ArticleCard
@@ -97,8 +119,8 @@ const RediscoveryPage = ({ onNavigate }) => {
                       onNavigate && onNavigate(destination, { article });
                     }}
                     onToggleFavorite={handleToggleFavorite}
-                    onStatusChange={(id, status) => handleStatusChange(id, status)}
-                    onDelete={(id) => handleDeleteArticle(id)}
+                    onStatusChange={handleStatusChange}
+                    onDelete={handleDeleteArticle}
                   />
                 ))}
               </div>
@@ -111,7 +133,6 @@ const RediscoveryPage = ({ onNavigate }) => {
           </div>
         </div>
       </div>
-
       {/* Save Stack Modal */}
       <SaveStackModal
         isOpen={showSaveStackModal}

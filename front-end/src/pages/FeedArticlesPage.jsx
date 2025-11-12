@@ -3,29 +3,42 @@ import { ChevronLeft, Rss, FileText } from "lucide-react";
 import ArticleCard from "../components/ArticleCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
-import { mockArticles } from "../data/mockArticles";
+import { articlesAPI } from "../services/api.js";
 import { mockFeeds } from "../data/mockFeeds";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
 
-// Get all available tags from mockArticles
-const allAvailableTags = Array.from(new Set(mockArticles.flatMap(article => article.tags)));
-
 export default function FeedArticlesPage({ onNavigate, feed }) {
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Base locked filters - always include the feed
   const baseLockedFilters = useMemo(() => ({ feed: feed || "" }), [feed]);
 
-  // Initial load with locked filters
   useEffect(() => {
-    setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
-  }, [articles, baseLockedFilters]);
+    setLoading(true);
+    setError(null);
+    articlesAPI.getAll(baseLockedFilters)
+      .then(res => {
+        let data = res;
+        if (Array.isArray(res)) data = res;
+        else if (res.data) data = res.data;
+        else if (res.articles) data = res.articles;
+        setArticles(data);
+        setDisplayedArticles(applyFiltersAndSort(data, baseLockedFilters));
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message || "Failed to load articles");
+        setLoading(false);
+      });
+  }, [feed]);
 
   const handleSearchWithFilters = (query, filters) => {
     // Merge locked filters with search filters
@@ -35,7 +48,6 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
   };
 
   const handleSaveSearch = () => {
-    console.log('Save current search as a Stack');
     setShowSaveStackModal(true);
   };
 
@@ -51,6 +63,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
     onNavigate && onNavigate(destination, { article });
   };
 
+  // The following handlers would need to call backend APIs for full integration
   const handleToggleFavorite = (articleId) => {
     setArticles(prev => prev.map(article => 
       article.id === articleId 
@@ -72,6 +85,9 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
       setArticles(prev => prev.filter(article => article.id !== articleId));
     }
   };
+
+  // Get all available tags from articles
+  const allAvailableTags = Array.from(new Set(articles.flatMap(article => article.tags || [])));
 
   return (
     <MainLayout
@@ -108,7 +124,6 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
               <ChevronLeft className="size-4" />
               Back to Feeds
             </Button>
-            
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -127,7 +142,6 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
                   </div>
                 </div>
               </div>
-              
               {/* Feed Badge */}
               {feed && (
                 <div>
@@ -139,9 +153,32 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
               )}
             </div>
           </div>
-
           {/* Articles Grid */}
-          {displayedArticles.length === 0 ? (
+          {loading ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 px-6">
+                <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <FileText className="size-8 text-muted-foreground" />
+                </div>
+                <CardTitle className="text-xl mb-2">Loading articles...</CardTitle>
+                <CardDescription className="text-center max-w-md">
+                  Fetching articles from the feed.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          ) : error ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 px-6">
+                <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                  <FileText className="size-8 text-destructive" />
+                </div>
+                <CardTitle className="text-xl mb-2 text-destructive">{error}</CardTitle>
+                <CardDescription className="text-center max-w-md">
+                  Could not load feed articles.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          ) : displayedArticles.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16 px-6">
                 <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -173,7 +210,6 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
                   Showing <span className="font-medium text-foreground">{displayedArticles.length}</span> {displayedArticles.length === 1 ? 'article' : 'articles'} from "{feed}"
                 </p>
               </div>
-
               {/* Articles Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {displayedArticles.map((article) => (
@@ -191,7 +227,6 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
           )}
         </div>
       </div>
-
       {/* Save Stack Modal */}
       <SaveStackModal
         isOpen={showSaveStackModal}
