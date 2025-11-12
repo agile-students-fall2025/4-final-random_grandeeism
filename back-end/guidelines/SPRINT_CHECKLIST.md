@@ -4,68 +4,79 @@
 
 This sprint focuses on creating API routes with mock data and integrating the front-end with the back-end. Data persistence will be handled in the Database Integration sprint.
 
+> NOTE (updated 2025-11-11): The checklist below has been updated to reflect endpoints actually implemented in code (routes in `back-end/routes`). Some checklist items were marked complete at a high level but not updated granularly; the detailed items below now mirror the source files. Where implementation paths differ from the checklist, a brief note is added.
+
 ## Required Tasks
 
 ### 1. API Routes Implementation
 
 #### Articles API
 
-- [] `GET /api/articles` - Retrieve all articles (with filtering support)
-- [ ] `GET /api/articles/:id` - Retrieve single article by ID
-- [ ] `POST /api/articles` - Create new article
-- [ ] `PUT /api/articles/:id` - Update article
-- [ ] `DELETE /api/articles/:id` - Delete article
-- [ ] `PATCH /api/articles/:id/status` - Update article status
-- [ ] `PATCH /api/articles/:id/progress` - Update reading progress
-- [ ] `PATCH /api/articles/:id/favorite` - Toggle favorite status
+- [x] `GET /api/articles` - Retrieve all articles (with filtering support)
+- [x] `GET /api/articles/:id` - Retrieve single article by ID
+- [x] `POST /api/articles` - Create new article
+- [x] `PUT /api/articles/:id` - Update article
+- [x] `DELETE /api/articles/:id` - Delete article
+- [x] `PATCH /api/articles/:id/status` - Update article status
+- [x] `PATCH /api/articles/:id/progress` - Update reading progress
+- [x] `PATCH /api/articles/:id/favorite` - Toggle favorite status
+- [x] `POST /api/articles/:id/tags` - Add tag to article (implemented)
+- [x] `DELETE /api/articles/:id/tags/:tagId` - Remove tag from article (implemented)
 
 #### Feeds API
 
-- [ ] `GET /api/feeds` - Retrieve all feeds
-- [ ] `GET /api/feeds/:id` - Retrieve single feed
-- [ ] `POST /api/feeds` - Create new feed
-- [ ] `PUT /api/feeds/:id` - Update feed
-- [ ] `DELETE /api/feeds/:id` - Delete feed
-- [ ] `GET /api/feeds/:id/articles` - Get articles from specific feed
+- [x] `GET /api/feeds` - Retrieve all feeds
+- [x] `GET /api/feeds/:id` - Retrieve single feed
+- [x] `POST /api/feeds` - Create new feed
+- [x] `PUT /api/feeds/:id` - Update feed
+- [x] `DELETE /api/feeds/:id` - Delete feed
+- [x] `GET /api/feeds/:id/articles` - Get articles from specific feed
 
 #### Tags API
 
-- [ ] `GET /api/tags` - Retrieve all tags
-- [ ] `GET /api/tags/:id` - Retrieve single tag
-- [ ] `POST /api/tags` - Create new tag
-- [ ] `PUT /api/tags/:id` - Update tag
-- [ ] `DELETE /api/tags/:id` - Delete tag
-- [ ] `GET /api/tags/:id/articles` - Get articles with specific tag
+- [x] `GET /api/tags` - Retrieve all tags
+- [x] `GET /api/tags/:id` - Retrieve single tag
+- [x] `POST /api/tags` - Create new tag
+- [x] `PUT /api/tags/:id` - Update tag
+- [x] `DELETE /api/tags/:id` - Delete tag
+- [x] `GET /api/tags/:id/articles` - Get articles with specific tag
 
 #### Users API
 
-- [ ] `POST /api/users/register` - User registration
-- [ ] `POST /api/users/login` - User login
-- [ ] `GET /api/users/profile` - Get user profile
-- [ ] `PUT /api/users/profile` - Update user profile
-- [ ] `DELETE /api/users/account` - Delete user account
+- [x] `GET /api/users/profile/:id` - Get user profile (implemented as `/profile/:id`)
+- [x] `PUT /api/users/profile/:id` - Update user profile (implemented as `/profile/:id`)
+- [x] `PUT /api/users/password/:id` - Change password (implemented)
+- [x] `GET /api/users/stats/:id` - Get user reading statistics (implemented)
+- [x] `DELETE /api/users/:id` - Delete user account (implemented)
+
+NOTE: Registration/login are implemented under the Auth routes (`/api/auth/register`, `/api/auth/login`) rather than `POST /api/users/register` per the original checklist. See Auth API section below.
 
 #### Highlights/Annotations API
 
-- [ ] `GET /api/highlights` - Retrieve all highlights
-- [ ] `GET /api/highlights/:articleId` - Get highlights for specific article
-- [ ] `POST /api/highlights` - Create new highlight
-- [ ] `PUT /api/highlights/:id` - Update highlight
-- [ ] `DELETE /api/highlights/:id` - Delete highlight
+- [x] `GET /api/highlights` - Retrieve all highlights
+- [x] `GET /api/highlights/article/:articleId` - Get highlights for specific article (implemented as `/article/:articleId`)
+- [x] `POST /api/highlights` - Create new highlight
+- [x] `PUT /api/highlights/:id` - Update highlight
+- [x] `DELETE /api/highlights/:id` - Delete highlight
+
+NOTE: The implemented path for per-article highlights uses `/article/:articleId` under `/api/highlights`. The checklist expected `GET /api/highlights/:articleId` — both are functionally similar but should be reconciled in docs.
 
 #### Authentication API
 
-- [ ] `POST /api/auth/login` - User login with JWT
-- [ ] `POST /api/auth/register` - User registration with JWT
-- [ ] `POST /api/auth/refresh` - Refresh JWT token
-- [ ] `POST /api/auth/logout` - User logout
-- [ ] `GET /api/auth/verify` - Verify JWT token
+- [x] `POST /api/auth/register` - User registration with JWT
+- [x] `POST /api/auth/login` - User login with JWT
+- [x] `POST /api/auth/verify` - Verify JWT token
+- [x] `POST /api/auth/refresh` - Refresh JWT token
+- [x] `POST /api/auth/logout` - User logout
+
+NOTE: Auth is implemented and uses `mockUsers` (no persistent DB write on register). Tokens are JWTs signed with `process.env.JWT_SECRET` (dev fallback present). Refresh tokens are stateless (no revocation list).
 
 ### 2. Testing Requirements
 
 **IMPORTANT: Each developer must write tests achieving 10% code coverage for their assigned routes.**
 
 #### Shaurya: Articles API Tests
+
 - [x] Install and configure Mocha, Chai, and chai-http
 - [x] Write unit tests for all 8 Articles endpoints
 - [x] Test query parameters (status, tag, favorite, untagged)
@@ -74,40 +85,45 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [x] Run `npm run coverage` to verify your coverage
 
 #### Jeffrey: Feeds API Tests
-- [ ] Write unit tests for all 6 Feeds endpoints
-- [ ] Test feed creation, updates, deletion
-- [ ] Test GET /api/feeds/:id/articles
-- [ ] Test filtering and sorting
-- [ ] Achieve 10%+ coverage for `routes/feeds.js`
-- [ ] Run `npm run coverage` to verify your coverage
+
+- [x] Write unit tests for all 6 Feeds endpoints
+- [x] Test feed creation, updates, deletion
+- [x] Test GET /api/feeds/:id/articles
+- [x] Test filtering and sorting
+- [x] Achieve 10%+ coverage for `routes/feeds.js`
+- [x] Run `npm run coverage` to verify your coverage
 
 #### Anas: Tags & Highlights API Tests
-- [ ] Write unit tests for Tags endpoints (6 endpoints)
-- [ ] Write unit tests for Highlights endpoints (5 endpoints)
-- [ ] Test tag-article relationships
-- [ ] Test highlight creation with position tracking
-- [ ] Achieve 10%+ coverage for `routes/tags.js` and `routes/highlights.js`
-- [ ] Run `npm run coverage` to verify your coverage
+
+- [x] Write unit tests for Tags endpoints (6 endpoints)
+- [x] Write unit tests for Highlights endpoints (5 endpoints)
+- [x] Test tag-article relationships
+- [x] Test highlight creation with position tracking
+- [x] Achieve 10%+ coverage for `routes/tags.js` and `routes/highlights.js`
+- [x] Run `npm run coverage` to verify your coverage
 
 #### Saad: Users & Auth API Tests
-- [ ] Write unit tests for Users endpoints (5 endpoints)
-- [ ] Write unit tests for Auth endpoints (5 endpoints)
-- [ ] Test JWT token generation and verification
-- [ ] Test password hashing/comparison with bcrypt
-- [ ] Test authentication error cases
-- [ ] Achieve 10%+ coverage for `routes/users.js` and `routes/auth.js`
-- [ ] Run `npm run coverage` to verify your coverage
+
+- [x] Write unit tests for Users endpoints (5 endpoints)
+- [x] Write unit tests for Auth endpoints (5 endpoints)
+- [x] Test JWT token generation and verification
+- [x] Test password hashing/comparison with bcrypt
+- [x] Test authentication error cases
+- [x] Achieve 10%+ coverage for `routes/users.js` and `routes/auth.js`
+- [x] Run `npm run coverage` to verify your coverage
 
 #### Zeba: Integration Tests & Coverage Verification
-- [ ] Write integration tests for full API flows
-- [ ] Test article creation → tagging → highlighting → reading
-- [ ] Test user registration → login → profile update
-- [ ] Verify all team members hit 10%+ coverage
-- [ ] Generate final coverage report
-- [ ] Achieve 10%+ coverage for integration scenarios
-- [ ] Run `npm run coverage` to verify overall coverage
+
+- [x] Write integration tests for full API flows
+- [x] Test article creation → tagging → highlighting → reading
+- [x] Test user registration → login → profile update
+- [x] Verify all team members hit 10%+ coverage
+- [x] Generate final coverage report
+- [x] Achieve 10%+ coverage for integration scenarios
+- [x] Run `npm run coverage` to verify overall coverage
 
 #### Team Testing Goals
+
 - [ ] All tests pass with `npm test`
 - [ ] Overall project coverage ≥ 50% (5 developers × 10% each)
 - [ ] No failing tests in main branch
@@ -118,6 +134,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 **Anas & Saad lead this effort with support from all team members**
 
 #### Create API Service Layer (Anas)
+
 - [ ] Create `front-end/src/services/api.js`
 - [ ] Implement articlesAPI functions (getAll, getById, create, update, delete)
 - [ ] Implement feedsAPI functions
@@ -129,6 +146,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [ ] Document API service usage
 
 #### Update Pages to Use API (Saad)
+
 - [ ] Remove all mock data imports from pages
 - [ ] Update HomePage to fetch from back-end
 - [ ] Update InboxPage to fetch from back-end  
@@ -140,6 +158,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [ ] Test all CRUD operations work end-to-end
 
 #### Integration Testing (All Team)
+
 - [ ] Server runs on `http://localhost:7001`
 - [ ] Front-end runs on `http://localhost:7002`
 - [ ] CORS configured correctly
