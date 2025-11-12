@@ -1,43 +1,41 @@
 const express = require('express');
 const router = express.Router();
-const { mockArticles } = require('../data/mockArticles');
-const { mockTags } = require('../data/mockTags');
+const { articlesDao } = require('../lib/daoFactory');
 
 /**
  * GET /api/articles
  * Retrieve all articles with optional filtering
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    // Optional: Add filtering support
     const { status, tag, favorite, untagged } = req.query;
-    let filteredArticles = [...mockArticles];
+    const userId = 'user-1'; // TODO: Get from authenticated user
+    
+    
+    const filters = { userId };
 
     if (status) {
-      filteredArticles = filteredArticles.filter(article => article.status === status);
+      filters.status = status;
     }
 
     if (tag) {
-      // Filter by tag ID (articles reference tag IDs)
-      filteredArticles = filteredArticles.filter(article => {
-        return article.tags && article.tags.includes(tag);
-      });
+      filters.tag = tag;
     }
 
     if (untagged === 'true') {
-      filteredArticles = filteredArticles.filter(article => 
-        !article.tags || article.tags.length === 0
-      );
+      filters.untagged = true;
     }
 
     if (favorite === 'true') {
-      filteredArticles = filteredArticles.filter(article => article.isFavorite === true);
+      filters.isFavorite = true;
     }
+
+    const articles = await articlesDao.getAll(filters);
 
     res.json({
       success: true,
-      count: filteredArticles.length,
-      data: filteredArticles
+      count: articles.length,
+      data: articles
     });
   } catch (error) {
     res.status(500).json({

@@ -9,13 +9,14 @@ import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { articlesAPI } from "../services/api.js";
+import { articlesAPI, feedsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 
 const FavoritesPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [articles, setArticles] = useState([]);
+  const [feeds, setFeeds] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,22 +25,43 @@ const FavoritesPage = ({ onNavigate }) => {
   const baseLockedFilters = useMemo(() => ({ isFavorite: true }), []);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    articlesAPI.getAll(baseLockedFilters)
-      .then(res => {
-        let data = res;
-        if (Array.isArray(res)) data = res;
-        else if (res.data) data = res.data;
-        else if (res.articles) data = res.articles;
-        setArticles(data);
-        setDisplayedArticles(applyFiltersAndSort(data, baseLockedFilters));
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch articles and feeds in parallel
+        const [articlesResponse, feedsResponse] = await Promise.all([
+          articlesAPI.getAll(baseLockedFilters),
+          feedsAPI.getAll()
+        ]);
+        
+        // Handle articles response
+        let articlesData = articlesResponse;
+        if (Array.isArray(articlesResponse)) {
+          articlesData = articlesResponse;
+        } else if (articlesResponse.data) {
+          articlesData = articlesResponse.data;
+        } else if (articlesResponse.articles) {
+          articlesData = articlesResponse.articles;
+        }
+        
+        setArticles(articlesData);
+        setDisplayedArticles(applyFiltersAndSort(articlesData, baseLockedFilters));
+        
+        // Handle feeds response
+        if (feedsResponse.success && feedsResponse.data) {
+          setFeeds(feedsResponse.data);
+        }
+        
         setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message || "Failed to load articles");
+      } catch (err) {
+        setError(err.message || "Failed to load data");
         setLoading(false);
-      });
+      }
+    };
+
+    fetchData();
   }, [baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
@@ -88,7 +110,7 @@ const FavoritesPage = ({ onNavigate }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
-      availableFeeds={["TechCrunch", "Medium", "Dev.to"]}
+      availableFeeds={feeds}
       lockedFilters={{ isFavorite: true }}
       preAppliedFilters={{ isFavorite: true }}
       onFilterChipRemoved={() => onNavigate("search")}
