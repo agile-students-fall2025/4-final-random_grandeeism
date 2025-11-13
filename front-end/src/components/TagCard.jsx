@@ -176,7 +176,7 @@ export default function TagCard({
                         <Button variant="outline">Cancel</Button>
                       </DialogClose>
                       <Button 
-                        onClick={handleRenameConfirm}
+                        onClick={e => { e.stopPropagation(); handleRenameConfirm(); }}
                         disabled={!newTagName.trim() || newTagName.trim() === tag}
                       >
                         Rename
@@ -210,7 +210,7 @@ export default function TagCard({
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={handleDeleteConfirm}
+                        onClick={e => { e.stopPropagation(); handleDeleteConfirm(); }}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Delete

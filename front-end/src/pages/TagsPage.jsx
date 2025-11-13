@@ -1,8 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Plus, Tag as TagIcon, ArrowUpDown, X } from "lucide-react";
 import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
-import { mockArticles } from "../data/mockArticles";
 import { STATUS } from "../constants/statuses.js";
 import { Button } from "../components/ui/button.jsx";
 import { Input } from "../components/ui/input.jsx";
@@ -16,42 +15,41 @@ export default function TagsPage({ onNavigate }) {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isCreateTagModalOpen, setIsCreateTagModalOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
-  const [articles, setArticles] = useState(mockArticles);
+  const [tags, setTags] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch tags from backend
+  useEffect(() => {
+    fetchTags();
+  }, []);
+
+  const fetchTags = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/tags");
+      const data = await res.json();
+      if (data.success) {
+        setTags(data.data);
+      } else {
+        setError(data.error || "Failed to fetch tags");
+      }
+    } catch (e) {
+      setError("Failed to fetch tags");
+    }
+    setLoading(false);
+  };
 
   // Calculate tag statistics
   const tagStats = useMemo(() => {
-    const stats = new Map();
-    
-    articles.forEach(article => {
-      article.tags.forEach(tag => {
-        const existing = stats.get(tag) || { count: 0, articles: 0, videos: 0, podcasts: 0 };
-        existing.count++;
-        
-        // Infer media type from tags
-        if (article.tags.includes('podcast')) {
-          existing.podcasts++;
-        } else if (article.tags.includes('video')) {
-          existing.videos++;
-        } else {
-          existing.articles++;
-        }
-        
-        stats.set(tag, existing);
-      });
-    });
-    
-    return Array.from(stats.entries())
-      .map(([tag, data]) => ({
-        tag,
-        articleCount: data.count,
-        mediaBreakdown: {
-          articles: data.articles,
-          videos: data.videos,
-          podcasts: data.podcasts,
-        },
-      }))
-      .sort((a, b) => b.articleCount - a.articleCount);
-  }, [articles]);
+    return tags.map(tag => ({
+      tag: tag.name,
+      id: tag.id,
+      articleCount: tag.articleCount || 0,
+      mediaBreakdown: {}, // You can enhance this if you want
+    }));
+  }, [tags]);
 
   // Filter and sort tags
   const filteredAndSortedTags = useMemo(() => {
@@ -76,45 +74,62 @@ export default function TagsPage({ onNavigate }) {
     onNavigate('search', { tag: tag });
   };
 
-  const handleRename = (oldTag, newTag) => {
-    console.log(`Renaming tag "${oldTag}" to "${newTag}"`);
-    // Update all articles with the renamed tag
-    setArticles(articles.map(article => ({
-      ...article,
-      tags: article.tags.map(tag => tag === oldTag ? newTag : tag)
-    })));
+  const handleRename = async (oldTag, newTag) => {
+    const tagObj = tags.find(t => t.name === oldTag);
+    if (!tagObj) return;
+    try {
+      const res = await fetch(`/api/tags/${tagObj.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newTag })
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchTags();
+      } else {
+        alert(data.error || 'Failed to rename tag');
+      }
+    } catch (e) {
+      alert('Failed to rename tag');
+    }
   };
 
-  const handleDelete = (tag) => {
-    console.log(`Deleting tag: ${tag}`);
-    // Remove tag from all articles
-    setArticles(articles.map(article => ({
-      ...article,
-      tags: article.tags.filter(t => t !== tag)
-    })));
+  const handleDelete = async (tag) => {
+    const tagObj = tags.find(t => t.name === tag);
+    if (!tagObj) return;
+    // if (!window.confirm(`Delete tag "${tag}"?`)) return;
+    try {
+      const res = await fetch(`/api/tags/${tagObj.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        fetchTags();
+      } else {
+        alert(data.error || 'Failed to delete tag');
+      }
+    } catch (e) {
+      alert('Failed to delete tag');
+    }
   };
 
-  const handleCreateTag = () => {
+  const handleCreateTag = async () => {
     const trimmedTag = newTagName.trim();
-    if (trimmedTag && !tagStats.some(t => t.tag === trimmedTag)) {
-      // Create a new article with this tag to demonstrate the functionality
-      const newArticle = {
-        id: `new-${Date.now()}`,
-        title: `Sample Article with ${trimmedTag}`,
-        url: "https://example.com",
-        author: "User",
-        readingTime: "5 min",
-        status: STATUS.INBOX,
-        isFavorite: false,
-        tags: [trimmedTag],
-        dateAdded: new Date(),
-        hasAnnotations: false,
-        readProgress: 0
-      };
-      
-      setArticles([...articles, newArticle]);
-      setNewTagName("");
-      setIsCreateTagModalOpen(false);
+    if (!trimmedTag || tagStats.some(t => t.tag === trimmedTag)) return;
+    try {
+      const res = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedTag })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewTagName("");
+        setIsCreateTagModalOpen(false);
+        fetchTags();
+      } else {
+        alert(data.error || 'Failed to create tag');
+      }
+    } catch (e) {
+      alert('Failed to create tag');
     }
   };
 
@@ -135,7 +150,6 @@ export default function TagsPage({ onNavigate }) {
       currentPage="articles"
       currentView="Tags"
       onNavigate={onNavigate}
-      articles={articles}
       showSearch={true}
       customSearchContent={
         <>
@@ -253,8 +267,16 @@ export default function TagsPage({ onNavigate }) {
             </div>
           </div>
 
-          {/* Tags Grid */}
-          {filteredAndSortedTags.length === 0 ? (
+          {/* Loading and Error States */}
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <span className="text-muted-foreground text-lg">Loading tags...</span>
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center py-12">
+              <span className="text-destructive text-lg">{error}</span>
+            </div>
+          ) : filteredAndSortedTags.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 px-6">
                 <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
