@@ -18,6 +18,7 @@ import ArticleCard from "../components/ArticleCard.jsx";
 import { articlesAPI } from "../services/api.js";
 import { STATUS } from "../constants/statuses.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
+import { useTagResolution } from "../hooks/useTagResolution.js";
 
 // Tab configuration with icons and status mapping
 const tabs = [
@@ -29,12 +30,16 @@ const tabs = [
 
 const HomePage = ({ onNavigate }) => {
   const [articles, setArticles] = useState([]);
+  const [rawArticles, setRawArticles] = useState([]); // Store raw articles
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [activeTab, setActiveTab] = useState("Inbox");
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Use tag resolution hook
+  const { resolveArticleTags } = useTagResolution();
 
   // Get current tab's status value
   const currentStatus = tabs.find(t => t.name === activeTab)?.status || STATUS.INBOX;
@@ -52,8 +57,8 @@ const HomePage = ({ onNavigate }) => {
         if (Array.isArray(res)) data = res;
         else if (res.data) data = res.data;
         else if (res.articles) data = res.articles;
-        setArticles(data);
-        setDisplayedArticles(applyFiltersAndSort(data, baseLockedFilters));
+        
+        setRawArticles(data); // Store raw articles
         setLoading(false);
       })
       .catch(err => {
@@ -61,6 +66,15 @@ const HomePage = ({ onNavigate }) => {
         setLoading(false);
       });
   }, []);
+
+  // Resolve tags when raw articles or tag resolution function changes
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const resolvedArticles = resolveArticleTags(rawArticles);
+      setArticles(resolvedArticles);
+      setDisplayedArticles(applyFiltersAndSort(resolvedArticles, baseLockedFilters));
+    }
+  }, [rawArticles, resolveArticleTags, baseLockedFilters]);
 
   // Update displayed articles when tab or articles change
   useEffect(() => {

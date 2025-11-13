@@ -11,16 +11,19 @@ import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { articlesAPI, feedsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
+import useTagResolution from "../hooks/useTagResolution.js";
 
 const FavoritesPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
+  const [rawArticles, setRawArticles] = useState([]);
   const [articles, setArticles] = useState([]);
   const [feeds, setFeeds] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const { resolveArticleTags } = useTagResolution();
   // Backend expects isFavorite=true for favorites
   const baseLockedFilters = useMemo(() => ({ isFavorite: true }), []);
 
@@ -46,8 +49,7 @@ const FavoritesPage = ({ onNavigate }) => {
           articlesData = articlesResponse.articles;
         }
         
-        setArticles(articlesData);
-        setDisplayedArticles(applyFiltersAndSort(articlesData, baseLockedFilters));
+        setRawArticles(articlesData);
         
         // Handle feeds response
         if (feedsResponse.success && feedsResponse.data) {
@@ -63,6 +65,26 @@ const FavoritesPage = ({ onNavigate }) => {
 
     fetchData();
   }, [baseLockedFilters]);
+
+  // Tag resolution effect
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const resolveAndSetArticles = async () => {
+        const resolved = await resolveArticleTags(rawArticles);
+        setArticles(resolved);
+      };
+      resolveAndSetArticles();
+    } else {
+      setArticles([]);
+    }
+  }, [rawArticles, resolveArticleTags]);
+
+  // Update displayed articles when resolved articles change
+  useEffect(() => {
+    if (articles.length > 0) {
+      setDisplayedArticles(applyFiltersAndSort(articles, currentFilters || baseLockedFilters));
+    }
+  }, [articles, currentFilters, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
@@ -81,7 +103,7 @@ const FavoritesPage = ({ onNavigate }) => {
 
   // The following handlers would need to call backend APIs for full integration
   const handleStatusChange = (articleId, newStatus) => {
-    setArticles(prevArticles => 
+    setRawArticles(prevArticles => 
       prevArticles.map(article => 
         article.id === articleId ? { ...article, status: newStatus } : article
       )
@@ -89,7 +111,7 @@ const FavoritesPage = ({ onNavigate }) => {
   };
 
   const handleToggleFavorite = (articleId) => {
-    setArticles(prevArticles =>
+    setRawArticles(prevArticles =>
       prevArticles.map(article =>
         article.id === articleId ? { ...article, isFavorite: !article.isFavorite } : article
       )
@@ -97,7 +119,7 @@ const FavoritesPage = ({ onNavigate }) => {
   };
 
   const handleDeleteArticle = (articleId) => {
-    setArticles(prevArticles => prevArticles.filter(article => article.id !== articleId));
+    setRawArticles(prevArticles => prevArticles.filter(article => article.id !== articleId));
   };
 
   return (

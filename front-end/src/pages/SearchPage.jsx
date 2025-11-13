@@ -11,15 +11,20 @@ import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { articlesAPI, feedsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
+import { useTagResolution } from "../hooks/useTagResolution.js";
 
 const SearchPage = ({ onNavigate, initialTag }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(initialTag ? { tags: [initialTag] } : {});
   const [articles, setArticles] = useState([]);
+  const [rawArticles, setRawArticles] = useState([]); // Store raw articles
   const [feeds, setFeeds] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Use tag resolution hook
+  const { resolveArticleTags } = useTagResolution();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,8 +50,7 @@ const SearchPage = ({ onNavigate, initialTag }) => {
           data = articlesResponse.articles;
         }
         
-        setArticles(data);
-        setDisplayedArticles(applyFiltersAndSort(data, filters));
+        setRawArticles(data); // Store raw articles
         
         // Handle feeds response
         if (feedsResponse.success && feedsResponse.data) {
@@ -62,6 +66,16 @@ const SearchPage = ({ onNavigate, initialTag }) => {
 
     fetchData();
   }, [initialTag]);
+
+  // Resolve tags when raw articles or tag resolution function changes
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const resolvedArticles = resolveArticleTags(rawArticles);
+      setArticles(resolvedArticles);
+      const filters = initialTag ? { tag: initialTag } : {};
+      setDisplayedArticles(applyFiltersAndSort(resolvedArticles, filters));
+    }
+  }, [rawArticles, resolveArticleTags, initialTag]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...(filters || {}), query };

@@ -13,6 +13,7 @@ import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
 import { articlesAPI, feedsAPI } from "../services/api.js";
 import { Card, CardContent, CardTitle, CardDescription } from "../components/ui/card.jsx";
+import useTagResolution from "../hooks/useTagResolution.js";
 
 // Utility to normalize backend response to an array
 const normalizeArticles = (data) => {
@@ -25,12 +26,14 @@ const normalizeArticles = (data) => {
 const ArchivePage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
+  const [rawArticles, setRawArticles] = useState([]);
   const [articles, setArticles] = useState([]);
   const [feeds, setFeeds] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const { resolveArticleTags } = useTagResolution();
   const baseLockedFilters = useMemo(() => ({ status: STATUS.ARCHIVED }), []);
 
   useEffect(() => {
@@ -47,8 +50,7 @@ const ArchivePage = ({ onNavigate }) => {
         
         // Handle articles response
         const normalized = normalizeArticles(articlesResponse);
-        setArticles(normalized);
-        setDisplayedArticles(applyFiltersAndSort(normalized, baseLockedFilters));
+        setRawArticles(normalized);
         
         // Handle feeds response
         if (feedsResponse.success && feedsResponse.data) {
@@ -58,7 +60,7 @@ const ArchivePage = ({ onNavigate }) => {
         setLoading(false);
       } catch (err) {
         setError("Failed to load archived articles");
-        setArticles([]);
+        setRawArticles([]);
         setDisplayedArticles([]);
         setLoading(false);
       }
@@ -66,6 +68,26 @@ const ArchivePage = ({ onNavigate }) => {
 
     fetchData();
   }, []);
+
+  // Tag resolution effect
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const resolveAndSetArticles = async () => {
+        const resolved = await resolveArticleTags(rawArticles);
+        setArticles(resolved);
+      };
+      resolveAndSetArticles();
+    } else {
+      setArticles([]);
+    }
+  }, [rawArticles, resolveArticleTags]);
+
+  // Update displayed articles when resolved articles change
+  useEffect(() => {
+    if (articles.length > 0) {
+      setDisplayedArticles(applyFiltersAndSort(articles, currentFilters || baseLockedFilters));
+    }
+  }, [articles, currentFilters, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
@@ -83,7 +105,7 @@ const ArchivePage = ({ onNavigate }) => {
   };
 
   const handleStatusChange = (articleId, newStatus) => {
-    setArticles(prev => prev.map(article => 
+    setRawArticles(prev => prev.map(article => 
       article.id === articleId 
         ? { ...article, status: newStatus }
         : article
@@ -91,7 +113,7 @@ const ArchivePage = ({ onNavigate }) => {
   };
 
   const handleToggleFavorite = (articleId) => {
-    setArticles(prev => prev.map(article => 
+    setRawArticles(prev => prev.map(article => 
       article.id === articleId 
         ? { ...article, isFavorite: !article.isFavorite }
         : article

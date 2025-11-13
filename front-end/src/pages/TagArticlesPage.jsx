@@ -8,6 +8,7 @@ import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
+import { useTagResolution } from "../hooks/useTagResolution.js";
 
 // Utility to normalize backend response to an array
 const normalizeArticles = (data) => {
@@ -24,58 +25,48 @@ const getAllAvailableTags = (articles) =>
 
 export default function TagArticlesPage({ onNavigate, tag }) {
   const [articles, setArticles] = useState([]);
+  const [rawArticles, setRawArticles] = useState([]); // Store raw articles
   const [feeds, setFeeds] = useState([]);
-  const [tags, setTags] = useState([]);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Helper function to find tag ID by tag name
-  const getTagIdByName = (tagName, tagsArray) => {
-    if (!tagName || !Array.isArray(tagsArray)) return tagName;
-    const foundTag = tagsArray.find(t => t.name === tagName);
-    return foundTag ? foundTag.id : tagName;
-  };
+  // Use shared tag resolution hook
+  const { tags, resolveTagName, resolveArticleTags, resolveTagId } = useTagResolution();
 
-  // Create base filters for search functionality (will use resolved tag ID)
+  // Create base filters for search functionality (convert tag name to ID if needed)
   const baseLockedFilters = useMemo(() => {
     if (!tag) return {};
-    const tagId = getTagIdByName(tag, tags);
+    const tagId = resolveTagName(tag);
     return { tag: tagId };
-  }, [tag, tags]);
+  }, [tag, resolveTagName]);
 
-  // Fetch tags first, then articles and feeds
+  // Get the display name for the current tag
+  const tagDisplayName = useMemo(() => {
+    if (!tag) return 'Untagged';
+    // If tag is already a readable name (not an ID), return it
+    if (!tag.startsWith('tag-')) return tag;
+    // Otherwise, resolve ID to name using the hook
+    return resolveTagId(tag);
+  }, [tag, resolveTagId]);
+
+  // Fetch articles and feeds when tag or baseLockedFilters change
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // First, fetch tags to resolve tag name to ID
-        const tagsResponse = await tagsAPI.getAll();
-        let tagId = tag;
-        
-        if (tagsResponse.success && tagsResponse.data) {
-          setTags(tagsResponse.data);
-          // Convert tag name to tag ID if needed
-          if (tag) {
-            const foundTag = tagsResponse.data.find(t => t.name === tag);
-            tagId = foundTag ? foundTag.id : tag;
-          }
-        }
-        
-        // Now fetch articles and feeds with the resolved tag ID
-        const filters = tagId ? { tag: tagId } : {};
+        // Fetch articles and feeds with the resolved tag ID
         const [articlesResponse, feedsResponse] = await Promise.all([
-          articlesAPI.getAll(filters),
+          articlesAPI.getAll(baseLockedFilters),
           feedsAPI.getAll()
         ]);
         
         const normalized = normalizeArticles(articlesResponse);
-        setArticles(normalized);
-        setDisplayedArticles(normalized); // Use backend-filtered result directly
+        setRawArticles(normalized); // Store raw articles
         
         // Handle feeds response
         if (feedsResponse.success && feedsResponse.data) {
@@ -85,14 +76,25 @@ export default function TagArticlesPage({ onNavigate, tag }) {
         setLoading(false);
       } catch (err) {
         setError("Failed to load articles");
-        setArticles([]);
-        setDisplayedArticles([]);
+        setRawArticles([]);
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [tag]);
+  }, [baseLockedFilters]);
+
+  // Resolve tags when raw articles or tag resolution function changes
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const articlesWithResolvedTags = resolveArticleTags(rawArticles);
+      setArticles(articlesWithResolvedTags);
+      setDisplayedArticles(articlesWithResolvedTags);
+    } else {
+      setArticles([]);
+      setDisplayedArticles([]);
+    }
+  }, [rawArticles, resolveArticleTags]);
 
   const allAvailableTags = useMemo(() => getAllAvailableTags(articles), [articles]);
 
@@ -184,7 +186,7 @@ export default function TagArticlesPage({ onNavigate, tag }) {
                 </div>
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold text-foreground mb-2">
-                    {tag || 'Untagged'}
+                    {tagDisplayName}
                   </h1>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span>

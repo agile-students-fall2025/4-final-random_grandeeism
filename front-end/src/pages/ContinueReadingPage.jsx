@@ -12,15 +12,18 @@ import ArticleCard from "../components/ArticleCard.jsx";
 import { articlesAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
+import useTagResolution from "../hooks/useTagResolution.js";
 
 const ContinueReadingPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
+  const [rawArticles, setRawArticles] = useState([]);
   const [articles, setArticles] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const { resolveArticleTags } = useTagResolution();
   const baseLockedFilters = useMemo(() => ({ status: STATUS.CONTINUE }), []);
 
   useEffect(() => {
@@ -32,8 +35,7 @@ const ContinueReadingPage = ({ onNavigate }) => {
         if (Array.isArray(res)) data = res;
         else if (res.data) data = res.data;
         else if (res.articles) data = res.articles;
-        setArticles(data);
-        setDisplayedArticles(applyFiltersAndSort(data, baseLockedFilters));
+        setRawArticles(data);
         setLoading(false);
       })
       .catch(err => {
@@ -41,6 +43,26 @@ const ContinueReadingPage = ({ onNavigate }) => {
         setLoading(false);
       });
   }, [baseLockedFilters]);
+
+  // Tag resolution effect
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const resolveAndSetArticles = async () => {
+        const resolved = await resolveArticleTags(rawArticles);
+        setArticles(resolved);
+      };
+      resolveAndSetArticles();
+    } else {
+      setArticles([]);
+    }
+  }, [rawArticles, resolveArticleTags]);
+
+  // Update displayed articles when resolved articles change
+  useEffect(() => {
+    if (articles.length > 0) {
+      setDisplayedArticles(applyFiltersAndSort(articles, currentFilters || baseLockedFilters));
+    }
+  }, [articles, currentFilters, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
@@ -57,7 +79,7 @@ const ContinueReadingPage = ({ onNavigate }) => {
 
   // The following handlers would need to call backend APIs for full integration
   const handleStatusChange = (articleId, newStatus) => {
-    setArticles(prevArticles => 
+    setRawArticles(prevArticles => 
       prevArticles.map(article => 
         article.id === articleId ? { ...article, status: newStatus } : article
       )
@@ -65,7 +87,7 @@ const ContinueReadingPage = ({ onNavigate }) => {
   };
 
   const handleToggleFavorite = (articleId) => {
-    setArticles(prevArticles =>
+    setRawArticles(prevArticles =>
       prevArticles.map(article =>
         article.id === articleId ? { ...article, isFavorite: !article.isFavorite } : article
       )
@@ -73,7 +95,7 @@ const ContinueReadingPage = ({ onNavigate }) => {
   };
 
   const handleDeleteArticle = (articleId) => {
-    setArticles(prevArticles => prevArticles.filter(article => article.id !== articleId));
+    setRawArticles(prevArticles => prevArticles.filter(article => article.id !== articleId));
   };
 
   return (

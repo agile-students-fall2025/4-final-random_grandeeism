@@ -9,8 +9,10 @@ import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
+import useTagResolution from "../hooks/useTagResolution.js";
 
 export default function FeedArticlesPage({ onNavigate, feed }) {
+  const [rawArticles, setRawArticles] = useState([]);
   const [articles, setArticles] = useState([]);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
@@ -18,6 +20,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const { resolveArticleTags } = useTagResolution();
   // Base locked filters - always include the feed
   const baseLockedFilters = useMemo(() => ({ feed: feed || "" }), [feed]);
 
@@ -30,8 +33,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
         if (Array.isArray(res)) data = res;
         else if (res.data) data = res.data;
         else if (res.articles) data = res.articles;
-        setArticles(data);
-        setDisplayedArticles(applyFiltersAndSort(data, baseLockedFilters));
+        setRawArticles(data);
         setLoading(false);
       })
       .catch(err => {
@@ -39,6 +41,26 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
         setLoading(false);
       });
   }, [feed]);
+
+  // Tag resolution effect
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const resolveAndSetArticles = async () => {
+        const resolved = await resolveArticleTags(rawArticles);
+        setArticles(resolved);
+      };
+      resolveAndSetArticles();
+    } else {
+      setArticles([]);
+    }
+  }, [rawArticles, resolveArticleTags]);
+
+  // Update displayed articles when resolved articles change
+  useEffect(() => {
+    if (articles.length > 0) {
+      setDisplayedArticles(applyFiltersAndSort(articles, currentFilters || baseLockedFilters));
+    }
+  }, [articles, currentFilters, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
     // Merge locked filters with search filters
@@ -65,7 +87,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
 
   // The following handlers would need to call backend APIs for full integration
   const handleToggleFavorite = (articleId) => {
-    setArticles(prev => prev.map(article => 
+    setRawArticles(prev => prev.map(article => 
       article.id === articleId 
         ? { ...article, isFavorite: !article.isFavorite }
         : article
@@ -73,7 +95,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
   };
 
   const handleStatusChange = (articleId, newStatus) => {
-    setArticles(prev => prev.map(article => 
+    setRawArticles(prev => prev.map(article => 
       article.id === articleId 
         ? { ...article, status: newStatus }
         : article
@@ -82,7 +104,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
 
   const handleDelete = (articleId) => {
     if (confirm('Are you sure you want to delete this article?')) {
-      setArticles(prev => prev.filter(article => article.id !== articleId));
+      setRawArticles(prev => prev.filter(article => article.id !== articleId));
     }
   };
 

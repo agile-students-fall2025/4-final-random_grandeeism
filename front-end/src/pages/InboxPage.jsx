@@ -12,15 +12,20 @@ import ArticleCard from "../components/ArticleCard.jsx";
 import { articlesAPI, feedsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
+import { useTagResolution } from "../hooks/useTagResolution.js";
 
 const InboxPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [articles, setArticles] = useState([]);
+  const [rawArticles, setRawArticles] = useState([]); // Store raw articles
   const [feeds, setFeeds] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Use tag resolution hook
+  const { resolveArticleTags } = useTagResolution();
 
   const baseLockedFilters = useMemo(() => ({ status: STATUS.INBOX }), []);
 
@@ -46,8 +51,7 @@ const InboxPage = ({ onNavigate }) => {
           articlesData = articlesResponse.articles;
         }
         
-        setArticles(articlesData);
-        setDisplayedArticles(applyFiltersAndSort(articlesData, baseLockedFilters));
+        setRawArticles(articlesData); // Store raw articles
         
         // Handle feeds response
         if (feedsResponse.success && feedsResponse.data) {
@@ -63,6 +67,15 @@ const InboxPage = ({ onNavigate }) => {
 
     fetchData();
   }, [baseLockedFilters]);
+
+  // Resolve tags when raw articles or tag resolution function changes
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const resolvedArticles = resolveArticleTags(rawArticles);
+      setArticles(resolvedArticles);
+      setDisplayedArticles(applyFiltersAndSort(resolvedArticles, baseLockedFilters));
+    }
+  }, [rawArticles, resolveArticleTags, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
