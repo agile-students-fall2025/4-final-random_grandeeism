@@ -7,6 +7,7 @@
  */
 
 const { mockTags } = require('../data/mockTags');
+const { mockArticles } = require('../data/mockArticles');
 
 // In-memory storage - clone the mock data to avoid mutations
 let tags = [...mockTags.map(tag => ({ ...tag }))];
@@ -15,6 +16,17 @@ let tags = [...mockTags.map(tag => ({ ...tag }))];
  * Generate a new ID for created tags
  */
 const generateId = () => `tag-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+/**
+ * Calculate the actual article count for a tag
+ * @param {string} tagId - Tag ID to count articles for
+ * @returns {number} Number of articles with this tag
+ */
+const calculateArticleCount = (tagId) => {
+  return mockArticles.filter(article => 
+    article.tags && Array.isArray(article.tags) && article.tags.includes(tagId)
+  ).length;
+};
 
 const tagsDao = {
   /**
@@ -40,6 +52,12 @@ const tagsDao = {
         (tag.description && tag.description.toLowerCase().includes(searchLower))
       );
     }
+
+    // Update article counts with actual values
+    filteredTags = filteredTags.map(tag => ({
+      ...tag,
+      articleCount: calculateArticleCount(tag.id)
+    }));
 
     return filteredTags;
   },
