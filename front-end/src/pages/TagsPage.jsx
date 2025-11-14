@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Plus, Tag as TagIcon, ArrowUpDown, X } from "lucide-react";
 import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
@@ -28,32 +28,37 @@ export default function TagsPage({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Fetch tags from backend
   useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Get sort parameter for API
-        let sortParam = 'popular';
-        if (sortBy === 'alphabetical') sortParam = 'alphabetical';
-        else if (sortBy === 'recent') sortParam = 'recent';
-        
-        const response = await tagsAPI.getAll({ sort: sortParam });
-        
-        if (response.success && response.data) {
-          setTags(response.data);
-        } else {
-          throw new Error('Failed to fetch tags');
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        setError("Failed to load tags");
-        setTags([]);
-        setLoading(false);
+    fetchTags();
+  }, []);
+
+  const fetchTags = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/tags");
+      const data = await res.json();
+      if (data.success) {
+        setTags(data.data);
+      } else {
+        setError(data.error || "Failed to fetch tags");
       }
-    };
+    } catch (e) {
+      setError("Failed to fetch tags");
+    }
+    setLoading(false);
+  };
+
+  // Calculate tag statistics
+  const tagStats = useMemo(() => {
+    return tags.map(tag => ({
+      tag: tag.name,
+      id: tag.id,
+      articleCount: tag.articleCount || 0,
+      mediaBreakdown: {}, // You can enhance this if you want
+    }));
+  }, [tags]);
 
     fetchTags();
   }, [sortBy]);
@@ -72,85 +77,62 @@ export default function TagsPage({ onNavigate }) {
     onNavigate('search', { tag: tagName });
   };
 
-  const handleRename = async (oldTagName, newTagName) => {
+  const handleRename = async (oldTag, newTag) => {
+    const tagObj = tags.find(t => t.name === oldTag);
+    if (!tagObj) return;
     try {
-      // Find the tag to rename
-      const tagToRename = tags.find(t => t.name === oldTagName);
-      if (!tagToRename) {
-        console.error('Tag not found:', oldTagName);
-        return;
-      }
-
-      // Update the tag via API
-      const response = await tagsAPI.update(tagToRename.id, { name: newTagName });
-      
-      if (response.success) {
-        // Update local state
-        setTags(tags.map(t => 
-          t.name === oldTagName ? { ...t, name: newTagName } : t
-        ));
-        console.log(`Successfully renamed tag "${oldTagName}" to "${newTagName}"`);
+      const res = await fetch(`/api/tags/${tagObj.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newTag })
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchTags();
       } else {
-        throw new Error('Failed to rename tag');
+        alert(data.error || 'Failed to rename tag');
       }
-    } catch (err) {
-      console.error('Failed to rename tag:', err.message);
-      // Optionally show user-friendly error message
+    } catch (e) {
+      alert('Failed to rename tag');
     }
   };
 
-  const handleDelete = async (tagName) => {
+  const handleDelete = async (tag) => {
+    const tagObj = tags.find(t => t.name === tag);
+    if (!tagObj) return;
+    // if (!window.confirm(`Delete tag "${tag}"?`)) return;
     try {
-      // Find the tag to delete
-      const tagToDelete = tags.find(t => t.name === tagName);
-      if (!tagToDelete) {
-        console.error('Tag not found:', tagName);
-        return;
-      }
-
-      // Delete the tag via API
-      const response = await tagsAPI.delete(tagToDelete.id);
-      
-      if (response.success) {
-        // Update local state
-        setTags(tags.filter(t => t.name !== tagName));
-        console.log(`Successfully deleted tag: ${tagName}`);
+      const res = await fetch(`/api/tags/${tagObj.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        fetchTags();
       } else {
-        throw new Error('Failed to delete tag');
+        alert(data.error || 'Failed to delete tag');
       }
-    } catch (err) {
-      console.error('Failed to delete tag:', err.message);
-      // Optionally show user-friendly error message
+    } catch (e) {
+      alert('Failed to delete tag');
     }
   };
 
   const handleCreateTag = async () => {
     const trimmedTag = newTagName.trim();
-    if (trimmedTag && !tags.some(t => t.name === trimmedTag)) {
-      try {
-        // Create new tag via API
-        const newTagData = {
-          name: trimmedTag,
-          color: '#666666', // Default color
-          description: `Tag for ${trimmedTag}`,
-          articleCount: 0
-        };
-        
-        const response = await tagsAPI.create(newTagData);
-        
-        if (response.success) {
-          // Add the new tag to local state
-          setTags([...tags, response.data]);
-          setNewTagName("");
-          setIsCreateTagModalOpen(false);
-          console.log(`Successfully created tag: ${trimmedTag}`);
-        } else {
-          throw new Error('Failed to create tag');
-        }
-      } catch (err) {
-        console.error('Failed to create tag:', err.message);
-        // Optionally show user-friendly error message
+    if (!trimmedTag || tagStats.some(t => t.tag === trimmedTag)) return;
+    try {
+      const res = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedTag })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewTagName("");
+        setIsCreateTagModalOpen(false);
+        fetchTags();
+      } else {
+        alert(data.error || 'Failed to create tag');
       }
+    } catch (e) {
+      alert('Failed to create tag');
     }
   };
 
@@ -325,8 +307,16 @@ export default function TagsPage({ onNavigate }) {
             </div>
           </div>
 
-          {/* Tags Grid */}
-          {filteredTags.length === 0 ? (
+          {/* Loading and Error States */}
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <span className="text-muted-foreground text-lg">Loading tags...</span>
+            </div>
+          ) : error ? (
+            <div className="flex justify-center items-center py-12">
+              <span className="text-destructive text-lg">{error}</span>
+            </div>
+          ) : filteredAndSortedTags.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 px-6">
                 <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">

@@ -1,0 +1,8 @@
+@font-face {
+  font-family: 'New Spirit';
+  src: url('/fonts/NewSpirit-SemiBold.woff2') format('woff2'),
+       url('/fonts/NewSpirit-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
