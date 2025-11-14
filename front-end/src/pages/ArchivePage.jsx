@@ -9,21 +9,63 @@ import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { mockArticles } from "../data/mockArticles.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
+import { articlesAPI, feedsAPI } from "../services/api.js";
+import { Card, CardContent, CardTitle, CardDescription } from "../components/ui/card.jsx";
+
+// Utility to normalize backend response to an array
+const normalizeArticles = (data) => {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.articles)) return data.articles;
+  return [];
+};
 
 const ArchivePage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
+  const [feeds, setFeeds] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const baseLockedFilters = useMemo(() => ({ status: STATUS.ARCHIVED }), []);
 
   useEffect(() => {
-    setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
-  }, [articles, baseLockedFilters]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch articles and feeds in parallel
+        const [articlesResponse, feedsResponse] = await Promise.all([
+          articlesAPI.getAll({ status: STATUS.ARCHIVED }),
+          feedsAPI.getAll()
+        ]);
+        
+        // Handle articles response
+        const normalized = normalizeArticles(articlesResponse);
+        setArticles(normalized);
+        setDisplayedArticles(applyFiltersAndSort(normalized, baseLockedFilters));
+        
+        // Handle feeds response
+        if (feedsResponse.success && feedsResponse.data) {
+          setFeeds(feedsResponse.data);
+        }
+        
+        setLoading(false);
+      } catch (err) {
+        setError("Failed to load archived articles");
+        setArticles([]);
+        setDisplayedArticles([]);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
@@ -60,6 +102,7 @@ const ArchivePage = ({ onNavigate }) => {
     setArticles(prev => prev.filter(article => article.id !== articleId));
   };
 
+  // Only show error if present; otherwise, always render the layout
   return (
     <MainLayout
       currentPage="articles"
@@ -70,7 +113,7 @@ const ArchivePage = ({ onNavigate }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
-      availableFeeds={["TechCrunch", "Medium", "Dev.to"]}
+      availableFeeds={feeds}
       lockedFilters={{ status: STATUS.ARCHIVED }}
       preAppliedFilters={{ status: STATUS.ARCHIVED }}
       onFilterChipRemoved={() => onNavigate("search")}
@@ -88,9 +131,13 @@ const ArchivePage = ({ onNavigate }) => {
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Archive</h1>
             <p className="text-muted-foreground">Archived articles (filtered view).</p>
           </div>
-
           <div className="min-h-[200px]">
-            {displayedArticles.length > 0 ? (
+            {error ? (
+              <div className="bg-destructive/10 border border-destructive rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2 text-destructive">{error}</p>
+                <p className="text-sm text-muted-foreground">Could not load archived articles.</p>
+              </div>
+            ) : loading ? null : displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {displayedArticles.map(article => (
                   <ArticleCard
@@ -115,7 +162,6 @@ const ArchivePage = ({ onNavigate }) => {
           </div>
         </div>
       </div>
-
       {/* Save Stack Modal */}
       <SaveStackModal
         isOpen={showSaveStackModal}

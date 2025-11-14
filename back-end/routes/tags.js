@@ -24,10 +24,13 @@ function saveTagsToFile(tags) {
  * GET /api/tags
  * Retrieve all tags with optional filtering
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { sort } = req.query;
-    let tags = [...mockTags];
+    const userId = 'user-1'; // TODO: Get from authenticated user
+    
+    const filters = { userId };
+    const tags = await tagsDao.getAll(filters);
 
     // Sort by article count, name, or most recent
     if (sort === 'popular') {
@@ -35,7 +38,7 @@ router.get('/', (req, res) => {
     } else if (sort === 'alphabetical') {
       tags.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sort === 'recent') {
-      tags.sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
+      tags.sort((a, b) => new Date(b.lastUsed || b.createdDate) - new Date(a.lastUsed || a.createdDate));
     }
 
     res.json({
@@ -56,9 +59,12 @@ router.get('/', (req, res) => {
  * GET /api/tags/:id
  * Retrieve a single tag by ID
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const tag = mockTags.find(t => t.id === req.params.id);
+    const userId = 'user-1'; // TODO: Get from authenticated user
+    
+    
+    const tag = await tagsDao.getById(req.params.id, userId);
     
     if (!tag) {
       return res.status(404).json({
@@ -82,9 +88,9 @@ router.get('/:id', (req, res) => {
 
 /**
  * POST /api/tags
- * Create a new tag (mock - doesn't persist)
+ * Create a new tag
  */
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { name, color, description } = req.body;
     if (!name) {
@@ -99,9 +105,7 @@ router.post('/', (req, res) => {
       name: name.toLowerCase(),
       color: color || '#6b7280',
       description: description || '',
-      articleCount: 0,
-      createdAt: new Date(),
-      lastUsed: new Date()
+      userId
     };
     mockTags.push(newTag);
     saveTagsToFile(mockTags);
@@ -113,9 +117,9 @@ router.post('/', (req, res) => {
 
 /**
  * PUT /api/tags/:id
- * Update a tag (mock - doesn't persist)
+ * Update a tag
  */
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const tagIdx = mockTags.findIndex(t => t.id === req.params.id);
     if (tagIdx === -1) {
@@ -137,9 +141,9 @@ router.put('/:id', (req, res) => {
 
 /**
  * DELETE /api/tags/:id
- * Delete a tag (mock - doesn't persist)
+ * Delete a tag
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const tagIdx = mockTags.findIndex(t => t.id === req.params.id);
     if (tagIdx === -1) {
@@ -157,9 +161,13 @@ router.delete('/:id', (req, res) => {
  * GET /api/tags/:id/articles
  * Get all articles with a specific tag
  */
-router.get('/:id/articles', (req, res) => {
+router.get('/:id/articles', async (req, res) => {
   try {
-    const tag = mockTags.find(t => t.id === req.params.id);
+    const userId = 'user-1'; // TODO: Get from authenticated user
+    
+    
+    
+    const tag = await tagsDao.getById(req.params.id, userId);
     
     if (!tag) {
       return res.status(404).json({
@@ -168,10 +176,8 @@ router.get('/:id/articles', (req, res) => {
       });
     }
 
-    // Find articles that have this tag
-    const taggedArticles = mockArticles.filter(article => 
-      article.tags && article.tags.includes(tag.name)
-    );
+    // Find articles that have this tag (match by tag name)
+    const taggedArticles = await articlesDao.getByTag(tag.name, userId);
 
     res.json({
       success: true,

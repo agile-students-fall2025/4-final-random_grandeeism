@@ -1,41 +1,41 @@
 const express = require('express');
 const router = express.Router();
-const { mockArticles } = require('../data/mockArticles');
+const { articlesDao } = require('../lib/daoFactory');
 
 /**
  * GET /api/articles
  * Retrieve all articles with optional filtering
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    // Optional: Add filtering support
     const { status, tag, favorite, untagged } = req.query;
-    let filteredArticles = [...mockArticles];
+    const userId = 'user-1'; // TODO: Get from authenticated user
+    
+    
+    const filters = { userId };
 
     if (status) {
-      filteredArticles = filteredArticles.filter(article => article.status === status);
+      filters.status = status;
     }
 
     if (tag) {
-      filteredArticles = filteredArticles.filter(article => 
-        article.tags && article.tags.includes(tag)
-      );
+      filters.tag = tag;
     }
 
     if (untagged === 'true') {
-      filteredArticles = filteredArticles.filter(article => 
-        !article.tags || article.tags.length === 0
-      );
+      filters.untagged = true;
     }
 
     if (favorite === 'true') {
-      filteredArticles = filteredArticles.filter(article => article.isFavorite === true);
+      filters.isFavorite = true;
     }
+
+    const articles = await articlesDao.getAll(filters);
 
     res.json({
       success: true,
-      count: filteredArticles.length,
-      data: filteredArticles
+      count: articles.length,
+      data: articles
     });
   } catch (error) {
     res.status(500).json({
@@ -313,6 +313,80 @@ router.patch('/:id/favorite', (req, res) => {
       error: 'Server Error',
       message: error.message
     });
+  }
+});
+
+/**
+ * POST /api/articles/:id/tags
+ * Add a tag to an article by tag ID (mock - doesn't persist)
+ */
+router.post('/:id/tags', (req, res) => {
+  try {
+    const article = mockArticles.find(a => a.id === req.params.id);
+    if (!article) {
+      return res.status(404).json({ success: false, error: 'Article not found' });
+    }
+
+    const { tagId: requestedTagId } = req.body;
+    if (!requestedTagId) {
+      return res.status(400).json({ success: false, error: 'tagId is required' });
+    }
+
+    const tag = mockTags.find(t => t.id === requestedTagId);
+    if (!tag) {
+      return res.status(404).json({ success: false, error: 'Tag not found' });
+    }
+
+
+    const tagId = tag.id;
+    const existingTags = (article.tags || []).map(t => String(t).toLowerCase());
+
+    if (existingTags.includes(tagId.toLowerCase())) {
+      return res.status(409).json({ success: false, error: 'Tag already on article' });
+    }
+
+    const updatedArticle = {
+      ...article,
+      tags: [ ...(article.tags || []), tagId ]
+    };
+
+    return res.json({ success: true, data: updatedArticle, message: 'Tag added to article successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Server Error', message: error.message });
+  }
+});
+
+/**
+ * DELETE /api/articles/:id/tags/:tagId
+ * Remove a tag from an article by tag ID (mock - doesn't persist)
+ */
+router.delete('/:id/tags/:tagId', (req, res) => {
+  try {
+    const article = mockArticles.find(a => a.id === req.params.id);
+    if (!article) {
+      return res.status(404).json({ success: false, error: 'Article not found' });
+    }
+
+    const tag = mockTags.find(t => t.id === req.params.tagId);
+    if (!tag) {
+      return res.status(404).json({ success: false, error: 'Tag not found' });
+    }
+
+    const tagId = tag.id;
+    const existingTags = (article.tags || []).map(t => String(t).toLowerCase());
+
+    if (!existingTags.includes(tagId.toLowerCase())) {
+      return res.status(404).json({ success: false, error: 'Tag not found on article' });
+    }
+
+    const updatedArticle = {
+      ...article,
+      tags: (article.tags || []).filter(t => String(t).toLowerCase() !== tagId.toLowerCase())
+    };
+
+    return res.json({ success: true, data: updatedArticle, message: 'Tag removed from article successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Server Error', message: error.message });
   }
 });
 

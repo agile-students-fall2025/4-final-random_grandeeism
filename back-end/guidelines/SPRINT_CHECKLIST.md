@@ -4,68 +4,79 @@
 
 This sprint focuses on creating API routes with mock data and integrating the front-end with the back-end. Data persistence will be handled in the Database Integration sprint.
 
+> NOTE (updated 2025-11-11): The checklist below has been updated to reflect endpoints actually implemented in code (routes in `back-end/routes`). Some checklist items were marked complete at a high level but not updated granularly; the detailed items below now mirror the source files. Where implementation paths differ from the checklist, a brief note is added.
+
 ## Required Tasks
 
 ### 1. API Routes Implementation
 
 #### Articles API
 
-- [] `GET /api/articles` - Retrieve all articles (with filtering support)
-- [ ] `GET /api/articles/:id` - Retrieve single article by ID
-- [ ] `POST /api/articles` - Create new article
-- [ ] `PUT /api/articles/:id` - Update article
-- [ ] `DELETE /api/articles/:id` - Delete article
-- [ ] `PATCH /api/articles/:id/status` - Update article status
-- [ ] `PATCH /api/articles/:id/progress` - Update reading progress
-- [ ] `PATCH /api/articles/:id/favorite` - Toggle favorite status
+- [x] `GET /api/articles` - Retrieve all articles (with filtering support)
+- [x] `GET /api/articles/:id` - Retrieve single article by ID
+- [x] `POST /api/articles` - Create new article
+- [x] `PUT /api/articles/:id` - Update article
+- [x] `DELETE /api/articles/:id` - Delete article
+- [x] `PATCH /api/articles/:id/status` - Update article status
+- [x] `PATCH /api/articles/:id/progress` - Update reading progress
+- [x] `PATCH /api/articles/:id/favorite` - Toggle favorite status
+- [x] `POST /api/articles/:id/tags` - Add tag to article (implemented)
+- [x] `DELETE /api/articles/:id/tags/:tagId` - Remove tag from article (implemented)
 
 #### Feeds API
 
-- [ ] `GET /api/feeds` - Retrieve all feeds
-- [ ] `GET /api/feeds/:id` - Retrieve single feed
-- [ ] `POST /api/feeds` - Create new feed
-- [ ] `PUT /api/feeds/:id` - Update feed
-- [ ] `DELETE /api/feeds/:id` - Delete feed
-- [ ] `GET /api/feeds/:id/articles` - Get articles from specific feed
+- [x] `GET /api/feeds` - Retrieve all feeds
+- [x] `GET /api/feeds/:id` - Retrieve single feed
+- [x] `POST /api/feeds` - Create new feed
+- [x] `PUT /api/feeds/:id` - Update feed
+- [x] `DELETE /api/feeds/:id` - Delete feed
+- [x] `GET /api/feeds/:id/articles` - Get articles from specific feed
 
 #### Tags API
 
-- [ ] `GET /api/tags` - Retrieve all tags
-- [ ] `GET /api/tags/:id` - Retrieve single tag
-- [ ] `POST /api/tags` - Create new tag
-- [ ] `PUT /api/tags/:id` - Update tag
-- [ ] `DELETE /api/tags/:id` - Delete tag
-- [ ] `GET /api/tags/:id/articles` - Get articles with specific tag
+- [x] `GET /api/tags` - Retrieve all tags
+- [x] `GET /api/tags/:id` - Retrieve single tag
+- [x] `POST /api/tags` - Create new tag
+- [x] `PUT /api/tags/:id` - Update tag
+- [x] `DELETE /api/tags/:id` - Delete tag
+- [x] `GET /api/tags/:id/articles` - Get articles with specific tag
 
 #### Users API
 
-- [ ] `POST /api/users/register` - User registration
-- [ ] `POST /api/users/login` - User login
-- [ ] `GET /api/users/profile` - Get user profile
-- [ ] `PUT /api/users/profile` - Update user profile
-- [ ] `DELETE /api/users/account` - Delete user account
+- [x] `GET /api/users/profile/:id` - Get user profile (implemented as `/profile/:id`)
+- [x] `PUT /api/users/profile/:id` - Update user profile (implemented as `/profile/:id`)
+- [x] `PUT /api/users/password/:id` - Change password (implemented)
+- [x] `GET /api/users/stats/:id` - Get user reading statistics (implemented)
+- [x] `DELETE /api/users/:id` - Delete user account (implemented)
+
+NOTE: Registration/login are implemented under the Auth routes (`/api/auth/register`, `/api/auth/login`) rather than `POST /api/users/register` per the original checklist. See Auth API section below.
 
 #### Highlights/Annotations API
 
-- [ ] `GET /api/highlights` - Retrieve all highlights
-- [ ] `GET /api/highlights/:articleId` - Get highlights for specific article
-- [ ] `POST /api/highlights` - Create new highlight
-- [ ] `PUT /api/highlights/:id` - Update highlight
-- [ ] `DELETE /api/highlights/:id` - Delete highlight
+- [x] `GET /api/highlights` - Retrieve all highlights
+- [x] `GET /api/highlights/article/:articleId` - Get highlights for specific article (implemented as `/article/:articleId`)
+- [x] `POST /api/highlights` - Create new highlight
+- [x] `PUT /api/highlights/:id` - Update highlight
+- [x] `DELETE /api/highlights/:id` - Delete highlight
+
+NOTE: The implemented path for per-article highlights uses `/article/:articleId` under `/api/highlights`. The checklist expected `GET /api/highlights/:articleId` — both are functionally similar but should be reconciled in docs.
 
 #### Authentication API
 
-- [ ] `POST /api/auth/login` - User login with JWT
-- [ ] `POST /api/auth/register` - User registration with JWT
-- [ ] `POST /api/auth/refresh` - Refresh JWT token
-- [ ] `POST /api/auth/logout` - User logout
-- [ ] `GET /api/auth/verify` - Verify JWT token
+- [x] `POST /api/auth/register` - User registration with JWT
+- [x] `POST /api/auth/login` - User login with JWT
+- [x] `POST /api/auth/verify` - Verify JWT token
+- [x] `POST /api/auth/refresh` - Refresh JWT token
+- [x] `POST /api/auth/logout` - User logout
+
+NOTE: Auth is implemented and uses `mockUsers` (no persistent DB write on register). Tokens are JWTs signed with `process.env.JWT_SECRET` (dev fallback present). Refresh tokens are stateless (no revocation list).
 
 ### 2. Testing Requirements
 
 **IMPORTANT: Each developer must write tests achieving 10% code coverage for their assigned routes.**
 
 #### Shaurya: Articles API Tests
+
 - [x] Install and configure Mocha, Chai, and chai-http
 - [x] Write unit tests for all 8 Articles endpoints
 - [x] Test query parameters (status, tag, favorite, untagged)
@@ -74,50 +85,113 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [x] Run `npm run coverage` to verify your coverage
 
 #### Jeffrey: Feeds API Tests
-- [ ] Write unit tests for all 6 Feeds endpoints
-- [ ] Test feed creation, updates, deletion
-- [ ] Test GET /api/feeds/:id/articles
-- [ ] Test filtering and sorting
-- [ ] Achieve 10%+ coverage for `routes/feeds.js`
-- [ ] Run `npm run coverage` to verify your coverage
+
+- [x] Write unit tests for all 6 Feeds endpoints
+- [x] Test feed creation, updates, deletion
+- [x] Test GET /api/feeds/:id/articles
+- [x] Test filtering and sorting
+- [x] Achieve 10%+ coverage for `routes/feeds.js`
+- [x] Run `npm run coverage` to verify your coverage
 
 #### Anas: Tags & Highlights API Tests
-- [ ] Write unit tests for Tags endpoints (6 endpoints)
-- [ ] Write unit tests for Highlights endpoints (5 endpoints)
-- [ ] Test tag-article relationships
-- [ ] Test highlight creation with position tracking
-- [ ] Achieve 10%+ coverage for `routes/tags.js` and `routes/highlights.js`
-- [ ] Run `npm run coverage` to verify your coverage
+
+- [x] Write unit tests for Tags endpoints (6 endpoints)
+- [x] Write unit tests for Highlights endpoints (5 endpoints)
+- [x] Test tag-article relationships
+- [x] Test highlight creation with position tracking
+- [x] Achieve 10%+ coverage for `routes/tags.js` and `routes/highlights.js`
+- [x] Run `npm run coverage` to verify your coverage
 
 #### Saad: Users & Auth API Tests
-- [ ] Write unit tests for Users endpoints (5 endpoints)
-- [ ] Write unit tests for Auth endpoints (5 endpoints)
-- [ ] Test JWT token generation and verification
-- [ ] Test password hashing/comparison with bcrypt
-- [ ] Test authentication error cases
-- [ ] Achieve 10%+ coverage for `routes/users.js` and `routes/auth.js`
-- [ ] Run `npm run coverage` to verify your coverage
+
+- [x] Write unit tests for Users endpoints (5 endpoints)
+- [x] Write unit tests for Auth endpoints (5 endpoints)
+- [x] Test JWT token generation and verification
+- [x] Test password hashing/comparison with bcrypt
+- [x] Test authentication error cases
+- [x] Achieve 10%+ coverage for `routes/users.js` and `routes/auth.js`
+- [x] Run `npm run coverage` to verify your coverage
 
 #### Zeba: Integration Tests & Coverage Verification
-- [ ] Write integration tests for full API flows
-- [ ] Test article creation → tagging → highlighting → reading
-- [ ] Test user registration → login → profile update
-- [ ] Verify all team members hit 10%+ coverage
-- [ ] Generate final coverage report
-- [ ] Achieve 10%+ coverage for integration scenarios
-- [ ] Run `npm run coverage` to verify overall coverage
+
+- [x] Write integration tests for full API flows
+- [x] Test article creation → tagging → highlighting → reading
+- [x] Test user registration → login → profile update
+- [x] Verify all team members hit 10%+ coverage
+- [x] Generate final coverage report
+- [x] Achieve 10%+ coverage for integration scenarios
+- [x] Run `npm run coverage` to verify overall coverage
 
 #### Team Testing Goals
+
 - [ ] All tests pass with `npm test`
 - [ ] Overall project coverage ≥ 50% (5 developers × 10% each)
 - [ ] No failing tests in main branch
 - [ ] Coverage report committed to repo
+
+## Pre-Integration: Backend readiness checklist (required before front-end integration)
+
+Complete these tasks before switching the front-end from local/mock imports to the live API. They make the back-end swappable and tests reliable for CI.
+
+- [x] Decide mocking strategy — in-memory mocks, DAO adapter, or mongodb-memory-server for tests
+- [ ] Add DAO abstraction (`lib/daoFactory.js`)
+	- Quick tip: the factory should return `articlesDao`, `feedsDao`, `tagsDao`, `usersDao`, `highlightsDao` based on `process.env.USE_MOCK_DB`.
+	- Recommendation: keep the DAO API small and consistent (getAll, getById, create, update, delete, query) so routes and tests are simple.
+- [ ] Create mock implementation (`lib/*Dao.mock.js`)
+	- Quick tip: implement array-backed DAOs and seed them from `data/mock*.js`. Export a `reset()` helper for tests.
+	- Recommendation: make mock DAOs deterministic and provide simple helpers to populate common test states.
+- [ ] Implement production DAO (`lib/*Dao.mongo.js`)
+	- Quick tip: implement minimal Mongoose models and map DAO functions to Mongoose calls.
+	- Recommendation: implement mongo DAO after mock DAO so the route/DAO contract is stable.
+- [ ] Test strategy for DAOs
+	- Quick tip: unit tests should stub the DAO (fast) and integration tests should use `mongodb-memory-server` (ephemeral DB) in CI.
+	- Recommendation: prefer DAO stubs for most unit tests; reserve a small integration suite for end-to-end DB validation.
+- [ ] Document and seed
+	- Quick tip: add `back-end/README-mocking.md` describing `USE_MOCK_DB`, how to seed mock data, and how to run tests in mock vs mongo mode.
+	- Recommendation: add `npm run seed:mock` and `npm run seed:mongo` scripts to simplify developer setup.
+- [ ] CI hooks for tests & coverage
+	- Quick tip: CI should run unit tests (mock DAO or stubs) and a short integration job against `mongodb-memory-server` to validate the mongo DAO.
+	- Recommendation: cache node_modules, run `npm test` and `npm run coverage`, and fail the job on coverage regressions.
+
+See the API contract for canonical endpoints and payloads: [`back-end/guidelines/API-CONTRACT.md`](API-CONTRACT.md)
+
+## Extractor & Ingestion (recommended order)
+
+Follow this order to add reliable ingestion without blocking front-end integration. Each step is small and testable so teammates can work in parallel.
+
+1. Add DAO abstraction and mock DAO
+	- Quick tip: implement `lib/daoFactory.js` and `lib/*Dao.mock.js` first so routes can import the DAO and `USE_MOCK_DB=true` works for front-end devs.
+	- Why: unblocks front-end and gives tests deterministic state.
+
+2. Define extractor contract and tests
+	- Quick tip: create `back-end/lib/contentExtractor.js` with two exported async functions: `extractContent(url)` and `extractFeed(url)` and unit tests that mock network responses.
+	- Contract: `extractContent(url)` returns { url, canonicalUrl?, title?, contentHtml?, excerpt?, images?:[], published?, wordCount? }.
+	- Contract: `extractFeed(url)` returns { feedTitle?, feedUrl, entries: [{ id, title?, url, excerpt?, contentHtml?, published? }] }.
+
+3. Implement extractor adapter(s)
+	- Quick tip: HTML extraction can use `axios + jsdom + @mozilla/readability`. RSS extraction can use `axios + fast-xml-parser` or a small RSS parser.
+	- Recommendation: return the contract shape and avoid persistence logic inside the extractor.
+
+4. Implement feed worker (idempotent upsert)
+	- Quick tip: implement `back-end/workers/feedWorker.js` that calls `contentExtractor.extractFeed`, maps entries to article records and calls `dao.upsertByUrl()`.
+	- Recommendation: make upsert idempotent by using canonical URL or GUID and content hashes to detect changes.
+
+5. Implement production DAO (Mongoose-backed)
+	- Quick tip: after mock DAOs and worker validated, implement `lib/*Dao.mongo.js` and wire to `daoFactory` when `USE_MOCK_DB=false`.
+
+6. Add integration tests and CI steps
+	- Quick tip: use `mongodb-memory-server` for a small integration job in CI that validates DAO+worker end-to-end.
+	- Recommendation: keep most unit tests using mock DAOs for speed; run a smaller integration suite for persistence checks.
+
+7. Document seeding and runbooks
+	- Quick tip: add `back-end/README-mocking.md` and `npm run seed:mock` / `npm run seed:mongo` scripts.
 
 ### 3. Front-End Integration
 
 **Anas & Saad lead this effort with support from all team members**
 
 #### Create API Service Layer (Anas)
+
 - [ ] Create `front-end/src/services/api.js`
 - [ ] Implement articlesAPI functions (getAll, getById, create, update, delete)
 - [ ] Implement feedsAPI functions
@@ -129,6 +203,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [ ] Document API service usage
 
 #### Update Pages to Use API (Saad)
+
 - [ ] Remove all mock data imports from pages
 - [ ] Update HomePage to fetch from back-end
 - [ ] Update InboxPage to fetch from back-end  
@@ -140,6 +215,7 @@ This sprint focuses on creating API routes with mock data and integrating the fr
 - [ ] Test all CRUD operations work end-to-end
 
 #### Integration Testing (All Team)
+
 - [ ] Server runs on `http://localhost:7001`
 - [ ] Front-end runs on `http://localhost:7002`
 - [ ] CORS configured correctly

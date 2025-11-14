@@ -9,7 +9,10 @@ const mockHighlights = [
     articleId: '3',
     userId: 'user-1',
     text: 'User interfaces should be intuitive and accessible',
-    note: 'Important principle for UX design',
+    annotations: {
+      title: 'Intuitive & accessible UIs',
+      note: 'Important principle for UX design'
+    },
     color: '#fef08a',
     position: {
       start: 150,
@@ -23,7 +26,10 @@ const mockHighlights = [
     articleId: '3',
     userId: 'user-1',
     text: 'Design systems help maintain consistency',
-    note: 'Consider implementing for our project',
+    annotations: {
+      title: 'Design systems for consistency',
+      note: 'Consider implementing for our project'
+    },
     color: '#bfdbfe',
     position: {
       start: 450,
@@ -37,7 +43,10 @@ const mockHighlights = [
     articleId: '4',
     userId: 'user-1',
     text: 'JavaScript async/await simplifies promise handling',
-    note: 'Use this pattern more often',
+    annotations: {
+      title: 'Async/await simplifies promises',
+      note: 'Use this pattern more often'
+    },
     color: '#86efac',
     position: {
       start: 320,
@@ -51,7 +60,10 @@ const mockHighlights = [
     articleId: '6',
     userId: 'user-1',
     text: 'TypeScript generics provide type safety with flexibility',
-    note: null,
+    annotations: {
+      title: 'TypeScript generics for type safety',
+      note: null
+    },
     color: '#fef08a',
     position: {
       start: 680,
@@ -65,7 +77,10 @@ const mockHighlights = [
     articleId: '10',
     userId: 'user-1',
     text: 'Database indexing can dramatically improve query performance',
-    note: 'Apply to our user lookup queries',
+    annotations: {
+      title: 'Database indexing boosts query performance',
+      note: 'Apply to our user lookup queries'
+    },
     color: '#fca5a5',
     position: {
       start: 890,

@@ -8,6 +8,15 @@ import { Input } from "../components/ui/input.jsx";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
+import { articlesAPI, tagsAPI } from "../services/api.js";
+
+// Utility to normalize backend response to an array
+const normalizeArticles = (data) => {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  if (data && Array.isArray(data.articles)) return data.articles;
+  return [];
+};
 
 export default function TagsPage({ onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,27 +60,21 @@ export default function TagsPage({ onNavigate }) {
     }));
   }, [tags]);
 
-  // Filter and sort tags
-  const filteredAndSortedTags = useMemo(() => {
-    let filtered = tagStats.filter(tagData => 
-      tagData.tag.toLowerCase().includes(searchQuery.toLowerCase())
+    fetchTags();
+  }, [sortBy]);
+
+  // Filter tags based on search query (API already handles sorting)
+  const filteredTags = useMemo(() => {
+    return tags.filter(tag => 
+      tag.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+  }, [tags, searchQuery]);
 
-    switch (sortBy) {
-      case 'usage':
-        return filtered.sort((a, b) => b.articleCount - a.articleCount);
-      case 'alphabetical':
-        return filtered.sort((a, b) => a.tag.localeCompare(b.tag));
-      default:
-        return filtered;
-    }
-  }, [tagStats, searchQuery, sortBy]);
+  const maxCount = Math.max(...tags.map(t => t.articleCount), 1);
 
-  const maxCount = Math.max(...tagStats.map(t => t.articleCount), 1);
-
-  const handleTagClick = (tag) => {
+  const handleTagClick = (tagName) => {
     // Navigate to search results filtered by this tag
-    onNavigate('search', { tag: tag });
+    onNavigate('search', { tag: tagName });
   };
 
   const handleRename = async (oldTag, newTag) => {
@@ -144,6 +147,43 @@ export default function TagsPage({ onNavigate }) {
     usage: "Sort by Usage",
     alphabetical: "Sort Alphabetically"
   };
+
+  if (loading) {
+    return (
+      <MainLayout currentPage="articles" currentView="Tags">
+        <div className="p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="text-center">
+                <TagIcon className="size-8 mx-auto mb-4 animate-pulse" />
+                <div className="text-lg font-medium">Loading tags...</div>
+                <div className="text-sm text-muted-foreground mt-2">Please wait while we fetch your tags</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 px-8">
+            <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+              <TagIcon className="size-8 text-destructive" />
+            </div>
+            <CardTitle className="text-xl mb-2 text-destructive">Error loading tags</CardTitle>
+            <CardDescription className="text-center max-w-md text-destructive">
+              {error}<br />
+              <span className="text-muted-foreground">Please try refreshing the page.</span>
+            </CardDescription>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <MainLayout
@@ -245,7 +285,7 @@ export default function TagsPage({ onNavigate }) {
                         autoFocus
                       />
                     </div>
-                    {newTagName.trim() && tagStats.some(t => t.tag === newTagName.trim()) && (
+                                        {newTagName.trim() && tags.some(t => t.name === newTagName.trim()) && (
                       <p className="text-sm text-destructive">
                         A tag with this name already exists.
                       </p>
@@ -257,7 +297,7 @@ export default function TagsPage({ onNavigate }) {
                     </DialogClose>
                     <Button 
                       onClick={handleCreateTag}
-                      disabled={!newTagName.trim() || tagStats.some(t => t.tag === newTagName.trim())}
+                      disabled={!newTagName.trim() || tags.some(t => t.name === newTagName.trim())}
                     >
                       Create Tag
                     </Button>
@@ -304,19 +344,19 @@ export default function TagsPage({ onNavigate }) {
               {/* Stats Summary */}
               <div className="mb-6">
                 <p className="text-sm text-muted-foreground">
-                  Showing <span className="font-medium text-foreground">{filteredAndSortedTags.length}</span> of <span className="font-medium text-foreground">{tagStats.length}</span> tags
+                  Showing <span className="font-medium text-foreground">{filteredTags.length}</span> of <span className="font-medium text-foreground">{tags.length}</span> tags
                 </p>
               </div>
 
               {/* Tags Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredAndSortedTags.map(({ tag, articleCount, mediaBreakdown }) => (
+                {filteredTags.map((tag) => (
                   <TagCard
-                    key={tag}
-                    tag={tag}
-                    articleCount={articleCount}
+                    key={tag.id}
+                    tag={tag.name}
+                    articleCount={tag.articleCount}
                     maxCount={maxCount}
-                    mediaBreakdown={mediaBreakdown}
+                    mediaBreakdown={{ articles: tag.articleCount, videos: 0, podcasts: 0 }} // Default breakdown since API doesn't provide this
                     onTagClick={handleTagClick}
                     onRename={handleRename}
                     onDelete={handleDelete}

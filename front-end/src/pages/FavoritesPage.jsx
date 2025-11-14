@@ -9,20 +9,60 @@ import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { mockArticles } from "../data/mockArticles.js";
+import { articlesAPI, feedsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 
 const FavoritesPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
+  const [feeds, setFeeds] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const baseLockedFilters = useMemo(() => ({ favoritesFilter: "favorites" }), []);
+  // Backend expects isFavorite=true for favorites
+  const baseLockedFilters = useMemo(() => ({ isFavorite: true }), []);
 
   useEffect(() => {
-    setDisplayedArticles(applyFiltersAndSort(articles, baseLockedFilters));
-  }, [articles, baseLockedFilters]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch articles and feeds in parallel
+        const [articlesResponse, feedsResponse] = await Promise.all([
+          articlesAPI.getAll(baseLockedFilters),
+          feedsAPI.getAll()
+        ]);
+        
+        // Handle articles response
+        let articlesData = articlesResponse;
+        if (Array.isArray(articlesResponse)) {
+          articlesData = articlesResponse;
+        } else if (articlesResponse.data) {
+          articlesData = articlesResponse.data;
+        } else if (articlesResponse.articles) {
+          articlesData = articlesResponse.articles;
+        }
+        
+        setArticles(articlesData);
+        setDisplayedArticles(applyFiltersAndSort(articlesData, baseLockedFilters));
+        
+        // Handle feeds response
+        if (feedsResponse.success && feedsResponse.data) {
+          setFeeds(feedsResponse.data);
+        }
+        
+        setLoading(false);
+      } catch (err) {
+        setError(err.message || "Failed to load data");
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
@@ -39,6 +79,7 @@ const FavoritesPage = ({ onNavigate }) => {
     alert(`Stack "${stackData.name}" saved successfully!`);
   };
 
+  // The following handlers would need to call backend APIs for full integration
   const handleStatusChange = (articleId, newStatus) => {
     setArticles(prevArticles => 
       prevArticles.map(article => 
@@ -69,9 +110,9 @@ const FavoritesPage = ({ onNavigate }) => {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={["Development", "Design", "AI", "Technology"]}
-      availableFeeds={["TechCrunch", "Medium", "Dev.to"]}
-      lockedFilters={{ favoritesFilter: "favorites" }}
-      preAppliedFilters={{ favoritesFilter: "favorites" }}
+      availableFeeds={feeds}
+      lockedFilters={{ isFavorite: true }}
+      preAppliedFilters={{ isFavorite: true }}
       onFilterChipRemoved={() => onNavigate("search")}
       showTimeFilter={true}
       showMediaFilter={true}
@@ -87,9 +128,13 @@ const FavoritesPage = ({ onNavigate }) => {
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Favorites</h1>
             <p className="text-muted-foreground">Your favorited articles (filtered view).</p>
           </div>
-
           <div className="min-h-[200px]">
-            {displayedArticles.length > 0 ? (
+            {error ? (
+              <div className="bg-destructive/10 border border-destructive rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2 text-destructive">{error}</p>
+                <p className="text-sm text-muted-foreground">Could not load favorite articles.</p>
+              </div>
+            ) : loading ? null : displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {displayedArticles.map(article => (
                   <ArticleCard
@@ -114,7 +159,6 @@ const FavoritesPage = ({ onNavigate }) => {
           </div>
         </div>
       </div>
-
       {/* Save Stack Modal */}
       <SaveStackModal
         isOpen={showSaveStackModal}
