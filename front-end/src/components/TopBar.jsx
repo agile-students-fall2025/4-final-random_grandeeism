@@ -163,7 +163,7 @@ export default function TopBar({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={() => onNavigate && onNavigate('auth')}
+                onClick={() => onNavigate && onNavigate('landing')}
               >
                 <LogOut size={16} className="mr-2" />
                 Sign Out

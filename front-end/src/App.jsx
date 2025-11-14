@@ -43,7 +43,7 @@ import { Toaster } from './components/ui/sonner.jsx';
 // import { mockArticles } from './data/mockArticles'; // Adjust path if needed
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState('landing');
   /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation state */
   /* TODO: Uncomment when development resumes */
   // const [isNavExpanded, setIsNavExpanded] = useState(false);
