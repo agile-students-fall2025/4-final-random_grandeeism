@@ -11,6 +11,13 @@
 import { useState } from 'react';
 import { STATUS } from '../constants/statuses.js';
 import { 
+  generateExportContent, 
+  downloadFile, 
+  generateFilename, 
+  getMimeType,
+  generatePDFFile 
+} from '../utils/exportUtils.js';
+import { 
   Star, 
   Tag, 
   Calendar, 
@@ -139,11 +146,31 @@ export default function ArticleCard({
 
   // Handle export
   const handleExport = (format, destination) => {
-    console.log('Exporting notes:', { articleId: article.id, format, destination });
-    // TODO: Implement actual export functionality
-  };
-
-  return (
+    console.log('🔄 Starting export process:', { format, destination, article: article.title });
+    
+    // Close modal FIRST to prevent any interaction issues
+    setShowExportModal(false);
+    
+    try {
+      const filename = generateFilename(article.title || 'Untitled Article', format);
+      
+      // Handle PDF export differently - generate PDF directly
+      if (format === 'pdf') {
+        generatePDFFile(article, filename);
+      } else {
+        // Generate content for text-based formats
+        const content = generateExportContent(article, format);
+        const mimeType = getMimeType(format);
+        downloadFile(content, filename, mimeType);
+      }
+      
+      console.log(`✅ Successfully exported "${article.title}" as ${format.toUpperCase()}`);
+      
+    } catch (error) {
+      console.error('❌ Export failed:', error);
+      // You could show an error toast here
+    }
+  };  return (
     <div 
       onClick={handleCardClick}
       className={`bg-card border rounded-lg overflow-hidden hover:border-primary/50 transition-colors cursor-pointer ${
@@ -278,6 +305,7 @@ export default function ArticleCard({
           {article.hasAnnotations && (
             <button
               onClick={(e) => {
+                console.log('🚀 Export button clicked for article:', article.title);
                 e.stopPropagation();
                 setShowExportModal(true);
               }}

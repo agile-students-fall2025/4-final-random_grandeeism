@@ -20,7 +20,9 @@ After the shutdown of the FOSS project Omnivore, we found ourselves searching fo
 Therefore for our  
 [Agile Software Development and DevOps](https://knowledge.kitchen/content/courses/agile-development-and-devops/syllabus/) course taught at NYU by [Professor Amos Bloomberg](https://knowledge.kitchen/me/cv/), we decided to work on **fieldnotes.** We hope that our project proves as useful to you in actively, and thoughfully reading in the face of the immense information landscape of the digital age.
 
-## Back-End Setup Instructions
+## Setup Instructions
+
+### Back-End Setup
 
 1. Clone the repository:
    ```bash
@@ -28,19 +30,39 @@ Therefore for our
    cd fieldnotes
    ```
 
-2. Install dependencies:
+2. Install back-end dependencies:
    ```bash
+   cd back-end
    npm install
    ```
 
-3. Create a `.env` file in the root directory and configure the environment variables (see the "Environment Variables" section below).
+3. Create a `.env` file in the back-end directory and configure the environment variables (see the "Environment Variables" section below).
 
-4. Start the development server:
+4. Start the back-end development server:
    ```bash
    npm run dev
    ```
 
 5. The back-end will run on `http://localhost:7001` by default.
+
+### Front-End Setup
+
+1. Install front-end dependencies:
+   ```bash
+   cd front-end
+   npm install
+   ```
+
+2. Start the front-end development server:
+   ```bash
+   npm run dev
+   ```
+
+3. The front-end will run on `http://localhost:5173` by default.
+
+### Key Features
+
+- **Export Notes**: Users can export their article notes and highlights in multiple formats (Markdown, PDF, Plain Text) directly to their device. PDF generation is handled client-side using jsPDF library for a seamless experience.
 
 ## API Endpoints
 

@@ -395,7 +395,7 @@ function App() {
             Settings
           </button>
           <button
-            onClick={() => setCurrentPage('text-reader')}
+            onClick={() => handleNavigate('text-reader', { returnTo: currentPage })}
             className={`text-xs px-2 py-1 rounded ${
               currentPage === 'text-reader' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
             }`}

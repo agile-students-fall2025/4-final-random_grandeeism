@@ -28,6 +28,17 @@ export default function ExportNotesModal({
   const [selectedFormat, setSelectedFormat] = useState("markdown");
   const [selectedDestination, setSelectedDestination] = useState("download");
 
+  // Debug state changes
+  const handleFormatChange = (value) => {
+    console.log('🔄 Format changing from', selectedFormat, 'to', value);
+    setSelectedFormat(value);
+  };
+
+  const handleDestinationChange = (value) => {
+    console.log('🔄 Destination changing from', selectedDestination, 'to', value);
+    setSelectedDestination(value);
+  };
+
   // Mock integration data (from global state in production)
   // const connectedIntegrations = [
   //   { id: "notion", name: "Notion", connected: false },
@@ -39,18 +50,18 @@ export default function ExportNotesModal({
   // const activeIntegrations = connectedIntegrations.filter(i => i.connected);
 
   const handleExport = () => {
-    onExport(selectedFormat, selectedDestination);
-    
     const formatName = selectedFormat.toUpperCase();
     const destinationName = selectedDestination === "download" 
       ? "your device" 
       : selectedDestination;
     
+    // Call the parent export handler - it will handle closing the modal
+    onExport(selectedFormat, selectedDestination);
+    
+    // Show success toast
     toast.success(`Notes exported successfully!`, {
       description: `Exported as ${formatName} to ${destinationName}`,
     });
-    
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -64,7 +75,10 @@ export default function ExportNotesModal({
       />
       
       {/* Modal (NO shadow-lg!) */}
-      <div className="relative bg-background border border-border rounded-lg w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+      <div 
+        className="relative bg-background border border-border rounded-lg w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Sticky Header */}
         <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -90,10 +104,13 @@ export default function ExportNotesModal({
           {/* Export Format */}
           <div>
             <Label className="text-[14px] mb-3 block">Export Format</Label>
-            <RadioGroup value={selectedFormat} onValueChange={setSelectedFormat}>
+            <RadioGroup value={selectedFormat} onValueChange={handleFormatChange}>
               <div className="space-y-2">
                 {/* Markdown Option */}
-                <div className="border border-border p-3 rounded-lg hover:bg-accent transition-colors">
+                <div 
+                  className="border border-border p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                  onClick={() => handleFormatChange("markdown")}
+                >
                   <div className="flex items-center space-x-3">
                     <RadioGroupItem value="markdown" id="format-markdown" />
                     <Label htmlFor="format-markdown" className="flex-1 cursor-pointer text-[14px]">
@@ -107,7 +124,10 @@ export default function ExportNotesModal({
                 </div>
 
                 {/* PDF Option */}
-                <div className="border border-border p-3 rounded-lg hover:bg-accent transition-colors">
+                <div 
+                  className="border border-border p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                  onClick={() => handleFormatChange("pdf")}
+                >
                   <div className="flex items-center space-x-3">
                     <RadioGroupItem value="pdf" id="format-pdf" />
                     <Label htmlFor="format-pdf" className="flex-1 cursor-pointer text-[14px]">
@@ -121,7 +141,10 @@ export default function ExportNotesModal({
                 </div>
 
                 {/* Plain Text Option */}
-                <div className="border border-border p-3 rounded-lg hover:bg-accent transition-colors">
+                <div 
+                  className="border border-border p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                  onClick={() => handleFormatChange("txt")}
+                >
                   <div className="flex items-center space-x-3">
                     <RadioGroupItem value="txt" id="format-txt" />
                     <Label htmlFor="format-txt" className="flex-1 cursor-pointer text-[14px]">
@@ -140,10 +163,13 @@ export default function ExportNotesModal({
           {/* Export Destination */}
           <div>
             <Label className="text-[14px] mb-3 block">Export To</Label>
-            <RadioGroup value={selectedDestination} onValueChange={setSelectedDestination}>
+            <RadioGroup value={selectedDestination} onValueChange={handleDestinationChange}>
               <div className="space-y-2">
                 {/* Download Option */}
-                <div className="border border-border p-3 rounded-lg hover:bg-accent transition-colors">
+                <div 
+                  className="border border-border p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                  onClick={() => handleDestinationChange("download")}
+                >
                   <div className="flex items-center space-x-3">
                     <RadioGroupItem value="download" id="dest-download" />
                     <Label htmlFor="dest-download" className="flex-1 cursor-pointer text-[14px]">
