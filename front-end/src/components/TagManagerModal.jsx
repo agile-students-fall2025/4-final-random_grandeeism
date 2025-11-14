@@ -1,0 +1,277 @@
+/**
+ * TagManagerModal.jsx
+ * 
+ * Modal for managing tags on articles with autocomplete dropdown functionality
+ */
+
+import { useState, useEffect, useRef } from "react";
+import { X, Plus, Minus, Tag } from "lucide-react";
+import { tagsAPI } from "../services/api.js";
+
+export default function TagManagerModal({ 
+  isOpen, 
+  onClose, 
+  article, 
+  availableTags = [], 
+  onAddTag, 
+  onRemoveTag,
+  onCreateTag // New prop for creating tags
+}) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredTags, setFilteredTags] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  // Get current tag IDs and resolve them to tag objects
+  // Handle both cases: tags as IDs or tags as names (after resolution)
+  const currentTags = availableTags.filter(tag => {
+    const articleTags = article?.tags || [];
+    // Check if article tags contain either the tag ID or tag name
+    return articleTags.includes(tag.id) || articleTags.includes(tag.name);
+  });
+
+  // Filter available tags based on search term and exclude already added tags
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredTags([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const currentTagIds = article?.tags || [];
+    const filtered = availableTags.filter(tag => {
+      // Check if tag is already added (by ID or name)
+      const isAlreadyAdded = currentTagIds.includes(tag.id) || currentTagIds.includes(tag.name);
+      // Check if tag name matches search term
+      const matchesSearch = tag.name.toLowerCase().includes(searchTerm.toLowerCase());
+      return !isAlreadyAdded && matchesSearch;
+    });
+    
+    // Check if search term exactly matches any existing tag
+    const exactMatch = availableTags.find(tag => 
+      tag.name.toLowerCase() === searchTerm.toLowerCase()
+    );
+    
+    // Add "Create new tag" option if no exact match exists and search term is valid
+    let optionsToShow = filtered;
+    if (!exactMatch && searchTerm.trim().length >= 2) {
+      optionsToShow = [
+        ...filtered,
+        {
+          id: 'create-new',
+          name: searchTerm.trim(),
+          isCreateNew: true,
+          color: '#6b7280' // Default color
+        }
+      ];
+    }
+    
+    setFilteredTags(optionsToShow);
+    setShowDropdown(optionsToShow.length > 0);
+    setSelectedIndex(-1);
+  }, [searchTerm, availableTags, article?.tags]);
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e) => {
+    if (!showDropdown) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev < filteredTags.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && filteredTags[selectedIndex]) {
+          handleAddTag(filteredTags[selectedIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowDropdown(false);
+        setSelectedIndex(-1);
+        break;
+    }
+  };
+
+  const handleAddTag = async (tag) => {
+    try {
+      if (tag.isCreateNew) {
+        // Create new tag first
+        const newTagData = {
+          name: tag.name,
+          color: tag.color || '#6b7280',
+          description: `Tag for ${tag.name}`
+        };
+        
+        const createResponse = await tagsAPI.create(newTagData);
+        if (createResponse.success && createResponse.data) {
+          const newTag = createResponse.data;
+          // Add the new tag to the article
+          await onAddTag(article.id, newTag.id);
+          // Notify parent component about the new tag
+          if (onCreateTag) {
+            onCreateTag(newTag);
+          }
+        }
+      } else {
+        // Add existing tag
+        await onAddTag(article.id, tag.id);
+      }
+      
+      setSearchTerm('');
+      setShowDropdown(false);
+      setSelectedIndex(-1);
+    } catch (error) {
+      console.error('Failed to add tag:', error);
+    }
+  };
+
+  const handleRemoveTag = async (tag) => {
+    try {
+      await onRemoveTag(article.id, tag.id);
+    } catch (error) {
+      console.error('Failed to remove tag:', error);
+    }
+  };
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Focus input when modal opens
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-background border border-border rounded-lg w-full max-w-md mx-4 shadow-lg">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-lg font-semibold">Manage Tags</h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-accent rounded-md transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4">
+          {/* Article Info */}
+          <div className="mb-4">
+            <h3 className="font-medium text-sm text-muted-foreground mb-1">Article:</h3>
+            <p className="text-sm truncate">{article?.title}</p>
+          </div>
+
+          {/* Current Tags */}
+          <div className="mb-4">
+            <h3 className="font-medium text-sm text-muted-foreground mb-2">Current Tags:</h3>
+            {currentTags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {currentTags.map(tag => (
+                  <div 
+                    key={tag.id}
+                    className="flex items-center gap-1 px-2 py-1 bg-accent rounded-md text-sm"
+                  >
+                    <Tag size={12} />
+                    <span>{tag.name}</span>
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-1 p-0.5 hover:bg-accent-foreground/10 rounded transition-colors"
+                    >
+                      <Minus size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No tags assigned</p>
+            )}
+          </div>
+
+          {/* Add New Tag */}
+          <div className="mb-4">
+            <h3 className="font-medium text-sm text-muted-foreground mb-2">Add Tag:</h3>
+            <div className="relative" ref={dropdownRef}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type to search tags..."
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              
+              {/* Dropdown */}
+              {showDropdown && filteredTags.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-lg max-h-48 overflow-y-auto z-10">
+                  {filteredTags.map((tag, index) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => handleAddTag(tag)}
+                      className={`w-full px-3 py-2 text-left hover:bg-accent transition-colors flex items-center gap-2 ${
+                        index === selectedIndex ? 'bg-accent' : ''
+                      } ${tag.isCreateNew ? 'border-t border-border bg-muted/20' : ''}`}
+                    >
+                      <Plus size={14} />
+                      <span>
+                        {tag.isCreateNew ? (
+                          <>Create new tag: <strong>{tag.name}</strong></>
+                        ) : (
+                          tag.name
+                        )}
+                      </span>
+                      {!tag.isCreateNew && (
+                        <span className="text-xs text-muted-foreground ml-auto">#{tag.id}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* No results message */}
+              {showDropdown && filteredTags.length === 0 && searchTerm.trim() !== '' && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-lg px-3 py-2 text-sm text-muted-foreground">
+                  No tags found matching "{searchTerm}"
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 p-4 border-t border-border">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

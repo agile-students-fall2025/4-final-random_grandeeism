@@ -3,11 +3,13 @@ import { ChevronLeft, Tag as TagIcon, FileText } from "lucide-react";
 import ArticleCard from "../components/ArticleCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
+import TagManagerModal from "../components/TagManagerModal.jsx";
 import { feedsAPI, articlesAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
+import { useTagResolution } from "../hooks/useTagResolution.js";
 
 // Utility to normalize backend response to an array
 const normalizeArticles = (data) => {
@@ -24,75 +26,85 @@ const getAllAvailableTags = (articles) =>
 
 export default function TagArticlesPage({ onNavigate, tag }) {
   const [articles, setArticles] = useState([]);
+  const [rawArticles, setRawArticles] = useState([]); // Store raw articles
   const [feeds, setFeeds] = useState([]);
-  const [tags, setTags] = useState([]);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
+  const [showTagManagerModal, setShowTagManagerModal] = useState(false);
+  const [selectedArticleForTags, setSelectedArticleForTags] = useState(null);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Helper function to find tag ID by tag name
-  const getTagIdByName = (tagName, tagsArray) => {
-    if (!tagName || !Array.isArray(tagsArray)) return tagName;
-    const foundTag = tagsArray.find(t => t.name === tagName);
-    return foundTag ? foundTag.id : tagName;
-  };
+  // Use shared tag resolution hook
+  const { tags, resolveTagName, resolveArticleTags, resolveTagId } = useTagResolution();
 
-  // Create base filters for search functionality (will use resolved tag ID)
+  // Create base filters for search functionality (convert tag name to ID if needed)
   const baseLockedFilters = useMemo(() => {
     if (!tag) return {};
-    const tagId = getTagIdByName(tag, tags);
+    const tagId = resolveTagName(tag);
     return { tag: tagId };
-  }, [tag, tags]);
+  }, [tag, resolveTagName]);
 
-  // Fetch tags first, then articles and feeds
+  // Get the display name for the current tag
+  const tagDisplayName = useMemo(() => {
+    if (!tag) return 'Untagged';
+    // If tag is already a readable name (not an ID), return it
+    if (!tag.startsWith('tag-')) return tag;
+    // Otherwise, resolve ID to name using the hook
+    return resolveTagId(tag);
+  }, [tag, resolveTagId]);
+
+  // Fetch articles and feeds when tag or baseLockedFilters change
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // First, fetch tags to resolve tag name to ID
-        const tagsResponse = await tagsAPI.getAll();
-        let tagId = tag;
-        
-        if (tagsResponse.success && tagsResponse.data) {
-          setTags(tagsResponse.data);
-          // Convert tag name to tag ID if needed
-          if (tag) {
-            const foundTag = tagsResponse.data.find(t => t.name === tag);
-            tagId = foundTag ? foundTag.id : tag;
-          }
-        }
-        
-        // Now fetch articles and feeds with the resolved tag ID
-        const filters = tagId ? { tag: tagId } : {};
-        const [articlesResponse, feedsResponse] = await Promise.all([
-          articlesAPI.getAll(filters),
-          feedsAPI.getAll()
+        // Fetch articles, feeds, and tags with the resolved tag ID
+        const [articlesResponse, feedsResponse, tagsResponse] = await Promise.all([
+          articlesAPI.getAll(baseLockedFilters),
+          feedsAPI.getAll(),
+          tagsAPI.getAll()
         ]);
         
         const normalized = normalizeArticles(articlesResponse);
-        setArticles(normalized);
-        setDisplayedArticles(normalized); // Use backend-filtered result directly
+        setRawArticles(normalized); // Store raw articles
         
         // Handle feeds response
         if (feedsResponse.success && feedsResponse.data) {
           setFeeds(feedsResponse.data);
         }
         
+        // Handle tags response
+        if (tagsResponse.success && tagsResponse.data) {
+          setAvailableTags(tagsResponse.data);
+        }
+        
         setLoading(false);
       } catch (err) {
         setError("Failed to load articles");
-        setArticles([]);
-        setDisplayedArticles([]);
+        setRawArticles([]);
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [tag]);
+  }, [baseLockedFilters]);
+
+  // Resolve tags when raw articles or tag resolution function changes
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const articlesWithResolvedTags = resolveArticleTags(rawArticles);
+      setArticles(articlesWithResolvedTags);
+      setDisplayedArticles(articlesWithResolvedTags);
+    } else {
+      setArticles([]);
+      setDisplayedArticles([]);
+    }
+  }, [rawArticles, resolveArticleTags]);
 
   const allAvailableTags = useMemo(() => getAllAvailableTags(articles), [articles]);
 
@@ -120,25 +132,114 @@ export default function TagArticlesPage({ onNavigate, tag }) {
     onNavigate && onNavigate(destination, { article });
   };
 
-  const handleToggleFavorite = (articleId) => {
-    setArticles(prev => prev.map(article => 
-      article.id === articleId 
-        ? { ...article, isFavorite: !article.isFavorite }
-        : article
-    ));
+  const handleToggleFavorite = async (articleId) => {
+    try {
+      // Find the current article to get its favorite status
+      const currentArticle = articles.find(article => article.id === articleId);
+      if (!currentArticle) {
+        console.error('Article not found:', articleId);
+        return;
+      }
+
+      // Call the API to toggle favorite status
+      const response = await articlesAPI.toggleFavorite(articleId, !currentArticle.isFavorite);
+      
+      if (response.success) {
+        // Update local state immediately to reflect the change
+        setRawArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, isFavorite: !article.isFavorite }
+            : article
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
   };
 
-  const handleStatusChange = (articleId, newStatus) => {
-    setArticles(prev => prev.map(article => 
-      article.id === articleId 
-        ? { ...article, status: newStatus }
-        : article
-    ));
+  const handleStatusChange = async (articleId, newStatus) => {
+    try {
+      const response = await articlesAPI.updateStatus(articleId, newStatus);
+      if (response.success) {
+        // Optimistically update the local state
+        setRawArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, status: newStatus }
+            : article
+        ));
+      } else {
+        throw new Error(response.error || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Failed to update article status:', error);
+      alert(`Failed to update status: ${error.message}`);
+    }
   };
 
   const handleDelete = (articleId) => {
     if (confirm('Are you sure you want to delete this article?')) {
       setArticles(prev => prev.filter(article => article.id !== articleId));
+    }
+  };
+
+  const handleManageTags = (article) => {
+    // Find the raw article (with tag IDs) instead of using the resolved article (with tag names)
+    const rawArticle = rawArticles.find(raw => raw.id === article.id);
+    setSelectedArticleForTags(rawArticle || article);
+    setShowTagManagerModal(true);
+  };
+
+  const handleAddTag = async (articleId, tagId) => {
+    try {
+      const response = await articlesAPI.addTag(articleId, tagId);
+      if (response.success) {
+        const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+        const normalized = normalizeArticles(articlesResponse);
+        setRawArticles(normalized);
+        const updatedArticle = normalized.find(a => a.id === articleId);
+        if (updatedArticle) {
+          setSelectedArticleForTags(resolveArticleTags([updatedArticle])[0]);
+        }
+      } else {
+        throw new Error(response.error || 'Failed to add tag');
+      }
+    } catch (error) {
+      console.error('Failed to add tag:', error);
+      alert(`Failed to add tag: ${error.message}`);
+    }
+  };
+
+  const handleRemoveTag = async (articleId, tagId) => {
+    try {
+      const response = await articlesAPI.removeTag(articleId, tagId);
+      if (response.success) {
+        const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+        const normalized = normalizeArticles(articlesResponse);
+        setRawArticles(normalized);
+        const updatedArticle = normalized.find(a => a.id === articleId);
+        if (updatedArticle) {
+          setSelectedArticleForTags(resolveArticleTags([updatedArticle])[0]);
+        }
+      } else {
+        throw new Error(response.error || 'Failed to remove tag');
+      }
+    } catch (error) {
+      console.error('Failed to remove tag:', error);
+      alert(`Failed to remove tag: ${error.message}`);
+    }
+  };
+
+  const handleCreateTag = async (newTag) => {
+    try {
+      const response = await tagsAPI.create({ name: newTag.name, color: newTag.color });
+      if (response.success) {
+        setAvailableTags(prevTags => [...prevTags, response.data]);
+      } else {
+        throw new Error(response.error || 'Failed to create tag');
+      }
+    } catch (error) {
+      console.error('Failed to create tag:', error);
+      alert(`Failed to create tag: ${error.message}`);
     }
   };
 
@@ -184,7 +285,7 @@ export default function TagArticlesPage({ onNavigate, tag }) {
                 </div>
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold text-foreground mb-2">
-                    {tag || 'Untagged'}
+                    {tagDisplayName}
                   </h1>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span>
@@ -259,6 +360,7 @@ export default function TagArticlesPage({ onNavigate, tag }) {
                     article={article}
                     onArticleClick={handleArticleClick}
                     onToggleFavorite={handleToggleFavorite}
+                    onManageTags={handleManageTags}
                     onStatusChange={handleStatusChange}
                     onDelete={handleDelete}
                   />
@@ -274,6 +376,17 @@ export default function TagArticlesPage({ onNavigate, tag }) {
         onClose={() => setShowSaveStackModal(false)}
         onSave={handleSaveStack}
         currentFilters={currentFilters}
+      />
+      
+      {/* Tag Manager Modal */}
+      <TagManagerModal
+        isOpen={showTagManagerModal}
+        onClose={() => setShowTagManagerModal(false)}
+        article={selectedArticleForTags}
+        availableTags={availableTags}
+        onAddTag={handleAddTag}
+        onRemoveTag={handleRemoveTag}
+        onCreateTag={handleCreateTag}
       />
     </MainLayout>
   );

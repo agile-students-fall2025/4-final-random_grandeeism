@@ -8,15 +8,19 @@
 import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { mockArticles } from "../data/mockArticles.js";
+import { articlesAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 
 const AudioPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [articles, setArticles] = useState(mockArticles);
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [articleToDelete, setArticleToDelete] = useState(null);
 
   const baseLockedFilters = useMemo(() => ({ mediaType: 'audio' }), []);
 
@@ -45,16 +49,78 @@ const AudioPage = ({ onNavigate }) => {
     );
   };
 
-  const handleToggleFavorite = (articleId) => {
-    setArticles(prevArticles =>
-      prevArticles.map(article =>
-        article.id === articleId ? { ...article, isFavorite: !article.isFavorite } : article
-      )
-    );
+  const handleToggleFavorite = async (articleId) => {
+    try {
+      // Find the current article to get its favorite status
+      const currentArticle = articles.find(article => article.id === articleId);
+      if (!currentArticle) {
+        console.error('Article not found:', articleId);
+        return;
+      }
+
+      // Call the API to toggle favorite status
+      const response = await articlesAPI.toggleFavorite(articleId, !currentArticle.isFavorite);
+      
+      if (response.success) {
+        // Update local state to reflect the change
+        setArticles(prevArticles =>
+          prevArticles.map(article =>
+            article.id === articleId ? { ...article, isFavorite: !article.isFavorite } : article
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
   };
 
   const handleDeleteArticle = (articleId) => {
-    setArticles(prevArticles => prevArticles.filter(article => article.id !== articleId));
+    // Find the article to show in confirmation modal
+    const article = articles.find(a => a.id === articleId);
+    setArticleToDelete(article);
+    setShowConfirmDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!articleToDelete) return;
+
+    try {
+      // Optimistically update the UI immediately
+      setArticles(prev => prev.filter(article => article.id !== articleToDelete.id));
+      
+      // Call the backend API
+      const response = await articlesAPI.delete(articleToDelete.id);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete article');
+      }
+      
+      console.log('Article deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete article:', error);
+      
+      // Revert the optimistic update on error by refetching data
+      try {
+        const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+        let articlesData = articlesResponse;
+        if (Array.isArray(articlesResponse)) {
+          articlesData = articlesResponse;
+        } else if (articlesResponse.data) {
+          articlesData = articlesResponse.data;
+        } else if (articlesResponse.articles) {
+          articlesData = articlesResponse.articles;
+        }
+        setArticles(articlesData);
+      } catch (fetchError) {
+        console.error('Failed to refetch articles:', fetchError);
+      }
+      
+      alert(`Failed to delete article: ${error.message}`);
+    } finally {
+      // Close modal and reset state
+      setShowConfirmDeleteModal(false);
+      setArticleToDelete(null);
+    }
   };
 
   return (
@@ -117,6 +183,17 @@ const AudioPage = ({ onNavigate }) => {
         onClose={() => setShowSaveStackModal(false)}
         onSave={handleSaveStack}
         currentFilters={currentFilters}
+      />
+
+      {/* Confirm Delete Modal */}
+      <ConfirmDeleteModal
+        isOpen={showConfirmDeleteModal}
+        onClose={() => {
+          setShowConfirmDeleteModal(false);
+          setArticleToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        articleTitle={articleToDelete?.title}
       />
     </MainLayout>
   );
