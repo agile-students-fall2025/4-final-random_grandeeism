@@ -236,6 +236,7 @@ export default function TagsPage({ onNavigate }) {
                       className={`w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-[14px] ${
                         sortBy === option ? "bg-accent" : ""
                       }`}
+                      
                     >
                       {sortLabels[option]}
                     </button>
