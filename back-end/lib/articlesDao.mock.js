@@ -200,6 +200,15 @@ const articlesDao = {
    */
   getCount() {
     return articles.length;
+  },
+
+  /**
+   * Get all articles for internal usage (no filters applied)
+   * Used by other DAOs for cross-referencing
+   * @returns {Array} All articles in current state
+   */
+  getAllArticlesForInternalUse() {
+    return [...articles];
   }
 };
 

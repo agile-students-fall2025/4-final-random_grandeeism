@@ -20,14 +20,41 @@ const apiRequest = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
-    const data = await response.json();
     
+    // Check if response is OK first
     if (!response.ok) {
-      throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      // Try to get error message from JSON, but handle HTML responses
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`);
+      } else {
+        throw new Error(`HTTP error! status: ${response.status} - Server returned non-JSON response`);
+      }
     }
     
+    // Check content type before parsing JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      throw new Error(`Expected JSON response but got ${contentType || 'unknown content type'}. Response: ${text.substring(0, 100)}`);
+    }
+    
+    const data = await response.json();
     return data;
   } catch (error) {
+    // If it's a network error or CORS issue, provide helpful message
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.error(`API request failed for ${endpoint}:`, error);
+      throw new Error(`Cannot connect to backend server at ${url}. Make sure the backend is running on port 7001.`);
+    }
+    
+    // If it's a JSON parse error, provide helpful message
+    if (error.message.includes('JSON') || error.message.includes('<!DOCTYPE')) {
+      console.error(`API request failed for ${endpoint}:`, error);
+      throw new Error(`Backend returned invalid response. Make sure the backend server is running and the endpoint ${endpoint} exists.`);
+    }
+    
     console.error(`API request failed for ${endpoint}:`, error);
     throw error;
   }
@@ -128,6 +155,31 @@ export const articlesAPI = {
     return apiRequest(`/articles/${id}/favorite`, {
       method: 'PATCH',
       body: JSON.stringify({ isFavorite }),
+    });
+  },
+
+  /**
+   * Add tag to article
+   * @param {string} id - Article ID
+   * @param {string} tagId - Tag ID to add
+   * @returns {Promise} API response
+   */
+  addTag: async (id, tagId) => {
+    return apiRequest(`/articles/${id}/tags`, {
+      method: 'POST',
+      body: JSON.stringify({ tagId }),
+    });
+  },
+
+  /**
+   * Remove tag from article
+   * @param {string} id - Article ID
+   * @param {string} tagId - Tag ID to remove
+   * @returns {Promise} API response
+   */
+  removeTag: async (id, tagId) => {
+    return apiRequest(`/articles/${id}/tags/${tagId}`, {
+      method: 'DELETE',
     });
   },
 };

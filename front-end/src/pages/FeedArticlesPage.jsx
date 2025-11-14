@@ -3,7 +3,8 @@ import { ChevronLeft, Rss, FileText } from "lucide-react";
 import ArticleCard from "../components/ArticleCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
-import { articlesAPI } from "../services/api.js";
+import TagManagerModal from "../components/TagManagerModal.jsx";
+import { articlesAPI, tagsAPI } from "../services/api.js";
 import { mockFeeds } from "../data/mockFeeds";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
@@ -15,8 +16,11 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
   const [rawArticles, setRawArticles] = useState([]);
   const [articles, setArticles] = useState([]);
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
+  const [showTagManagerModal, setShowTagManagerModal] = useState(false);
+  const [selectedArticleForTags, setSelectedArticleForTags] = useState(null);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [displayedArticles, setDisplayedArticles] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -25,21 +29,42 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
   const baseLockedFilters = useMemo(() => ({ feed: feed || "" }), [feed]);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    articlesAPI.getAll(baseLockedFilters)
-      .then(res => {
-        let data = res;
-        if (Array.isArray(res)) data = res;
-        else if (res.data) data = res.data;
-        else if (res.articles) data = res.articles;
-        setRawArticles(data);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch articles and tags in parallel
+        const [articlesResponse, tagsResponse] = await Promise.all([
+          articlesAPI.getAll(baseLockedFilters),
+          tagsAPI.getAll()
+        ]);
+        
+        // Handle articles response
+        let articlesData = articlesResponse;
+        if (Array.isArray(articlesResponse)) {
+          articlesData = articlesResponse;
+        } else if (articlesResponse.data) {
+          articlesData = articlesResponse.data;
+        } else if (articlesResponse.articles) {
+          articlesData = articlesResponse.articles;
+        }
+        
+        setRawArticles(articlesData);
+        
+        // Handle tags response
+        if (tagsResponse.success && tagsResponse.data) {
+          setAvailableTags(tagsResponse.data);
+        }
+        
         setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message || "Failed to load articles");
+      } catch (err) {
+        setError(err.message || "Failed to load data");
         setLoading(false);
-      });
+      }
+    };
+    
+    fetchData();
   }, [feed]);
 
   // Tag resolution effect
@@ -78,6 +103,82 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
     alert(`Stack "${stackData.name}" saved successfully!`);
   };
 
+  // TagManager handlers
+  const handleManageTags = (article) => {
+    // Find the raw article (with tag IDs) instead of using the resolved article (with tag names)
+    const rawArticle = rawArticles.find(raw => raw.id === article.id);
+    setSelectedArticleForTags(rawArticle || article);
+    setShowTagManagerModal(true);
+  };
+
+  const handleAddTag = async (articleId, tagId) => {
+    try {
+      const response = await articlesAPI.addTag(articleId, tagId);
+      if (response.success) {
+        // Refetch articles to get updated data
+        const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+        let articlesData = articlesResponse;
+        if (Array.isArray(articlesResponse)) {
+          articlesData = articlesResponse;
+        } else if (articlesResponse.data) {
+          articlesData = articlesResponse.data;
+        } else if (articlesResponse.articles) {
+          articlesData = articlesResponse.articles;
+        }
+        setRawArticles(articlesData);
+        
+        // Update the selected article for the modal
+        const updatedArticle = articlesData.find(a => a.id === articleId);
+        if (updatedArticle) {
+          setSelectedArticleForTags(updatedArticle);
+        }
+      }
+    } catch (error) {
+      console.error('Error adding tag:', error);
+    }
+  };
+
+  const handleRemoveTag = async (articleId, tagId) => {
+    try {
+      const response = await articlesAPI.removeTag(articleId, tagId);
+      if (response.success) {
+        // Refetch articles to get updated data
+        const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+        let articlesData = articlesResponse;
+        if (Array.isArray(articlesResponse)) {
+          articlesData = articlesResponse;
+        } else if (articlesResponse.data) {
+          articlesData = articlesResponse.data;
+        } else if (articlesResponse.articles) {
+          articlesData = articlesResponse.articles;
+        }
+        setRawArticles(articlesData);
+        
+        // Update the selected article for the modal
+        const updatedArticle = articlesData.find(a => a.id === articleId);
+        if (updatedArticle) {
+          setSelectedArticleForTags(updatedArticle);
+        }
+      }
+    } catch (error) {
+      console.error('Error removing tag:', error);
+    }
+  };
+
+  const handleCreateTag = async (newTag) => {
+    try {
+      const response = await tagsAPI.create({ name: newTag.name, color: newTag.color });
+      if (response.success) {
+        setAvailableTags(prevTags => [...prevTags, response.data]);
+      } else {
+        throw new Error(response.error || 'Failed to create tag');
+      }
+    } catch (error) {
+      console.error('Failed to create tag:', error);
+      alert(`Failed to create tag: ${error.message}`);
+    }
+  };
+
   // ArticleCard handlers
   const handleArticleClick = (article) => {
     // Navigate to the appropriate viewer based on media type
@@ -86,20 +187,48 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
   };
 
   // The following handlers would need to call backend APIs for full integration
-  const handleToggleFavorite = (articleId) => {
-    setRawArticles(prev => prev.map(article => 
-      article.id === articleId 
-        ? { ...article, isFavorite: !article.isFavorite }
-        : article
-    ));
+  const handleToggleFavorite = async (articleId) => {
+    try {
+      // Find the current article to get its favorite status
+      const currentArticle = articles.find(article => article.id === articleId);
+      if (!currentArticle) {
+        console.error('Article not found:', articleId);
+        return;
+      }
+
+      // Call the API to toggle favorite status
+      const response = await articlesAPI.toggleFavorite(articleId, !currentArticle.isFavorite);
+      
+      if (response.success) {
+        // Update local state immediately to reflect the change
+        setRawArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, isFavorite: !article.isFavorite }
+            : article
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
   };
 
-  const handleStatusChange = (articleId, newStatus) => {
-    setRawArticles(prev => prev.map(article => 
-      article.id === articleId 
-        ? { ...article, status: newStatus }
-        : article
-    ));
+  const handleStatusChange = async (articleId, newStatus) => {
+    try {
+      const response = await articlesAPI.updateStatus(articleId, newStatus);
+      if (response.success) {
+        // Optimistically update the local state
+        setRawArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, status: newStatus }
+            : article
+        ));
+      } else {
+        throw new Error(response.error || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Failed to update article status:', error);
+      alert(`Failed to update status: ${error.message}`);
+    }
   };
 
   const handleDelete = (articleId) => {
@@ -242,6 +371,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
                     onToggleFavorite={handleToggleFavorite}
                     onStatusChange={handleStatusChange}
                     onDelete={handleDelete}
+                    onManageTags={handleManageTags}
                   />
                 ))}
               </div>
@@ -255,6 +385,17 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
         onClose={() => setShowSaveStackModal(false)}
         onSave={handleSaveStack}
         currentFilters={currentFilters}
+      />
+      
+      {/* Tag Manager Modal */}
+      <TagManagerModal
+        isOpen={showTagManagerModal}
+        onClose={() => setShowTagManagerModal(false)}
+        article={selectedArticleForTags}
+        availableTags={availableTags}
+        onAddTag={handleAddTag}
+        onRemoveTag={handleRemoveTag}
+        onCreateTag={handleCreateTag}
       />
     </MainLayout>
   );
