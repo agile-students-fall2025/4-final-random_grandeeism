@@ -254,16 +254,23 @@ const HomePage = ({ onNavigate }) => {
     try {
       const response = await articlesAPI.addTag(articleId, tagId);
       if (response.success) {
+        // First, optimistically update the selected article for immediate UI feedback
+        if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
+          const updatedTags = [...(selectedArticleForTags.tags || []), tagId];
+          const optimisticUpdate = { ...selectedArticleForTags, tags: updatedTags };
+          setSelectedArticleForTags(optimisticUpdate);
+        }
+        
         // Refetch articles to show updated tags
         const articlesResponse = await articlesAPI.getAll({});
         let articlesData = articlesResponse;
         if (articlesResponse.data) articlesData = articlesResponse.data;
         
         setRawArticles(articlesData);
-        // Update the selected article for the modal
+        // Update the selected article for the modal with fresh server data
         const updatedArticle = articlesData.find(a => a.id === articleId);
         if (updatedArticle) {
-          setSelectedArticleForTags(resolveArticleTags([updatedArticle])[0]);
+          setSelectedArticleForTags(updatedArticle);
         }
       } else {
         throw new Error(response.error || 'Failed to add tag');
@@ -278,16 +285,23 @@ const HomePage = ({ onNavigate }) => {
     try {
       const response = await articlesAPI.removeTag(articleId, tagId);
       if (response.success) {
+        // First, optimistically update the selected article for immediate UI feedback
+        if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
+          const updatedTags = selectedArticleForTags.tags.filter(tag => tag !== tagId);
+          const optimisticUpdate = { ...selectedArticleForTags, tags: updatedTags };
+          setSelectedArticleForTags(optimisticUpdate);
+        }
+        
         // Refetch articles to show updated tags
         const articlesResponse = await articlesAPI.getAll({});
         let articlesData = articlesResponse;
         if (articlesResponse.data) articlesData = articlesResponse.data;
         
         setRawArticles(articlesData);
-        // Update the selected article for the modal
+        // Update the selected article for the modal with fresh server data
         const updatedArticle = articlesData.find(a => a.id === articleId);
         if (updatedArticle) {
-          setSelectedArticleForTags(resolveArticleTags([updatedArticle])[0]);
+          setSelectedArticleForTags(updatedArticle);
         }
       } else {
         throw new Error(response.error || 'Failed to remove tag');

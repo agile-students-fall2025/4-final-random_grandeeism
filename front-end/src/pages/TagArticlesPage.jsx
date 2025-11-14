@@ -193,12 +193,22 @@ export default function TagArticlesPage({ onNavigate, tag }) {
     try {
       const response = await articlesAPI.addTag(articleId, tagId);
       if (response.success) {
+        // First, optimistically update the selected article for immediate UI feedback
+        if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
+          const updatedTags = [...(selectedArticleForTags.tags || []), tagId];
+          const optimisticUpdate = { ...selectedArticleForTags, tags: updatedTags };
+          setSelectedArticleForTags(optimisticUpdate);
+        }
+        
+        // Then fetch fresh data to ensure consistency
         const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
         const normalized = normalizeArticles(articlesResponse);
         setRawArticles(normalized);
+        
+        // Update the selected article with fresh data from server
         const updatedArticle = normalized.find(a => a.id === articleId);
         if (updatedArticle) {
-          setSelectedArticleForTags(resolveArticleTags([updatedArticle])[0]);
+          setSelectedArticleForTags(updatedArticle);
         }
       } else {
         throw new Error(response.error || 'Failed to add tag');
@@ -213,12 +223,22 @@ export default function TagArticlesPage({ onNavigate, tag }) {
     try {
       const response = await articlesAPI.removeTag(articleId, tagId);
       if (response.success) {
+        // First, optimistically update the selected article for immediate UI feedback
+        if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
+          const updatedTags = selectedArticleForTags.tags.filter(tag => tag !== tagId);
+          const optimisticUpdate = { ...selectedArticleForTags, tags: updatedTags };
+          setSelectedArticleForTags(optimisticUpdate);
+        }
+        
+        // Then fetch fresh data to ensure consistency
         const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
         const normalized = normalizeArticles(articlesResponse);
         setRawArticles(normalized);
+        
+        // Update the selected article with fresh data from server
         const updatedArticle = normalized.find(a => a.id === articleId);
         if (updatedArticle) {
-          setSelectedArticleForTags(resolveArticleTags([updatedArticle])[0]);
+          setSelectedArticleForTags(updatedArticle);
         }
       } else {
         throw new Error(response.error || 'Failed to remove tag');

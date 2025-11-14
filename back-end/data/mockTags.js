@@ -24,6 +24,15 @@ const mockTags = [
     "updatedAt": new Date("2025-11-14T03:52:27.646Z")
   },
   {
+    "id": "tag-3",
+    "name": "frontend",
+    "color": "#ec4899",
+    "description": "Frontend development technologies and practices",
+    "articleCount": 3,
+    "createdAt": new Date("2024-01-03T00:00:00.000Z"),
+    "lastUsed": new Date("2024-01-13T00:00:00.000Z")
+  },
+  {
     "id": "tag-4",
     "name": "typescript",
     "color": "#3178c6",
@@ -61,9 +70,9 @@ const mockTags = [
   },
   {
     "id": "tag-8",
-    "name": "frontend",
-    "color": "#ec4899",
-    "description": "Frontend development",
+    "name": "css",
+    "color": "#1572b6",
+    "description": "Cascading Style Sheets",
     "articleCount": 4,
     "createdAt": new Date("2024-01-08T00:00:00.000Z"),
     "lastUsed": new Date("2024-01-13T00:00:00.000Z")
@@ -506,12 +515,12 @@ const mockTags = [
   },
   {
     "id": "tag-57",
-    "name": "test-webdev-1763092347473",
-    "color": "#61dafb",
-    "description": "",
+    "name": "testing",
+    "color": "#6b7280",
+    "description": "Tag for testing",
     "articleCount": 0,
-    "createdAt": new Date("2025-11-14T03:52:27.601Z"),
-    "lastUsed": new Date("2025-11-14T03:52:27.601Z")
+    "createdAt": new Date("2025-11-14T19:35:38.596Z"),
+    "lastUsed": new Date("2025-11-14T19:35:38.596Z")
   }
 ];
 

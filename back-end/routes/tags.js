@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { mockTags } = require('../data/mockTags');
-const { mockArticles } = require('../data/mockArticles');
+const { articlesDao } = require('../lib/daoFactory');
 const path = require('path');
 const fs = require('fs');
 const TAGS_FILE = path.join(__dirname, '../data/mockTags.js');
@@ -22,12 +22,28 @@ function saveTagsToFile(tags) {
 
 /**
  * GET /api/tags
- * Retrieve all tags with optional filtering
+ * Retrieve all tags with optional filtering and dynamic article counts
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { sort } = req.query;
     let tags = [...mockTags];
+    const userId = 'user-1'; // TODO: Get from authenticated user
+
+    // Get all articles to calculate tag counts
+    const allArticles = await articlesDao.getAll({});
+
+    // Calculate actual article count for each tag
+    tags = tags.map(tag => {
+      const articleCount = allArticles.filter(article => 
+        article.tags && article.tags.includes(tag.id)
+      ).length;
+      
+      return {
+        ...tag,
+        articleCount // Override the static count with actual count
+      };
+    });
 
     // Sort by article count, name, or most recent
     if (sort === 'popular') {
