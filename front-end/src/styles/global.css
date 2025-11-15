@@ -250,21 +250,22 @@ html, body {
   fill: rgb(34, 197, 94) !important;
 }
 
-/* Fade in up animation for hero elements */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Hero app image shadow - desktop only */
-@media (min-width: 768px) {
-  .hero-app-image-shadow {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
-  }
+/* Hide only number badges/counts in sidebar navigation */
+.sidebar .badge,
+.sidebar .count,
+.sidebar .number,
+.sidebar-menu .badge,
+.sidebar-menu .count,
+.sidebar-menu .number,
+.nav-item .badge,
+.nav-item .count,
+.nav-item .number,
+.menu-item .badge,
+.menu-item .count,
+.menu-item .number,
+nav .badge,
+nav .count,
+aside .badge,
+aside .count {
+  display: none !important;
 }
