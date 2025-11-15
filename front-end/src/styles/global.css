@@ -249,3 +249,23 @@ html, body {
   color: rgb(34, 197, 94) !important;
   fill: rgb(34, 197, 94) !important;
 }
+
+/* Hide only number badges/counts in sidebar navigation */
+.sidebar .badge,
+.sidebar .count,
+.sidebar .number,
+.sidebar-menu .badge,
+.sidebar-menu .count,
+.sidebar-menu .number,
+.nav-item .badge,
+.nav-item .count,
+.nav-item .number,
+.menu-item .badge,
+.menu-item .count,
+.menu-item .number,
+nav .badge,
+nav .count,
+aside .badge,
+aside .count {
+  display: none !important;
+}

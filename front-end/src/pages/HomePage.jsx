@@ -172,11 +172,6 @@ const HomePage = ({ onNavigate }) => {
                      tab.name === "Continue Reading" ? "Continue" : 
                      tab.name}
                   </span>
-                  {articleCounts[tab.status] > 0 && (
-                    <span className="bg-foreground text-background text-[10px] px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                      {articleCounts[tab.status]}
-                    </span>
-                  )}
                 </button>
               ))}
             </div>

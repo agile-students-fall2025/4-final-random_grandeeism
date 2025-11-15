@@ -85,13 +85,6 @@ export default function NavigationSidebar({
             {item.name}
           </span>
         </div>
-        
-        {/* Count Badge - only show if count exists and > 0 */}
-        {item.count !== undefined && item.count > 0 && (
-          <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-[11px] min-w-[20px] text-center shrink-0">
-            {item.count}
-          </span>
-        )}
       </button>
     );
   };
