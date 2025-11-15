@@ -503,7 +503,7 @@ const SettingsPage = ({ onNavigate }) => {
                 <div>
                   <Button 
                   // variant="destructive" 
-                  onClick={() => onNavigate('auth')}
+                  onClick={() => onNavigate('landing')}
                   className="w-full sm:w-auto"
                 >
                   <LogOut size={16} className="mr-2" />

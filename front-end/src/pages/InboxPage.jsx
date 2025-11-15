@@ -8,19 +8,31 @@
 import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
+import TagManagerModal from "../components/TagManagerModal.jsx";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { articlesAPI, feedsAPI } from "../services/api.js";
+import { articlesAPI, feedsAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
+import { useTagResolution } from "../hooks/useTagResolution.js";
 
 const InboxPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
+  const [showTagManagerModal, setShowTagManagerModal] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+  const [selectedArticleForTags, setSelectedArticleForTags] = useState(null);
+  const [articleToDelete, setArticleToDelete] = useState(null);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [articles, setArticles] = useState([]);
+  const [rawArticles, setRawArticles] = useState([]); // Store raw articles
   const [feeds, setFeeds] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Use tag resolution hook
+  const { resolveArticleTags } = useTagResolution();
 
   const baseLockedFilters = useMemo(() => ({ status: STATUS.INBOX }), []);
 
@@ -30,10 +42,11 @@ const InboxPage = ({ onNavigate }) => {
         setLoading(true);
         setError(null);
         
-        // Fetch articles and feeds in parallel
-        const [articlesResponse, feedsResponse] = await Promise.all([
+        // Fetch articles, feeds, and tags in parallel
+        const [articlesResponse, feedsResponse, tagsResponse] = await Promise.all([
           articlesAPI.getAll(baseLockedFilters),
-          feedsAPI.getAll()
+          feedsAPI.getAll(),
+          tagsAPI.getAll()
         ]);
         
         // Handle articles response
@@ -46,12 +59,16 @@ const InboxPage = ({ onNavigate }) => {
           articlesData = articlesResponse.articles;
         }
         
-        setArticles(articlesData);
-        setDisplayedArticles(applyFiltersAndSort(articlesData, baseLockedFilters));
+        setRawArticles(articlesData); // Store raw articles
         
         // Handle feeds response
         if (feedsResponse.success && feedsResponse.data) {
           setFeeds(feedsResponse.data);
+        }
+        
+        // Handle tags response
+        if (tagsResponse.success && tagsResponse.data) {
+          setAvailableTags(tagsResponse.data);
         }
         
         setLoading(false);
@@ -64,32 +81,128 @@ const InboxPage = ({ onNavigate }) => {
     fetchData();
   }, [baseLockedFilters]);
 
+  // Resolve tags when raw articles or tag resolution function changes
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const resolvedArticles = resolveArticleTags(rawArticles);
+      setArticles(resolvedArticles);
+      setDisplayedArticles(applyFiltersAndSort(resolvedArticles, baseLockedFilters));
+    }
+  }, [rawArticles, resolveArticleTags, baseLockedFilters]);
+
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
     setCurrentFilters(merged);
     setDisplayedArticles(applyFiltersAndSort(articles, merged));
   };
 
-  // The following handlers would need to call backend APIs for full integration
-  // For now, keep local state update for UI responsiveness
-  const handleStatusChange = (articleId, newStatus) => {
-    setArticles(prev => prev.map(article => 
-      article.id === articleId 
-        ? { ...article, status: newStatus }
-        : article
-    ));
+  const handleStatusChange = async (articleId, newStatus) => {
+    try {
+      const response = await articlesAPI.updateStatus(articleId, newStatus);
+      if (response.success) {
+        // Optimistically update the local state
+        setRawArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, status: newStatus }
+            : article
+        ));
+      } else {
+        throw new Error(response.error || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Failed to update article status:', error);
+      alert(`Failed to update status: ${error.message}`);
+    }
   };
 
-  const handleToggleFavorite = (articleId) => {
-    setArticles(prev => prev.map(article => 
+  const handleToggleFavorite = async (articleId) => {
+    console.log('handleToggleFavorite called with:', articleId);
+    
+    // Optimistically update the UI immediately
+    setRawArticles(prev => prev.map(article => 
       article.id === articleId 
         ? { ...article, isFavorite: !article.isFavorite }
         : article
     ));
+
+    try {
+      // Find the current article to get its favorite status
+      const currentArticle = articles.find(article => article.id === articleId);
+      if (!currentArticle) {
+        console.error('Article not found:', articleId);
+        return;
+      }
+
+      console.log('Calling API to toggle favorite...');
+      
+      // Call the API to toggle favorite status
+      const response = await articlesAPI.toggleFavorite(articleId, !currentArticle.isFavorite);
+      
+      console.log('API response:', response);
+      
+      if (!response.success) {
+        console.error('API responded with failure');
+        // Revert the optimistic update
+        setRawArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, isFavorite: currentArticle.isFavorite }
+            : article
+        ));
+      }
+      
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      // Revert the optimistic update on error
+      const currentArticle = articles.find(article => article.id === articleId);
+      if (currentArticle) {
+        setRawArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, isFavorite: currentArticle.isFavorite }
+            : article
+        ));
+      }
+    }
   };
 
   const handleDeleteArticle = (articleId) => {
-    setArticles(prev => prev.filter(article => article.id !== articleId));
+    // Find the article to show its title in the confirmation modal
+    const article = rawArticles.find(a => a.id === articleId);
+    setArticleToDelete(article);
+    setShowConfirmDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!articleToDelete) return;
+
+    try {
+      // Optimistically update the UI immediately
+      setRawArticles(prev => prev.filter(article => article.id !== articleToDelete.id));
+      
+      // Call the backend API
+      const response = await articlesAPI.delete(articleToDelete.id);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete article');
+      }
+      
+      console.log('Article deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete article:', error);
+      
+      // Revert the optimistic update on error
+      const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+      let articlesData = articlesResponse;
+      if (Array.isArray(articlesResponse)) {
+        articlesData = articlesResponse;
+      } else if (articlesResponse.data) {
+        articlesData = articlesResponse.data;
+      } else if (articlesResponse.articles) {
+        articlesData = articlesResponse.articles;
+      }
+      setRawArticles(articlesData);
+      
+      alert(`Failed to delete article: ${error.message}`);
+    }
   };
 
   const handleSaveSearch = () => {
@@ -99,6 +212,75 @@ const InboxPage = ({ onNavigate }) => {
   const handleSaveStack = (stackData) => {
     console.log('Saving stack:', stackData);
     alert(`Stack "${stackData.name}" saved successfully!`);
+  };
+
+  const handleManageTags = (article) => {
+    // Find the raw article (with tag IDs) instead of using the resolved article (with tag names)
+    const rawArticle = rawArticles.find(raw => raw.id === article.id);
+    setSelectedArticleForTags(resolveArticleTags([rawArticle || article])[0]);
+    setShowTagManagerModal(true);
+  };
+
+  const handleAddTag = async (articleId, tagId) => {
+    try {
+      const response = await articlesAPI.addTag(articleId, tagId);
+      if (response.success) {
+        // Refetch articles to show updated tags
+        const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+        let articlesData = articlesResponse;
+        if (articlesResponse.data) articlesData = articlesResponse.data;
+        
+        setRawArticles(articlesData);
+        // Update the selected article for the modal
+        const updatedArticle = articlesData.find(a => a.id === articleId);
+        if (updatedArticle) {
+          setSelectedArticleForTags(resolveArticleTags([updatedArticle])[0]);
+        }
+      } else {
+        throw new Error(response.error || 'Failed to add tag');
+      }
+    } catch (error) {
+      console.error('Failed to add tag:', error);
+      alert(`Failed to add tag: ${error.message}`);
+    }
+  };
+
+  const handleRemoveTag = async (articleId, tagId) => {
+    try {
+      const response = await articlesAPI.removeTag(articleId, tagId);
+      if (response.success) {
+        // Refetch articles to show updated tags
+        const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+        let articlesData = articlesResponse;
+        if (articlesResponse.data) articlesData = articlesResponse.data;
+        
+        setRawArticles(articlesData);
+        // Update the selected article for the modal
+        const updatedArticle = articlesData.find(a => a.id === articleId);
+        if (updatedArticle) {
+          setSelectedArticleForTags(resolveArticleTags([updatedArticle])[0]);
+        }
+      } else {
+        throw new Error(response.error || 'Failed to remove tag');
+      }
+    } catch (error) {
+      console.error('Failed to remove tag:', error);
+      alert(`Failed to remove tag: ${error.message}`);
+    }
+  };
+
+  const handleCreateTag = async (newTag) => {
+    try {
+      const response = await tagsAPI.create({ name: newTag.name, color: newTag.color });
+      if (response.success) {
+        setAvailableTags(prevTags => [...prevTags, response.data]);
+      } else {
+        throw new Error(response.error || 'Failed to create tag');
+      }
+    } catch (error) {
+      console.error('Failed to create tag:', error);
+      alert(`Failed to create tag: ${error.message}`);
+    }
   };
 
   return (
@@ -147,6 +329,7 @@ const InboxPage = ({ onNavigate }) => {
                       onNavigate && onNavigate(destination, { article });
                     }}
                     onToggleFavorite={handleToggleFavorite}
+                    onManageTags={handleManageTags}
                     onStatusChange={handleStatusChange}
                     onDelete={handleDeleteArticle}
                   />
@@ -167,6 +350,28 @@ const InboxPage = ({ onNavigate }) => {
         onClose={() => setShowSaveStackModal(false)}
         onSave={handleSaveStack}
         currentFilters={currentFilters}
+      />
+      
+      {/* Tag Manager Modal */}
+      <TagManagerModal
+        isOpen={showTagManagerModal}
+        onClose={() => setShowTagManagerModal(false)}
+        article={selectedArticleForTags}
+        availableTags={availableTags}
+        onAddTag={handleAddTag}
+        onRemoveTag={handleRemoveTag}
+        onCreateTag={handleCreateTag}
+      />
+      
+      {/* Confirm Delete Modal */}
+      <ConfirmDeleteModal
+        isOpen={showConfirmDeleteModal}
+        onClose={() => {
+          setShowConfirmDeleteModal(false);
+          setArticleToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        articleTitle={articleToDelete?.title}
       />
     </MainLayout>
   );

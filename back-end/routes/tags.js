@@ -1,18 +1,49 @@
 const express = require('express');
 const router = express.Router();
-const { tagsDao, articlesDao } = require('../lib/daoFactory');
+const { mockTags } = require('../data/mockTags');
+const { articlesDao } = require('../lib/daoFactory');
+const path = require('path');
+const fs = require('fs');
+const TAGS_FILE = path.join(__dirname, '../data/mockTags.js');
+
+function serializeTags(tags) {
+  // Write as JS file with module.exports
+  return `/**\n * Mock tags data for development and testing\n * This will be replaced with MongoDB Tag model in Sprint 3\n */\n\nconst mockTags = ${JSON.stringify(tags, (key, value) => {
+    if (key === 'createdAt' || key === 'lastUsed' || key === 'updatedAt') {
+      return value ? `__DATE__${new Date(value).toISOString()}` : value;
+    }
+    return value;
+  }, 2).replace(/"__DATE__(.*?)"/g, 'new Date("$1")')};\n\nmodule.exports = { mockTags };\n`;
+}
+
+function saveTagsToFile(tags) {
+  fs.writeFileSync(TAGS_FILE, serializeTags(tags), 'utf8');
+}
 
 /**
  * GET /api/tags
- * Retrieve all tags with optional filtering
+ * Retrieve all tags with optional filtering and dynamic article counts
  */
 router.get('/', async (req, res) => {
   try {
     const { sort } = req.query;
+    let tags = [...mockTags];
     const userId = 'user-1'; // TODO: Get from authenticated user
-    
-    const filters = { userId };
-    const tags = await tagsDao.getAll(filters);
+
+    // Get all articles to calculate tag counts
+    const allArticles = await articlesDao.getAll({});
+
+    // Calculate actual article count for each tag
+    tags = tags.map(tag => {
+      const articleCount = allArticles.filter(article => 
+        article.tags && article.tags.includes(tag.id)
+      ).length;
+      
+      return {
+        ...tag,
+        articleCount // Override the static count with actual count
+      };
+    });
 
     // Sort by article count, name, or most recent
     if (sort === 'popular') {
@@ -20,7 +51,7 @@ router.get('/', async (req, res) => {
     } else if (sort === 'alphabetical') {
       tags.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sort === 'recent') {
-      tags.sort((a, b) => new Date(b.lastUsed || b.createdDate) - new Date(a.lastUsed || a.createdDate));
+      tags.sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
     }
 
     res.json({
@@ -41,12 +72,9 @@ router.get('/', async (req, res) => {
  * GET /api/tags/:id
  * Retrieve a single tag by ID
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
-    
-    
-    const tag = await tagsDao.getById(req.params.id, userId);
+    const tag = mockTags.find(t => t.id === req.params.id);
     
     if (!tag) {
       return res.status(404).json({
@@ -70,118 +98,74 @@ router.get('/:id', async (req, res) => {
 
 /**
  * POST /api/tags
- * Create a new tag
+ * Create a new tag (mock - doesn't persist)
  */
-router.post('/', async (req, res) => {
+router.post('/', (req, res) => {
   try {
     const { name, color, description } = req.body;
-    const userId = 'user-1'; // TODO: Get from authenticated user
-    
-
     if (!name) {
-      return res.status(400).json({
-        success: false,
-        error: 'Tag name is required'
-      });
+      return res.status(400).json({ success: false, error: 'Tag name is required' });
     }
-
-    // Check if tag already exists
-    const existingTag = await tagsDao.getByName(name.toLowerCase(), userId);
+    const existingTag = mockTags.find(t => t.name.toLowerCase() === name.toLowerCase());
     if (existingTag) {
-      return res.status(409).json({
-        success: false,
-        error: 'Tag already exists',
-        data: existingTag
-      });
+      return res.status(409).json({ success: false, error: 'Tag already exists', data: existingTag });
     }
-
-    const tagData = {
+    const newTag = {
+      id: `tag-${mockTags.length + 1}`,
       name: name.toLowerCase(),
       color: color || '#6b7280',
       description: description || '',
-      userId
+      articleCount: 0,
+      createdAt: new Date(),
+      lastUsed: new Date()
     };
-
-    const newTag = await tagsDao.create(tagData);
-
-    res.status(201).json({
-      success: true,
-      data: newTag,
-      message: 'Tag created successfully'
-    });
+    mockTags.push(newTag);
+    saveTagsToFile(mockTags);
+    res.status(201).json({ success: true, data: newTag, message: 'Tag created successfully' });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Server Error',
-      message: error.message
-    });
+    res.status(500).json({ success: false, error: 'Server Error', message: error.message });
   }
 });
 
 /**
  * PUT /api/tags/:id
- * Update a tag
+ * Update a tag (mock - doesn't persist)
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
-    
-    
-    const updatedTag = await tagsDao.update(req.params.id, {
-      ...req.body,
-      updatedAt: new Date()
-    }, userId);
-    
-    if (!updatedTag) {
-      return res.status(404).json({
-        success: false,
-        error: 'Tag not found'
-      });
+    const tagIdx = mockTags.findIndex(t => t.id === req.params.id);
+    if (tagIdx === -1) {
+      return res.status(404).json({ success: false, error: 'Tag not found' });
     }
-
-    res.json({
-      success: true,
-      data: updatedTag,
-      message: 'Tag updated successfully'
-    });
+    const updatedTag = {
+      ...mockTags[tagIdx],
+      ...req.body,
+      id: req.params.id,
+      updatedAt: new Date()
+    };
+    mockTags[tagIdx] = updatedTag;
+    saveTagsToFile(mockTags);
+    res.json({ success: true, data: updatedTag, message: 'Tag updated successfully' });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Server Error',
-      message: error.message
-    });
+    res.status(500).json({ success: false, error: 'Server Error', message: error.message });
   }
 });
 
 /**
  * DELETE /api/tags/:id
- * Delete a tag
+ * Delete a tag (mock - doesn't persist)
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
-    
-    
-    const deleted = await tagsDao.delete(req.params.id, userId);
-    
-    if (!deleted) {
-      return res.status(404).json({
-        success: false,
-        error: 'Tag not found'
-      });
+    const tagIdx = mockTags.findIndex(t => t.id === req.params.id);
+    if (tagIdx === -1) {
+      return res.status(404).json({ success: false, error: 'Tag not found' });
     }
-
-    res.json({
-      success: true,
-      message: 'Tag deleted successfully',
-      data: { id: req.params.id }
-    });
+    mockTags.splice(tagIdx, 1);
+    saveTagsToFile(mockTags);
+    res.json({ success: true, message: 'Tag deleted successfully', data: { id: req.params.id } });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Server Error',
-      message: error.message
-    });
+    res.status(500).json({ success: false, error: 'Server Error', message: error.message });
   }
 });
 
@@ -189,13 +173,9 @@ router.delete('/:id', async (req, res) => {
  * GET /api/tags/:id/articles
  * Get all articles with a specific tag
  */
-router.get('/:id/articles', async (req, res) => {
+router.get('/:id/articles', (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
-    
-    
-    
-    const tag = await tagsDao.getById(req.params.id, userId);
+    const tag = mockTags.find(t => t.id === req.params.id);
     
     if (!tag) {
       return res.status(404).json({
@@ -204,8 +184,10 @@ router.get('/:id/articles', async (req, res) => {
       });
     }
 
-    // Find articles that have this tag (match by tag name)
-    const taggedArticles = await articlesDao.getByTag(tag.name, userId);
+    // Find articles that have this tag
+    const taggedArticles = mockArticles.filter(article => 
+      article.tags && article.tags.includes(tag.name)
+    );
 
     res.json({
       success: true,

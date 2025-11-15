@@ -46,7 +46,7 @@ import { articlesAPI, handleAPIError } from './services/api.js';
 // import { mockArticles } from './data/mockArticles'; // Adjust path if needed
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState('landing');
   /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation state */
   /* TODO: Uncomment when development resumes */
   // const [isNavExpanded, setIsNavExpanded] = useState(false);
@@ -395,7 +395,7 @@ function App() {
             Settings
           </button>
           <button
-            onClick={() => setCurrentPage('text-reader')}
+            onClick={() => handleNavigate('text-reader', { returnTo: currentPage })}
             className={`text-xs px-2 py-1 rounded ${
               currentPage === 'text-reader' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
             }`}

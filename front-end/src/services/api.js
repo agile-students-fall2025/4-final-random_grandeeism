@@ -157,6 +157,31 @@ export const articlesAPI = {
       body: JSON.stringify({ isFavorite }),
     });
   },
+
+  /**
+   * Add tag to article
+   * @param {string} id - Article ID
+   * @param {string} tagId - Tag ID to add
+   * @returns {Promise} API response
+   */
+  addTag: async (id, tagId) => {
+    return apiRequest(`/articles/${id}/tags`, {
+      method: 'POST',
+      body: JSON.stringify({ tagId }),
+    });
+  },
+
+  /**
+   * Remove tag from article
+   * @param {string} id - Article ID
+   * @param {string} tagId - Tag ID to remove
+   * @returns {Promise} API response
+   */
+  removeTag: async (id, tagId) => {
+    return apiRequest(`/articles/${id}/tags/${tagId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 /**

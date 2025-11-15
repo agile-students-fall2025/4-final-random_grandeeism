@@ -8,32 +8,53 @@
 import { useState, useEffect, useMemo } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
+import TagManagerModal from "../components/TagManagerModal.jsx";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { articlesAPI } from "../services/api.js";
+import { articlesAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
+import useTagResolution from "../hooks/useTagResolution.js";
 
 const RediscoveryPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
+  const [rawArticles, setRawArticles] = useState([]);
   const [articles, setArticles] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // TagManager states
+  const [showTagManagerModal, setShowTagManagerModal] = useState(false);
+  const [selectedArticleForTags, setSelectedArticleForTags] = useState(null);
+  const [articleToDelete, setArticleToDelete] = useState(null);
+  const [availableTags, setAvailableTags] = useState([]);
 
+  const { resolveArticleTags } = useTagResolution();
   const baseLockedFilters = useMemo(() => ({ status: STATUS.REDISCOVERY }), []);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    articlesAPI.getAll(baseLockedFilters)
-      .then(res => {
-        let data = res;
-        if (Array.isArray(res)) data = res;
-        else if (res.data) data = res.data;
-        else if (res.articles) data = res.articles;
-        setArticles(data);
-        setDisplayedArticles(applyFiltersAndSort(data, baseLockedFilters));
+    Promise.all([
+      articlesAPI.getAll(baseLockedFilters),
+      tagsAPI.getAll()
+    ])
+      .then(([articlesRes, tagsRes]) => {
+        let data = articlesRes;
+        if (Array.isArray(articlesRes)) data = articlesRes;
+        else if (articlesRes.data) data = articlesRes.data;
+        else if (articlesRes.articles) data = articlesRes.articles;
+        setRawArticles(data);
+        
+        // Handle tags response properly
+        let tagsData = tagsRes;
+        if (Array.isArray(tagsRes)) tagsData = tagsRes;
+        else if (tagsRes.data) tagsData = tagsRes.data;
+        else if (tagsRes.tags) tagsData = tagsRes.tags;
+        setAvailableTags(tagsData);
+        
         setLoading(false);
       })
       .catch(err => {
@@ -41,6 +62,24 @@ const RediscoveryPage = ({ onNavigate }) => {
         setLoading(false);
       });
   }, [baseLockedFilters]);
+
+  // Tag resolution effect
+  useEffect(() => {
+    if (rawArticles.length > 0) {
+      const resolveAndSetArticles = async () => {
+        const resolved = await resolveArticleTags(rawArticles);
+        setArticles(resolved);
+      };
+      resolveAndSetArticles();
+    } else {
+      setArticles([]);
+    }
+  }, [rawArticles, resolveArticleTags]);
+
+  // Update displayed articles when resolved articles change
+  useEffect(() => {
+    setDisplayedArticles(applyFiltersAndSort(articles, currentFilters || baseLockedFilters));
+  }, [articles, currentFilters, baseLockedFilters]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...baseLockedFilters, ...(filters || {}), query };
@@ -55,25 +94,151 @@ const RediscoveryPage = ({ onNavigate }) => {
     alert(`Stack "${stackData.name}" saved successfully!`);
   };
 
-  // The following handlers would need to call backend APIs for full integration
-  const handleStatusChange = (articleId, newStatus) => {
-    setArticles(prevArticles => 
-      prevArticles.map(article => 
-        article.id === articleId ? { ...article, status: newStatus } : article
-      )
-    );
+  // TagManager handlers
+  const handleManageTags = (article) => {
+    // Find the raw article with tag IDs (before resolution)
+    const rawArticle = rawArticles.find(raw => raw.id === article.id);
+    setSelectedArticleForTags(rawArticle || article);
+    setShowTagManagerModal(true);
   };
 
-  const handleToggleFavorite = (articleId) => {
-    setArticles(prevArticles =>
-      prevArticles.map(article =>
-        article.id === articleId ? { ...article, isFavorite: !article.isFavorite } : article
-      )
-    );
+  const handleAddTag = async (articleId, tagId) => {
+    try {
+      await articlesAPI.addTag(articleId, tagId);
+      // Update the raw articles with the new tag
+      setRawArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: [...(article.tags || []), tagId] }
+          : article
+      ));
+      // Update the selected article for the modal to show the new tag immediately
+      if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
+        setSelectedArticleForTags(prev => ({
+          ...prev,
+          tags: [...(prev.tags || []), tagId]
+        }));
+      }
+    } catch (error) {
+      console.error('Error adding tag:', error);
+    }
+  };
+
+  const handleRemoveTag = async (articleId, tagId) => {
+    try {
+      await articlesAPI.removeTag(articleId, tagId);
+      // Update the raw articles by removing the tag
+      setRawArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: (article.tags || []).filter(id => id !== tagId) }
+          : article
+      ));
+      // Update the selected article for the modal to remove the tag immediately
+      if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
+        setSelectedArticleForTags(prev => ({
+          ...prev,
+          tags: (prev.tags || []).filter(id => id !== tagId)
+        }));
+      }
+    } catch (error) {
+      console.error('Error removing tag:', error);
+    }
+  };
+
+  const handleCreateTag = (newTag) => {
+    // Add the new tag to our available tags list
+    setAvailableTags(prev => [...prev, newTag]);
+  };
+
+  const handleStatusChange = async (articleId, newStatus) => {
+    try {
+      const response = await articlesAPI.updateStatus(articleId, newStatus);
+      if (response.success) {
+        // Optimistically update the local state
+        setRawArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, status: newStatus }
+            : article
+        ));
+      } else {
+        throw new Error(response.error || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Failed to update article status:', error);
+      alert(`Failed to update status: ${error.message}`);
+    }
+  };
+
+  const handleToggleFavorite = async (articleId) => {
+    try {
+      // Find the current article to get its favorite status
+      const currentArticle = articles.find(article => article.id === articleId);
+      if (!currentArticle) {
+        console.error('Article not found:', articleId);
+        return;
+      }
+
+      // Call the API to toggle favorite status
+      const response = await articlesAPI.toggleFavorite(articleId, !currentArticle.isFavorite);
+      
+      if (response.success) {
+        // Refetch all articles to get the updated state
+        const articlesResponse = await articlesAPI.getAll({ status: STATUS.REDISCOVERY });
+        if (articlesResponse.success) {
+          setRawArticles(articlesResponse.data);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
   };
 
   const handleDeleteArticle = (articleId) => {
-    setArticles(prevArticles => prevArticles.filter(article => article.id !== articleId));
+    // Find the article to show in confirmation modal
+    const article = rawArticles.find(a => a.id === articleId);
+    setArticleToDelete(article);
+    setShowConfirmDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!articleToDelete) return;
+
+    try {
+      // Optimistically update the UI immediately
+      setRawArticles(prev => prev.filter(article => article.id !== articleToDelete.id));
+      
+      // Call the backend API
+      const response = await articlesAPI.delete(articleToDelete.id);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete article');
+      }
+      
+      console.log('Article deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete article:', error);
+      
+      // Revert the optimistic update on error by refetching data
+      try {
+        const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+        let articlesData = articlesResponse;
+        if (Array.isArray(articlesResponse)) {
+          articlesData = articlesResponse;
+        } else if (articlesResponse.data) {
+          articlesData = articlesResponse.data;
+        } else if (articlesResponse.articles) {
+          articlesData = articlesResponse.articles;
+        }
+        setRawArticles(articlesData);
+      } catch (fetchError) {
+        console.error('Failed to refetch articles:', fetchError);
+      }
+      
+      alert(`Failed to delete article: ${error.message}`);
+    } finally {
+      // Close modal and reset state
+      setShowConfirmDeleteModal(false);
+      setArticleToDelete(null);
+    }
   };
 
   return (
@@ -85,7 +250,7 @@ const RediscoveryPage = ({ onNavigate }) => {
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
-      availableTags={["Development", "Design", "AI", "Technology"]}
+      availableTags={availableTags}
       lockedFilters={{ status: STATUS.REDISCOVERY }}
       preAppliedFilters={{ status: STATUS.REDISCOVERY }}
       onFilterChipRemoved={() => onNavigate("search")}
@@ -108,7 +273,12 @@ const RediscoveryPage = ({ onNavigate }) => {
                 <p className="text-lg font-medium mb-2 text-destructive">{error}</p>
                 <p className="text-sm text-muted-foreground">Could not load rediscovery articles.</p>
               </div>
-            ) : loading ? null : displayedArticles.length > 0 ? (
+            ) : loading ? (
+              <div className="bg-card border border-border rounded-lg p-8 text-center">
+                <p className="text-lg font-medium mb-2">Loading rediscovery articles...</p>
+                <p className="text-sm text-muted-foreground">Please wait while we fetch your content.</p>
+              </div>
+            ) : displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {displayedArticles.map(article => (
                   <ArticleCard
@@ -121,6 +291,7 @@ const RediscoveryPage = ({ onNavigate }) => {
                     onToggleFavorite={handleToggleFavorite}
                     onStatusChange={handleStatusChange}
                     onDelete={handleDeleteArticle}
+                    onManageTags={handleManageTags}
                   />
                 ))}
               </div>
@@ -139,6 +310,28 @@ const RediscoveryPage = ({ onNavigate }) => {
         onClose={() => setShowSaveStackModal(false)}
         onSave={handleSaveStack}
         currentFilters={currentFilters}
+      />
+      
+      {/* Tag Manager Modal */}
+      <TagManagerModal
+        isOpen={showTagManagerModal}
+        onClose={() => setShowTagManagerModal(false)}
+        availableTags={availableTags}
+        article={selectedArticleForTags}
+        onAddTag={handleAddTag}
+        onRemoveTag={handleRemoveTag}
+        onCreateTag={handleCreateTag}
+      />
+
+      {/* Confirm Delete Modal */}
+      <ConfirmDeleteModal
+        isOpen={showConfirmDeleteModal}
+        onClose={() => {
+          setShowConfirmDeleteModal(false);
+          setArticleToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        articleTitle={articleToDelete?.title}
       />
     </MainLayout>
   );

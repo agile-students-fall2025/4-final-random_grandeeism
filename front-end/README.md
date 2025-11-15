@@ -25,6 +25,26 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 This front-end is implemented using JavaScript with JSX. Please write components and examples in JSX/JavaScript (files using the `.jsx` or `.js` extensions). The repository and project tooling are configured for a JavaScript (JSX) codebase — do not introduce TypeScript files for this project. If you need type-checked examples for learning purposes, document them separately, but keep the main source and examples in JSX.
 
+## Dependencies
+
+### Core Libraries
+
+This project uses several key dependencies for enhanced functionality:
+
+- **jsPDF** (`^3.0.3`) - PDF generation library for the export notes feature. Allows users to export their article notes and highlights as properly formatted PDF files directly in the browser without requiring server-side processing.
+
+### Setup
+
+1. Install all dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
 ## Front-End Development Restrictions
 
 ### Technical requirements

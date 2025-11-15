@@ -11,6 +11,13 @@
 import { useState } from 'react';
 import { STATUS } from '../constants/statuses.js';
 import { 
+  generateExportContent, 
+  downloadFile, 
+  generateFilename, 
+  getMimeType,
+  generatePDFFile 
+} from '../utils/exportUtils.js';
+import { 
   Star, 
   Tag, 
   Calendar, 
@@ -26,11 +33,13 @@ import {
   PanelBottomClose  // For manual status change actions (not automatic queue advancement)
 } from 'lucide-react';
 import ExportNotesModal from './ExportNotesModal.jsx';
+import StatusChangeModal from './StatusChangeModal.jsx';
 
 export default function ArticleCard({
   article,
   onArticleClick,
   onToggleFavorite,
+  onManageTags,
   onStatusChange,
   onDelete,
   selectionMode = false,
@@ -38,7 +47,7 @@ export default function ArticleCard({
   onToggleSelect
 }) {
   const [isStatusHovered, setIsStatusHovered] = useState(false);
-  const [showStatusSubmenu, setShowStatusSubmenu] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
 
   // Get status icon information
@@ -137,11 +146,31 @@ export default function ArticleCard({
 
   // Handle export
   const handleExport = (format, destination) => {
-    console.log('Exporting notes:', { articleId: article.id, format, destination });
-    // TODO: Implement actual export functionality
-  };
-
-  return (
+    console.log('🔄 Starting export process:', { format, destination, article: article.title });
+    
+    // Close modal FIRST to prevent any interaction issues
+    setShowExportModal(false);
+    
+    try {
+      const filename = generateFilename(article.title || 'Untitled Article', format);
+      
+      // Handle PDF export differently - generate PDF directly
+      if (format === 'pdf') {
+        generatePDFFile(article, filename);
+      } else {
+        // Generate content for text-based formats
+        const content = generateExportContent(article, format);
+        const mimeType = getMimeType(format);
+        downloadFile(content, filename, mimeType);
+      }
+      
+      console.log(`✅ Successfully exported "${article.title}" as ${format.toUpperCase()}`);
+      
+    } catch (error) {
+      console.error('❌ Export failed:', error);
+      // You could show an error toast here
+    }
+  };  return (
     <div 
       onClick={handleCardClick}
       className={`bg-card border rounded-lg overflow-hidden hover:border-primary/50 transition-colors cursor-pointer ${
@@ -264,7 +293,7 @@ export default function ArticleCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              // TODO: Open tag manager
+              onManageTags && onManageTags(article);
             }}
             className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
           >
@@ -276,6 +305,7 @@ export default function ArticleCard({
           {article.hasAnnotations && (
             <button
               onClick={(e) => {
+                console.log('🚀 Export button clicked for article:', article.title);
                 e.stopPropagation();
                 setShowExportModal(true);
               }}
@@ -286,79 +316,18 @@ export default function ArticleCard({
             </button>
           )}
 
-          {/* Change Status Dropdown */}
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowStatusSubmenu(!showStatusSubmenu);
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
-            >
-              <PanelBottomClose size={14} />
-              Change Status
-            </button>
-
-            {showStatusSubmenu && (
-              <div className="absolute bottom-full left-0 mb-1 bg-popover border border-border rounded-md shadow-lg py-1 min-w-[160px] z-10">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStatusChange(article.id, STATUS.INBOX);
-                    setShowStatusSubmenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
-                >
-                  <Inbox size={14} />
-                  Inbox
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStatusChange(article.id, STATUS.DAILY);
-                    setShowStatusSubmenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
-                >
-                  <Calendar size={14} />
-                  Daily Reading
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStatusChange(article.id, STATUS.CONTINUE);
-                    setShowStatusSubmenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
-                >
-                  <BookOpen size={14} />
-                  Continue Reading
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStatusChange(article.id, STATUS.REDISCOVERY);
-                    setShowStatusSubmenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
-                >
-                  <RotateCcw size={14} />
-                  Rediscovery
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStatusChange(article.id, STATUS.ARCHIVED);
-                    setShowStatusSubmenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-[12px] hover:bg-accent transition-colors text-left"
-                >
-                  <Archive size={14} />
-                  Archive
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Change Status Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setShowStatusModal(true);
+            }}
+            className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-accent hover:bg-accent/80 rounded transition-colors"
+          >
+            <PanelBottomClose size={14} />
+            Change Status
+          </button>
 
           {/* Delete Button */}
           {onDelete && (
@@ -382,6 +351,14 @@ export default function ArticleCard({
         onClose={() => setShowExportModal(false)}
         articleTitle={article.title}
         onExport={handleExport}
+      />
+
+      {/* Status Change Modal */}
+      <StatusChangeModal
+        isOpen={showStatusModal}
+        onClose={() => setShowStatusModal(false)}
+        article={article}
+        onStatusChange={onStatusChange}
       />
     </div>
   );
