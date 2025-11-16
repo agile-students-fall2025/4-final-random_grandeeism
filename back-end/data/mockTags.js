@@ -5,43 +5,6 @@
 
 const mockTags = [
   {
-    "id": "tag-1",
-    "name": "javascript",
-    "color": "#f7df1e",
-    "description": "JavaScript programming language",
-    "articleCount": 5,
-    "createdAt": new Date("2024-01-01T00:00:00.000Z"),
-    "lastUsed": new Date("2024-01-15T00:00:00.000Z")
-  },
-  {
-    "id": "tag-2",
-    "name": "react",
-    "color": "#61dafb",
-    "description": "Updated description",
-    "articleCount": 3,
-    "createdAt": new Date("2024-01-02T00:00:00.000Z"),
-    "lastUsed": new Date("2024-01-14T00:00:00.000Z"),
-    "updatedAt": new Date("2025-11-14T03:52:27.646Z")
-  },
-  {
-    "id": "tag-3",
-    "name": "frontend",
-    "color": "#ec4899",
-    "description": "Frontend development technologies and practices",
-    "articleCount": 3,
-    "createdAt": new Date("2024-01-03T00:00:00.000Z"),
-    "lastUsed": new Date("2024-01-13T00:00:00.000Z")
-  },
-  {
-    "id": "tag-4",
-    "name": "typescript",
-    "color": "#3178c6",
-    "description": "TypeScript programming language",
-    "articleCount": 3,
-    "createdAt": new Date("2024-01-04T00:00:00.000Z"),
-    "lastUsed": new Date("2024-01-12T00:00:00.000Z")
-  },
-  {
     "id": "tag-5",
     "name": "web-development",
     "color": "#ff6b6b",
@@ -348,15 +311,6 @@ const mockTags = [
     "lastUsed": new Date("2025-11-14T03:29:25.007Z")
   },
   {
-    "id": "tag-39",
-    "name": "ai",
-    "color": "#7dd3fc",
-    "description": "Artificial intelligence",
-    "articleCount": 1,
-    "createdAt": new Date("2025-11-14T03:29:25.007Z"),
-    "lastUsed": new Date("2025-11-14T03:29:25.007Z")
-  },
-  {
     "id": "tag-40",
     "name": "fundamentals",
     "color": "#6366f1",
@@ -406,15 +360,6 @@ const mockTags = [
     "name": "security",
     "color": "#10b981",
     "description": "Security topics",
-    "articleCount": 1,
-    "createdAt": new Date("2025-11-14T03:29:25.007Z"),
-    "lastUsed": new Date("2025-11-14T03:29:25.007Z")
-  },
-  {
-    "id": "tag-46",
-    "name": "web",
-    "color": "#7c3aed",
-    "description": "Web related topics",
     "articleCount": 1,
     "createdAt": new Date("2025-11-14T03:29:25.007Z"),
     "lastUsed": new Date("2025-11-14T03:29:25.007Z")

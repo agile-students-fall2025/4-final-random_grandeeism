@@ -155,15 +155,38 @@ router.put('/:id', (req, res) => {
  * DELETE /api/tags/:id
  * Delete a tag (mock - doesn't persist)
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const tagIdx = mockTags.findIndex(t => t.id === req.params.id);
+    const tagId = req.params.id;
+    const tagIdx = mockTags.findIndex(t => t.id === tagId);
     if (tagIdx === -1) {
       return res.status(404).json({ success: false, error: 'Tag not found' });
     }
+
+    // Remove the tag from the tags list
     mockTags.splice(tagIdx, 1);
     saveTagsToFile(mockTags);
-    res.json({ success: true, message: 'Tag deleted successfully', data: { id: req.params.id } });
+
+    // Find all articles that have this tag and remove it from their tags array
+    const allArticles = await articlesDao.getAll();
+    const articlesToUpdate = allArticles.filter(article => 
+      article.tags && article.tags.includes(tagId)
+    );
+
+    // Update each article to remove the deleted tag
+    for (const article of articlesToUpdate) {
+      const updatedTags = article.tags.filter(tag => tag !== tagId);
+      await articlesDao.update(article.id, { tags: updatedTags });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Tag deleted successfully', 
+      data: { 
+        id: tagId,
+        removedFromArticles: articlesToUpdate.length
+      } 
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Server Error', message: error.message });
   }

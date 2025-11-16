@@ -52,9 +52,9 @@ router.get('/', async (req, res) => {
  * GET /api/articles/:id
  * Retrieve a single article by ID
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const article = mockArticles.find(a => a.id === req.params.id);
+    const article = await articlesDao.getById(req.params.id);
     
     if (!article) {
       return res.status(404).json({
