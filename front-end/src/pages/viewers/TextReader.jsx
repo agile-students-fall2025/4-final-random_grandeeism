@@ -1,22 +1,25 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } from 'react';
 import { STATUS } from '../../constants/statuses.js';
 import { ThemeContext } from '../../contexts/ThemeContext.jsx';
-import { mockArticles } from '../../data/mockArticles';
 import CompletionModal from '../../components/CompletionModal.jsx';
 import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
 import TagManager from '../../components/TagManager.jsx';
-import * as highlightsStore from '../../data/mockHighlights';
-import { Star, Settings, StickyNote, RotateCcw, Archive } from 'lucide-react';
+import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar } from 'lucide-react';
+import { articlesAPI, tagsAPI, highlightsAPI } from '../../services/api.js';
 import '../../styles/textReader.css';
 
-// small palette used by the selection toolbar
-const HIGHLIGHT_COLORS = [
-  { name: 'Yellow', value: 'yellow', light: '#fef08a' },
-  { name: 'Green', value: 'green', light: '#bbf7d0' },
-  { name: 'Blue', value: 'blue', light: '#bfdbfe' },
-  { name: 'Red', value: 'red', light: '#fecaca' },
-  { name: 'Purple', value: 'purple', light: '#d8b4fe' },
-];
+// default color for new highlights (can be changed with color picker)
+const DEFAULT_HIGHLIGHT_COLOR = '#fef08a';
+// Exact article status strings discovered from mock data
+const ARTICLE_STATUSES = ['inbox','continue','daily','rediscovery','archived'];
+// Icon mapping for statuses
+const STATUS_ICON_MAP = {
+  inbox: Inbox,
+  continue: PlayCircle,
+  daily: Calendar,
+  rediscovery: RotateCcw,
+  archived: Archive,
+};
 
 const STORAGE_OVERRIDES = 'article_overrides_v1';
 
@@ -31,6 +34,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [current, setCurrent] = useState(article || null);
   const [highlights, setHighlights] = useState([]);
   const [selection, setSelection] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(DEFAULT_HIGHLIGHT_COLOR);
   const [showHighlightsPanel, setShowHighlightsPanel] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteValue, setEditingNoteValue] = useState('');
@@ -77,6 +81,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   };
 
   const contentRef = useRef(null);
+  const [allTags, setAllTags] = useState([]);
   
   // computed reader classes/styles based on settings
   const fontSizePx = fontSize === 'small' ? 18 : fontSize === 'large' ? 22 : 20;
@@ -89,49 +94,84 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const isDark = readerTheme === 'dark';
 
   useEffect(() => {
-    if (article) {
-      setCurrent(article);
-    } else if (articleId) {
-      const found = mockArticles.find(a => String(a.id) === String(articleId));
-      setCurrent(found || null);
-    } else {
-      setCurrent(null);
-    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        if (article) {
+          if (!cancelled) setCurrent(article);
+          return;
+        }
+        if (articleId) {
+          const res = await articlesAPI.getById(articleId);
+          if (!cancelled) setCurrent(res?.data || null);
+          return;
+        }
+        if (!cancelled) setCurrent(null);
+      } catch (e) {
+        console.error('Failed to load article', e);
+        if (!cancelled) setCurrent(null);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
   }, [article, articleId]);
+
+  // Load available tags from backend once article is known
+  useEffect(() => {
+    let cancelled = false;
+    const loadTags = async () => {
+      try {
+        const res = await tagsAPI.getAll({ sort: 'alphabetical' });
+        if (!cancelled) setAllTags(res?.data || []);
+      } catch (e) {
+        console.error('Failed to load tags', e);
+        if (!cancelled) setAllTags([]);
+      }
+    };
+    loadTags();
+    return () => { cancelled = true; };
+  }, [current?.id]);
+
+  const resolveTagName = useCallback((tagIdOrName) => {
+    // if already a string name (no numeric id), return as-is
+    if (typeof tagIdOrName === 'string' && isNaN(Number(tagIdOrName))) return tagIdOrName;
+    const t = (allTags || []).find(t => String(t.id) === String(tagIdOrName) || String(t.name) === String(tagIdOrName));
+    return t ? t.name : String(tagIdOrName);
+  }, [allTags]);
 
   
 
-  // paragraphs split (memoized so offsets stay stable across renders)
+  // Preserve exact content/newlines to keep stable offsets across backend and UI
   const paragraphs = useMemo(() => (
     (current && current.content)
-      ? String(current.content).split(/\n+/).map(p => p.trim()).filter(Boolean)
+      ? String(current.content).split('\n')
       : []
   ), [current]);
 
-  // load highlights and try to migrate any legacy text-only highlights to paragraph offsets
-  const refreshHighlights = useCallback(() => {
+  // Precomputed offsets of each paragraph start in the full text (joined with single \n)
+  const paragraphStartOffsets = useMemo(() => {
+    const starts = [];
+    let acc = 0;
+    for (let i = 0; i < paragraphs.length; i++) {
+      starts.push(acc);
+      acc += (paragraphs[i] || '').length + 1; // +1 for the split newline
+    }
+    return starts;
+  }, [paragraphs]);
+
+  const fullText = useMemo(() => paragraphs.join('\n'), [paragraphs]);
+
+  // Load highlights from backend for this article
+  const refreshHighlights = useCallback(async () => {
     if (!current) return;
-    let hs = highlightsStore.getHighlightsForArticle(current.id) || [];
-    let migrated = false;
-    const paras = paragraphs;
-    hs = hs.map(h => {
-      if (typeof h.paragraphIndex === 'number') return h;
-      for (let i = 0; i < paras.length; i++) {
-        const p = paras[i] || '';
-        const idx = p.indexOf(h.text || '');
-        if (idx !== -1) {
-          const start = idx;
-          const end = idx + (h.text || '').length;
-          try { highlightsStore.updateHighlight(h.id, { paragraphIndex: i, start, end }); } catch { /* ignore */ }
-          migrated = true;
-          return { ...h, paragraphIndex: i, start, end };
-        }
-      }
-      return h;
-    });
-    if (migrated) hs = highlightsStore.getHighlightsForArticle(current.id) || [];
-    setHighlights(hs);
-  }, [current, paragraphs]);
+    try {
+      const res = await highlightsAPI.getByArticle(current.id);
+      setHighlights(res?.data || []);
+    } catch (e) {
+      console.error('Failed to load highlights', e);
+      setHighlights([]);
+    }
+  }, [current]);
 
   // refresh highlights when current article is set
   useEffect(() => {
@@ -148,7 +188,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [goBack]);
 
-  // selection handling
+  // selection handling (supports multi-paragraph selections)
   useEffect(() => {
     const onMouseUp = () => {
       try {
@@ -157,51 +197,50 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         const range = sel.getRangeAt(0);
         const container = contentRef.current;
         if (!container) { setSelection(null); return; }
-        // ensure selection is inside reader container
         if (!container.contains(range.commonAncestorContainer)) { setSelection(null); return; }
 
-        // find the paragraph element that contains the start of the range
-        let startNode = range.startContainer;
-        let pEl = startNode.nodeType === Node.ELEMENT_NODE && startNode.nodeName.toLowerCase() === 'p' ? startNode : startNode.parentNode;
-        while (pEl && pEl !== container && pEl.nodeName.toLowerCase() !== 'p') pEl = pEl.parentNode;
-        if (!pEl || pEl === container) {
-          // try the commonAncestorContainer
-          let anc = range.commonAncestorContainer;
-          while (anc && anc !== container && anc.nodeName && anc.nodeName.toLowerCase() !== 'p') anc = anc.parentNode;
-          if (!anc || anc === container) { setSelection(null); return; }
-          pEl = anc;
-        }
+        // start paragraph
+        let sNode = range.startContainer;
+        let sP = sNode.nodeType === Node.ELEMENT_NODE && sNode.nodeName.toLowerCase() === 'p' ? sNode : sNode.parentNode;
+        while (sP && sP !== container && sP.nodeName.toLowerCase() !== 'p') sP = sP.parentNode;
+        if (!sP || sP === container) { setSelection(null); return; }
 
-        // ensure selection doesn't span multiple paragraphs (keep simple)
-        let endAncestor = range.endContainer;
-        let endP = endAncestor.nodeType === Node.ELEMENT_NODE && endAncestor.nodeName.toLowerCase() === 'p' ? endAncestor : endAncestor.parentNode;
-        while (endP && endP !== container && endP.nodeName.toLowerCase() !== 'p') endP = endP.parentNode;
-        if (endP !== pEl) { setSelection(null); return; }
+        // end paragraph
+        let eNode = range.endContainer;
+        let eP = eNode.nodeType === Node.ELEMENT_NODE && eNode.nodeName.toLowerCase() === 'p' ? eNode : eNode.parentNode;
+        while (eP && eP !== container && eP.nodeName.toLowerCase() !== 'p') eP = eP.parentNode;
+        if (!eP || eP === container) { setSelection(null); return; }
 
-        // compute start offset within paragraph by creating a range from paragraph start to range.start
-        const rBefore = document.createRange();
-        rBefore.setStart(pEl, 0);
-        rBefore.setEnd(range.startContainer, range.startOffset);
-        const start = rBefore.toString().length;
-        const length = range.toString().length;
-        const end = start + length;
+        const pNodes = Array.from(container.querySelectorAll('p'));
+        const sIdx = pNodes.indexOf(sP);
+        const eIdx = pNodes.indexOf(eP);
+        if (sIdx === -1 || eIdx === -1) { setSelection(null); return; }
 
-        const paragraphNodes = Array.from(container.querySelectorAll('p'));
-        const paragraphIndex = paragraphNodes.indexOf(pEl);
-        if (paragraphIndex === -1) { setSelection(null); return; }
+        const rBeforeStart = document.createRange();
+        rBeforeStart.setStart(sP, 0);
+        rBeforeStart.setEnd(range.startContainer, range.startOffset);
+        const startInPara = rBeforeStart.toString().length;
 
+        const rBeforeEnd = document.createRange();
+        rBeforeEnd.setStart(eP, 0);
+        rBeforeEnd.setEnd(range.endContainer, range.endOffset);
+        const endInPara = rBeforeEnd.toString().length;
+
+        const absStart = (paragraphStartOffsets[sIdx] || 0) + startInPara;
+        const absEnd = (paragraphStartOffsets[eIdx] || 0) + endInPara;
+        if (absEnd <= absStart) { setSelection(null); return; }
+
+        const text = fullText.slice(absStart, absEnd);
         const rect = range.getBoundingClientRect();
-        const text = range.toString();
-        setSelection({ text, rect, paragraphIndex, start, end });
-      } catch {
-        // ignore selection errors
+        setSelection({ text, absStart, absEnd, rect });
+      } catch (e) {
+        console.error('Selection error', e);
         setSelection(null);
       }
     };
-
     document.addEventListener('mouseup', onMouseUp);
     return () => document.removeEventListener('mouseup', onMouseUp);
-  }, []);
+  }, [paragraphStartOffsets, fullText]);
 
   // completion detection on scroll
   useEffect(() => {
@@ -225,51 +264,51 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   
 
-  const applyHighlight = (color) => {
+  const applyHighlight = async (colorHex) => {
     if (!selection || !current) return;
-    // require paragraph-based selection (start/end present)
-    if (typeof selection.paragraphIndex !== 'number' || typeof selection.start !== 'number' || typeof selection.end !== 'number') {
+    try {
+      // TODO: replace with authenticated user id when available
+      const userId = 1;
+      const payload = {
+        articleId: current.id,
+        userId,
+        text: selection.text,
+        color: colorHex || DEFAULT_HIGHLIGHT_COLOR,
+        position: { start: selection.absStart, end: selection.absEnd },
+        annotations: { title: '', note: '' }
+      };
+      const res = await highlightsAPI.create(payload);
+      await refreshHighlights();
+      if (res?.data?.id) {
+        setEditingNoteId(res.data.id);
+        setEditingNoteValue('');
+        setEditingTitle('');
+        setShowHighlightsPanel(true);
+        setFocusedHighlightId(res.data.id);
+      }
+    } catch (e) {
+      console.error('Failed to create highlight', e);
+    } finally {
       setSelection(null);
-      return;
+  try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
     }
-
-    const h = {
-      id: highlightsStore.makeId('h-'),
-      articleId: current.id,
-      paragraphIndex: selection.paragraphIndex,
-      start: selection.start,
-      end: selection.end,
-      text: selection.text,
-      color,
-      note: '',
-      title: '',
-      createdAt: new Date().toISOString(),
-    };
-
-    highlightsStore.addHighlight(h);
-    // open inline editor so user can add an annotation immediately
-    setEditingNoteId(h.id);
-    setEditingNoteValue('');
-    setEditingTitle('');
-    setShowHighlightsPanel(true);
-    setFocusedHighlightId(h.id); // Focus the newly created highlight
-    setSelection(null);
-    refreshHighlights();
-    try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
   };
 
-  const removeHighlight = (id) => { highlightsStore.deleteHighlight(id); refreshHighlights(); };
+  const removeHighlight = async (id) => {
+    try { await highlightsAPI.delete(id); } catch (e) { console.error('Delete highlight failed', e); }
+    await refreshHighlights();
+  };
 
   const saveEditingNote = async () => {
     if (!editingNoteId) return;
     try {
-      highlightsStore.updateHighlight(editingNoteId, { note: editingNoteValue, title: editingTitle });
+      await highlightsAPI.update(editingNoteId, { annotations: { title: editingTitle, note: editingNoteValue } });
     } catch (e) { console.error('save note failed', e); }
     setEditingNoteId(null);
     setEditingNoteValue('');
     setEditingTitle('');
-    setFocusedHighlightId(editingNoteId); // Keep focus on the edited highlight
-    refreshHighlights();
+    setFocusedHighlightId(editingNoteId);
+    await refreshHighlights();
   };
 
   const cancelEditingNote = () => {
@@ -312,16 +351,78 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   const persistOverrides = (next) => { setOverrides(next); try { localStorage.setItem(STORAGE_OVERRIDES, JSON.stringify(next)); } catch (e) { console.error('persistOverrides failed', e); } };
 
-  const toggleFavorite = () => {
+  const toggleFavorite = async () => {
     if (!current) return;
+    try {
+      // backend update
+      await articlesAPI.toggleFavorite(current.id, !appliedFavorite);
+      // reflect immediately in local state
+      setCurrent(prev => prev ? { ...prev, isFavorite: !appliedFavorite } : prev);
+    } catch (e) {
+      console.error('Favorite toggle failed', e);
+    }
+    // keep override store (optional cohesion with other flows)
     const next = { ...overrides };
     next[current.id] = { ...(next[current.id] || {}), isFavorite: !appliedFavorite };
     persistOverrides(next);
   };
 
-  const changeStatus = (newStatus) => { if (!current) return; const next = { ...overrides }; next[current.id] = { ...(next[current.id] || {}), status: newStatus }; persistOverrides(next); };
+  const changeStatus = async (newStatus) => {
+    if (!current) return;
+    if (!ARTICLE_STATUSES.includes(newStatus)) return; // guard invalid
+    try {
+      await articlesAPI.updateStatus(current.id, newStatus);
+      setCurrent(prev => prev ? { ...prev, status: newStatus } : prev);
+    } catch (e) {
+      console.error('Status update failed', e);
+    }
+    const next = { ...overrides };
+    next[current.id] = { ...(next[current.id] || {}), status: newStatus };
+    persistOverrides(next);
+  };
 
-  const handleUpdateTags = (articleId, newTags) => { if (!current || String(current.id) !== String(articleId)) return; setCurrent({ ...current, tags: newTags }); };
+  // Accept TagManager's new tag names list, compute diff, sync with backend (create tags if needed), then reload article
+  const handleUpdateTags = useCallback(async (articleId, newTagNames) => {
+    if (!current || String(current.id) !== String(articleId)) return;
+    try {
+      const currentNames = (current.tags || []).map(tid => resolveTagName(tid)).filter(Boolean);
+      const toAdd = newTagNames.filter(n => !currentNames.includes(n));
+      const toRemove = currentNames.filter(n => !newTagNames.includes(n));
+
+      // add missing tags
+      for (const name of toAdd) {
+        // find tag id or create
+        let t = (allTags || []).find(t => t.name.toLowerCase() === name.toLowerCase());
+        if (!t) {
+          try {
+            const created = await tagsAPI.create({ name });
+            if (created?.data) {
+              t = created.data;
+              // refresh allTags cache quickly
+              setAllTags(prev => [...prev, t]);
+            }
+          } catch (e) { console.error('Failed creating tag', name, e); }
+        }
+        if (t) {
+          try { await articlesAPI.addTag(current.id, t.id); } catch (e) { console.error('Add tag failed', t, e); }
+        }
+      }
+
+      // remove tags
+      for (const name of toRemove) {
+        const t = (allTags || []).find(t => t.name.toLowerCase() === name.toLowerCase());
+        if (t) {
+          try { await articlesAPI.removeTag(current.id, t.id); } catch (e) { console.error('Remove tag failed', t, e); }
+        }
+      }
+
+      // reload article to get canonical list of tag IDs
+      const res = await articlesAPI.getById(current.id);
+      if (res?.data) setCurrent(res.data);
+    } catch (e) {
+      console.error('handleUpdateTags failed', e);
+    }
+  }, [current, allTags, resolveTagName]);
 
   const handleCompletion = (reflection) => {
     if (!current) return;
@@ -336,69 +437,53 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     setIsCompletionOpen(false);
   };
 
-  // Render paragraph with offset-based highlights (paragraphIndex, start, end)
+  // Render paragraph by intersecting backend highlight ranges with this paragraph's span in the full text
   const renderParagraph = (text, idx) => {
-    const pHighlights = (highlights || []).filter(h => Number(h.paragraphIndex) === idx);
-  // use an empty gap between paragraphs (blank line) instead of a visible border
-  const pClass = 'mb-6';
-  if (!pHighlights || pHighlights.length === 0) return <p key={idx} className={pClass}>{text}</p>;
+    const pStart = paragraphStartOffsets[idx] || 0;
+    const pEnd = pStart + (text || '').length;
+    const pClass = 'mb-6';
+    if (!highlights || highlights.length === 0) return <p key={idx} className={pClass}>{text}</p>;
 
-    // sort and sanitize ranges
-    const ranges = pHighlights
-      .map(h => ({ ...h, start: Math.max(0, Math.min(Number(h.start) || 0, text.length)), end: Math.max(0, Math.min(Number(h.end) || 0, text.length)) }))
-      .sort((a, b) => (a.start - b.start));
+    const ranges = (highlights || [])
+      .map(h => ({
+        ...h,
+        start: Math.max(pStart, Number(h.position?.start ?? h.start ?? 0)),
+        end: Math.min(pEnd, Number(h.position?.end ?? h.end ?? 0))
+      }))
+      .filter(r => r.end > r.start)
+      .sort((a, b) => a.start - b.start);
+
+    if (ranges.length === 0) return <p key={idx} className={pClass}>{text}</p>;
 
     const parts = [];
-    let cursor = 0;
+    let cursor = pStart;
     for (const r of ranges) {
-      // skip invalid or empty ranges
-      if (r.end <= r.start) continue;
-      if (r.start > cursor) {
-        parts.push({ type: 'text', text: text.slice(cursor, r.start) });
-      }
-      // clamp end to text length
-      const end = Math.min(r.end, text.length);
-      const start = Math.max(r.start, cursor);
-      if (end > start) {
-        parts.push({ type: 'highlight', highlight: r, text: text.slice(start, end) });
-        cursor = end;
-      }
+      if (r.start > cursor) parts.push({ type: 'text', text: fullText.slice(cursor, r.start) });
+      parts.push({ type: 'highlight', highlight: r, text: fullText.slice(r.start, r.end) });
+      cursor = r.end;
     }
-    if (cursor < text.length) parts.push({ type: 'text', text: text.slice(cursor) });
+    if (cursor < pEnd) parts.push({ type: 'text', text: fullText.slice(cursor, pEnd) });
 
     return (
-  <p key={idx} className={pClass}>
+      <p key={idx} className={pClass}>
         {parts.map((part, i) => part.type === 'text' ? (
           <span key={i}>{part.text}</span>
         ) : (
-          (() => {
-            const colorDef = HIGHLIGHT_COLORS.find(c => c.value === part.highlight.color);
-            const bg = colorDef ? colorDef.light : '#fffbdd';
-            const style = {
-              backgroundColor: bg,
+          <mark
+            key={i}
+            data-highlight-id={part.highlight.id}
+            style={{
+              backgroundColor: part.highlight.color || '#fffbdd',
               padding: '0.08rem 0.24rem',
               borderRadius: 4,
               boxShadow: isDark ? 'inset 0 -6px 0 rgba(0,0,0,0.18)' : undefined,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-            };
-            return (
-              <mark
-                key={i}
-                data-highlight-id={part.highlight.id}
-                style={style}
-                onClick={() => {
-                  try {
-                    // focus this single highlight in the panel (do NOT open the editor)
-                    setFocusedHighlightId(part.highlight.id);
-                    setShowHighlightsPanel(true);
-                  } catch { /* ignore */ }
-                }}
-              >
-                {part.text}
-              </mark>
-            );
-          })()
+            }}
+            onClick={() => { setFocusedHighlightId(part.highlight.id); setShowHighlightsPanel(true); }}
+          >
+            {part.text}
+          </mark>
         ))}
       </p>
     );
@@ -427,9 +512,20 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               </p>
 
               <div className="flex items-center gap-2">
-                {current.tags && <div className="flex flex-wrap gap-2">{current.tags.map(t => <span key={t} className="text-[12px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded reader-tag">{t}</span>)}</div>}
+                {Array.isArray(current.tags) && current.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {current.tags.map(tid => (
+                      <span key={tid} className="text-[12px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded reader-tag">{resolveTagName(tid)}</span>
+                    ))}
+                  </div>
+                )}
                 <div className="ml-4">
-                  <TagManager articleId={current.id} currentTags={current.tags || []} allTags={Array.from(new Set(mockArticles.flatMap(a => a.tags || [])))} onUpdateTags={handleUpdateTags} />
+                  <TagManager
+                    articleId={current.id}
+                    currentTags={(current.tags || []).map(tid => resolveTagName(tid)).filter(Boolean)}
+                    allTags={(allTags || []).map(t => t.name)}
+                    onUpdateTags={handleUpdateTags}
+                  />
                 </div>
               </div>
             </>
@@ -483,12 +579,20 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 <button onClick={() => toggleFavorite()} className="p-2 rounded reader-button" title="Favorite">
                   <Star size={16} className={appliedFavorite ? 'text-yellow-400' : 'text-muted-foreground'} />
                 </button>
-                <button onClick={() => changeStatus('rediscovery')} className="p-2 rounded reader-button" title="Rediscovery">
-                  <RotateCcw size={16} className="text-muted-foreground" />
-                </button>
-                <button onClick={() => changeStatus('archived')} className="p-2 rounded reader-button" title="Archive">
-                  <Archive size={16} className="text-muted-foreground" />
-                </button>
+                {current && ARTICLE_STATUSES.map(status => {
+                  const Icon = STATUS_ICON_MAP[status];
+                  const active = current.status === status;
+                  return (
+                    <button
+                      key={status}
+                      onClick={() => changeStatus(status)}
+                      className={`p-2 rounded reader-button transition-colors ${active ? 'bg-muted' : ''}`}
+                      title={status.charAt(0).toUpperCase() + status.slice(1)}
+                    >
+                      <Icon size={16} className={active ? 'text-foreground' : 'text-muted-foreground'} />
+                    </button>
+                  );
+                })}
                 <button onClick={() => setSettingsOpen(true)} className="p-2 rounded reader-button" title="Settings">
                   <Settings size={16} className="text-muted-foreground" />
                 </button>
@@ -552,14 +656,14 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                           tabIndex={0}
                         >
                           <div className="flex items-center justify-between mb-1">
-                              <strong className="text-sm">{h.title && h.title.length > 0 ? (h.title.length > 80 ? h.title.slice(0,80) + '…' : h.title) : 'No title yet'}</strong>
+                              <strong className="text-sm">{h.annotations?.title && h.annotations.title.length > 0 ? (h.annotations.title.length > 80 ? h.annotations.title.slice(0,80) + '…' : h.annotations.title) : 'No title yet'}</strong>
                             <div className="flex gap-2">
                               <button onClick={(e) => { e.stopPropagation(); scrollToHighlight(h.id); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Jump</button>
-                              <button onClick={(e) => { e.stopPropagation(); setFocusedHighlightId(h.id); setEditingNoteId(h.id); setEditingTitle(h.title || ''); setEditingNoteValue(h.note || ''); setShowHighlightsPanel(true); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Edit</button>
+                              <button onClick={(e) => { e.stopPropagation(); setFocusedHighlightId(h.id); setEditingNoteId(h.id); setEditingTitle(h.annotations?.title || ''); setEditingNoteValue(h.annotations?.note || ''); setShowHighlightsPanel(true); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Edit</button>
                               <button onClick={(e) => { e.stopPropagation(); removeHighlight(h.id); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-destructive/10 text-destructive hover:text-destructive/90 transition-colors">Delete</button>
                             </div>
                           </div>
-                          <div className="text-[13px] text-muted-foreground">{h.note && h.note.length > 0 ? h.note : 'No annotation yet'}</div>
+                          <div className="text-[13px] text-muted-foreground">{h.annotations?.note && h.annotations.note.length > 0 ? h.annotations.note : 'No annotation yet'}</div>
                         </div>
                       ))}
                     </div>
@@ -568,16 +672,24 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               </div>
               {/* Bottom action group: Favorites, Rediscovery, Archive, Settings */}
               <div className="p-4 border-t border-border flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button onClick={() => toggleFavorite()} className="p-2 rounded reader-button" title="Favorite">
                     <Star size={18} className={appliedFavorite ? 'text-yellow-400' : 'text-muted-foreground'} />
                   </button>
-                  <button onClick={() => changeStatus('rediscovery')} className="p-2 rounded reader-button" title="Rediscovery">
-                    <RotateCcw size={18} className="text-muted-foreground" />
-                  </button>
-                  <button onClick={() => changeStatus('archived')} className="p-2 rounded reader-button" title="Archive">
-                    <Archive size={18} className="text-muted-foreground" />
-                  </button>
+                  {current && ARTICLE_STATUSES.map(status => {
+                    const Icon = STATUS_ICON_MAP[status];
+                    const active = current.status === status;
+                    return (
+                      <button
+                        key={status}
+                        onClick={() => changeStatus(status)}
+                        className={`p-2 rounded reader-button transition-colors ${active ? 'bg-muted' : ''}`}
+                        title={status.charAt(0).toUpperCase() + status.slice(1)}
+                      >
+                        <Icon size={18} className={active ? 'text-foreground' : 'text-muted-foreground'} />
+                      </button>
+                    );
+                  })}
                 </div>
                 <div>
                   <button onClick={() => setSettingsOpen(true)} className="p-2 rounded reader-button" title="Settings">
@@ -591,18 +703,24 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
         {/* Selection toolbar */}
         {selection && (
-          <div style={{ position: 'fixed', left: selection.rect.left + window.scrollX, top: selection.rect.top + window.scrollY - 40, zIndex: 60 }}>
-            <div className="flex gap-1 bg-card border border-border rounded shadow p-1">
-              {HIGHLIGHT_COLORS.map(c => (
-                <button 
-                  key={c.value} 
-                  onClick={() => applyHighlight(c.value)} 
-                  title={c.name} 
-                  style={{ background: c.light }} 
-                  className="w-6 h-6 rounded reader-button hover:scale-110 transition-transform duration-200" 
-                />
-              ))}
-              <button onClick={() => setSelection(null)} className="px-2 text-sm reader-button text-muted-foreground hover:text-foreground">Cancel</button>
+          <div style={{ position: 'fixed', left: selection.rect.left + window.scrollX, top: selection.rect.top + window.scrollY - 48, zIndex: 60 }}>
+            <div className="flex items-center gap-2 bg-card border border-border rounded shadow p-2">
+              <input
+                type="color"
+                value={selectedColor}
+                onChange={(e) => setSelectedColor(e.target.value)}
+                aria-label="Pick highlight color"
+                className="w-8 h-8 p-0 border border-border rounded cursor-pointer"
+              />
+              <input
+                type="text"
+                value={selectedColor}
+                onChange={(e) => setSelectedColor(e.target.value)}
+                className="w-24 px-2 py-1 text-xs border border-border rounded bg-background"
+                placeholder="#fef08a"
+              />
+              <button onClick={() => applyHighlight(selectedColor)} className="px-2 py-1 text-sm bg-primary text-white rounded reader-button">Highlight</button>
+              <button onClick={() => setSelection(null)} className="px-2 py-1 text-sm reader-button text-muted-foreground hover:text-foreground">Cancel</button>
             </div>
           </div>
         )}

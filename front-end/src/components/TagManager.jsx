@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Tag, X, Plus } from "lucide-react";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { tagsAPI, articlesAPI } from "../services/api.js";
 
 /**
  * TagManager component for managing tags on individual articles
@@ -20,6 +21,7 @@ export default function TagManager({
   const [newTag, setNewTag] = useState("");
   const [localTags, setLocalTags] = useState(currentTags);
   const [position, setPosition] = useState({ top: null, left: 0, fixed: false, above: false });
+  const [availableTags, setAvailableTags] = useState([]); // backend tag objects [{id,name,...}]
   
   const popoverRef = useRef(null);
   const buttonRef = useRef(null);
@@ -29,6 +31,22 @@ export default function TagManager({
   useEffect(() => {
     setLocalTags(currentTags);
   }, [currentTags]);
+
+  // Load available tags from backend when opened or when not provided via props
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await tagsAPI.getAll({ sort: 'alphabetical' });
+        if (!cancelled) setAvailableTags(res?.data || []);
+      } catch (e) {
+        console.error('Failed to load available tags', e);
+        if (!cancelled) setAvailableTags([]);
+      }
+    };
+    if (isOpen) load();
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   // Function to calculate and set position
   const calculatePosition = useCallback(() => {
@@ -128,26 +146,81 @@ export default function TagManager({
     };
   }, [isOpen]);
 
-  // Calculate suggested tags (all tags not currently applied)
-  const suggestedTags = allTags.filter(tag => !localTags.includes(tag));
+  // Calculate suggested tags (use backend list if available, else fallback to prop)
+  const allTagNames = (availableTags.length > 0 ? availableTags.map(t => t.name) : (allTags || []));
+  const suggestedTags = allTagNames.filter(tag => !localTags.map(t => t.toLowerCase()).includes(String(tag).toLowerCase()));
 
-  const toggleTag = (tag) => {
-    const newTags = localTags.includes(tag)
-      ? localTags.filter(t => t !== tag)
-      : [...localTags, tag];
-    
-    setLocalTags(newTags);
-    onUpdateTags(articleId, newTags);
+  const toggleTag = async (tag) => {
+    const isApplied = localTags.map(t => t.toLowerCase()).includes(String(tag).toLowerCase());
+    const tagObj = (availableTags || []).find(t => t.name.toLowerCase() === String(tag).toLowerCase());
+
+    try {
+      if (isApplied) {
+        // remove
+        if (onUpdateTags) {
+          await onUpdateTags(articleId, localTags.filter(t => t.toLowerCase() !== String(tag).toLowerCase()));
+        } else {
+          // backend accepts id or name
+          await articlesAPI.removeTag(articleId, tagObj?.id ?? tag);
+        }
+        setLocalTags(prev => prev.filter(t => t.toLowerCase() !== String(tag).toLowerCase()));
+      } else {
+        // add (create if needed)
+        let tagIdOrName = tag;
+        if (!tagObj) {
+          try {
+            const created = await tagsAPI.create({ name: tag });
+            if (created?.data) {
+              tagIdOrName = created.data.id;
+              setAvailableTags(prev => [...prev, created.data]);
+            }
+          } catch (e) {
+            console.error('Create tag failed', e);
+          }
+        } else {
+          tagIdOrName = tagObj.id;
+        }
+        if (onUpdateTags) {
+          await onUpdateTags(articleId, [...localTags, String(tag)]);
+        } else {
+          await articlesAPI.addTag(articleId, tagIdOrName);
+        }
+        setLocalTags(prev => [...prev, String(tag)]);
+      }
+    } catch (e) {
+      console.error('toggleTag failed', e);
+    }
   };
 
-  const addNewTag = () => {
+  const addNewTag = async () => {
     const trimmedTag = newTag.trim();
     
     if (trimmedTag && !localTags.includes(trimmedTag)) {
-      const newTags = [...localTags, trimmedTag];
-      setLocalTags(newTags);
-      onUpdateTags(articleId, newTags);
-      setNewTag("");
+      try {
+        // create (if not exists) then add
+        let tagIdOrName = trimmedTag;
+        const existing = (availableTags || []).find(t => t.name.toLowerCase() === trimmedTag.toLowerCase());
+        if (!existing) {
+          try {
+            const created = await tagsAPI.create({ name: trimmedTag });
+            if (created?.data) {
+              tagIdOrName = created.data.id;
+              setAvailableTags(prev => [...prev, created.data]);
+            }
+          } catch (e) { console.error('Create tag failed', e); }
+        } else {
+          tagIdOrName = existing.id;
+        }
+        if (onUpdateTags) {
+          await onUpdateTags(articleId, [...localTags, trimmedTag]);
+        } else {
+          await articlesAPI.addTag(articleId, tagIdOrName);
+        }
+        setLocalTags(prev => [...prev, trimmedTag]);
+        setNewTag("");
+      } catch (e) {
+        console.error('addNewTag failed', e);
+      }
     }
   };
 
@@ -188,7 +261,7 @@ export default function TagManager({
         <div
           ref={popoverRef}
           onClick={handlePopoverClick}
-          className={`${position.fixed ? 'fixed' : 'absolute'} w-[280px] bg-card border border-border rounded-lg shadow-lg z-[60] p-3 max-h-[80vh] overflow-y-auto`}
+          className={`${position.fixed ? 'fixed' : 'absolute'} w-[280px] bg-card border border-border rounded-lg shadow-lg z-60 p-3 max-h-[80vh] overflow-y-auto`}
           style={
             position.fixed
               ? {

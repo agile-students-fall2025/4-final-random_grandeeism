@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, Plus, Minus, Tag } from "lucide-react";
-import { tagsAPI } from "../services/api.js";
+import { tagsAPI, articlesAPI } from "../services/api.js";
 
 export default function TagManagerModal({ 
   isOpen, 
@@ -115,7 +115,11 @@ export default function TagManagerModal({
         if (createResponse.success && createResponse.data) {
           const newTag = createResponse.data;
           // Add the new tag to the article
-          await onAddTag(article.id, newTag.id);
+          if (onAddTag) {
+            await onAddTag(article.id, newTag.id);
+          } else {
+            await articlesAPI.addTag(article.id, newTag.id);
+          }
           // Notify parent component about the new tag
           if (onCreateTag) {
             onCreateTag(newTag);
@@ -123,7 +127,11 @@ export default function TagManagerModal({
         }
       } else {
         // Add existing tag
-        await onAddTag(article.id, tag.id);
+        if (onAddTag) {
+          await onAddTag(article.id, tag.id);
+        } else {
+          await articlesAPI.addTag(article.id, tag.id);
+        }
       }
       
       setSearchTerm('');
@@ -136,7 +144,11 @@ export default function TagManagerModal({
 
   const handleRemoveTag = async (tag) => {
     try {
-      await onRemoveTag(article.id, tag.id);
+      if (onRemoveTag) {
+        await onRemoveTag(article.id, tag.id);
+      } else {
+        await articlesAPI.removeTag(article.id, tag.id);
+      }
     } catch (error) {
       console.error('Failed to remove tag:', error);
     }
