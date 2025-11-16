@@ -32,11 +32,11 @@ const TestExport = () => {
     ]
   };
 
-  const testExport = (format) => {
+  const testExport = async (format) => {
     try {
       console.log(`Testing ${format} export...`);
       
-      const content = generateExportContent(testArticle, format);
+      const content = await generateExportContent(testArticle, format);
       const filename = generateFilename(testArticle.title, format);
       const mimeType = getMimeType(format);
       

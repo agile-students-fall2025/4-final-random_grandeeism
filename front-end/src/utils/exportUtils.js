@@ -3,32 +3,50 @@
  */
 
 import jsPDF from 'jspdf';
+import { highlightsAPI } from '../services/api.js';
 
 /**
  * Generate content for exporting notes and highlights
  * @param {Object} article - Article object with notes and highlights
  * @param {string} format - Export format (markdown, pdf, txt)
- * @returns {string} - Formatted content
+ * @returns {Promise<string>} - Formatted content
  */
-export function generateExportContent(article, format) {
+export async function generateExportContent(article, format) {
   const title = article.title || 'Untitled Article';
   const author = article.author || 'Unknown Author';
   const url = article.url || '';
   const dateAdded = article.createdAt ? new Date(article.createdAt).toLocaleDateString() : '';
   const tags = article.tags && article.tags.length > 0 ? article.tags : [];
   
-  // Mock notes and highlights data - in a real app, this would come from the article
-  const notes = article.notes || [
-    "This is an interesting perspective on the topic.",
-    "Key insight: The author emphasizes the importance of understanding fundamentals.",
-    "Todo: Research more about this concept."
-  ];
+  // Fetch real highlights and notes data from the API
+  let highlights = [];
+  let notes = [];
   
-  const highlights = article.highlights || [
-    "Understanding the core principles is essential for long-term success.",
-    "The most important skill is the ability to learn continuously.",
-    "Focus on building strong foundations rather than chasing trends."
-  ];
+  try {
+    console.log('🔄 Fetching highlights for article:', article.id);
+    const response = await highlightsAPI.getByArticle(article.id);
+    
+    if (response.success && response.data) {
+      const highlightData = response.data;
+      console.log('✅ Retrieved highlights:', highlightData.length);
+      
+      // Extract highlights text and notes
+      highlights = highlightData.map(h => h.text).filter(text => text);
+      notes = highlightData
+        .map(h => h.annotations?.note || h.note)
+        .filter(note => note && note.trim())
+        .map(note => note.trim());
+      
+      console.log('📝 Processed highlights:', highlights.length, 'notes:', notes.length);
+    } else {
+      console.log('⚠️ No highlights found for article:', article.id);
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch highlights:', error);
+    // Fallback to empty arrays if API call fails
+    highlights = [];
+    notes = [];
+  }
 
   switch (format) {
     case 'markdown':
@@ -185,7 +203,37 @@ export function getMimeType(format) {
  * @param {Object} article - Article object with notes and highlights
  * @param {string} filename - Filename for PDF
  */
-export function generatePDFFile(article, filename) {
+export async function generatePDFFile(article, filename) {
+  // Fetch real highlights and notes data from the API
+  let highlights = [];
+  let notes = [];
+  
+  try {
+    console.log('🔄 Fetching highlights for PDF export:', article.id);
+    const response = await highlightsAPI.getByArticle(article.id);
+    
+    if (response.success && response.data) {
+      const highlightData = response.data;
+      console.log('✅ Retrieved highlights for PDF:', highlightData.length);
+      
+      // Extract highlights text and notes
+      highlights = highlightData.map(h => h.text).filter(text => text);
+      notes = highlightData
+        .map(h => h.annotations?.note || h.note)
+        .filter(note => note && note.trim())
+        .map(note => note.trim());
+      
+      console.log('📝 Processed for PDF - highlights:', highlights.length, 'notes:', notes.length);
+    } else {
+      console.log('⚠️ No highlights found for PDF export:', article.id);
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch highlights for PDF:', error);
+    // Fallback to empty arrays if API call fails
+    highlights = [];
+    notes = [];
+  }
+  
   const doc = new jsPDF();
   
   // Set up document styling
@@ -250,13 +298,7 @@ export function generatePDFFile(article, filename) {
   doc.line(margin, currentY, pageWidth - margin, currentY);
   currentY += 15;
   
-  // Add highlights section
-  const highlights = article.highlights || [
-    "Understanding the core principles is essential for long-term success.",
-    "The most important skill is the ability to learn continuously.",
-    "Focus on building strong foundations rather than chasing trends."
-  ];
-  
+  // Add highlights section (using fetched data)
   if (highlights.length > 0) {
     addWrappedText('Highlights', 14, true);
     currentY += 5;
@@ -270,13 +312,7 @@ export function generatePDFFile(article, filename) {
     currentY += 10;
   }
   
-  // Add notes section
-  const notes = article.notes || [
-    "This is an interesting perspective on the topic.",
-    "Key insight: The author emphasizes the importance of understanding fundamentals.",
-    "Todo: Research more about this concept."
-  ];
-  
+  // Add notes section (using fetched data)
   if (notes.length > 0) {
     addWrappedText('Notes', 14, true);
     currentY += 5;

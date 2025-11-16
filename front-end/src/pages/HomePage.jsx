@@ -348,15 +348,71 @@ const HomePage = ({ onNavigate }) => {
     }
   };
 
-  // Note: TagManagerModal already creates the tag via API and passes the created tag here.
-  // Avoid creating again (which caused 409 conflicts). Just update local state.
-  const handleCreateTag = (createdTag) => {
-    if (!createdTag || !createdTag.id) return;
-    setAvailableTags(prev => {
-      // Prevent duplicates if callback fires multiple times
-      const exists = prev.some(t => t.id === createdTag.id || t.name.toLowerCase() === createdTag.name.toLowerCase());
-      return exists ? prev : [...prev, createdTag];
-    });
+  const handleCreateTag = async (tagName) => {
+    try {
+      if (!selectedArticleForTags) {
+        throw new Error('No article selected');
+      }
+
+      // 1. Check if tag already exists
+      let existingTag = availableTags.find(t => 
+        t.name.toLowerCase() === tagName.toLowerCase()
+      );
+
+      let tagId;
+      if (existingTag) {
+        tagId = existingTag.id;
+      } else {
+        // 2. Create new tag via API
+        const createResponse = await tagsAPI.create({ name: tagName });
+        if (!createResponse.success || !createResponse.data) {
+          throw new Error('Failed to create tag');
+        }
+        existingTag = createResponse.data;
+        tagId = existingTag.id;
+        setAvailableTags(prev => [...prev, existingTag]);
+      }
+
+      // 3. Add tag to article via API
+      const addResponse = await articlesAPI.addTag(selectedArticleForTags.id, tagId);
+      if (!addResponse.success) {
+        throw new Error(addResponse.error || 'Failed to add tag to article');
+      }
+
+      // 4. Update rawArticles state immediately for UI responsiveness
+      setRawArticles(prev => prev.map(article => 
+        article.id === selectedArticleForTags.id 
+          ? { ...article, tags: [...(article.tags || []), tagId] }
+          : article
+      ));
+
+      // 5. Update resolved articles state
+      const nextRaw = rawArticles.map(article => 
+        article.id === selectedArticleForTags.id 
+          ? { ...article, tags: [...(article.tags || []), tagId] }
+          : article
+      );
+      const resolved = resolveArticleTags(nextRaw);
+      setArticles(resolved);
+      setDisplayedArticles(applyFiltersAndSort(resolved, baseLockedFilters));
+
+      // 6. Update selected article for modal with fresh tag
+      setSelectedArticleForTags(prev => ({
+        ...prev,
+        tags: [...(prev.tags || []), tagId]
+      }));
+
+      // 7. Return the created/existing tag for the modal
+      return existingTag;
+
+    } catch (error) {
+      console.error('Failed to create/add tag:', error);
+      const errorMsg = String(error?.message || 'Unknown error');
+      if (!errorMsg.toLowerCase().includes('already')) {
+        alert(`Failed to create tag: ${errorMsg}`);
+      }
+      throw error; // Re-throw so modal can handle it
+    }
   };
 
   return (

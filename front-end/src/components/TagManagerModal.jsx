@@ -23,14 +23,25 @@ export default function TagManagerModal({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+  
+  // Local state for immediate UI updates - tracks tag IDs for the current article
+  const [currentArticleTags, setCurrentArticleTags] = useState([]);
 
-  // Get current tag objects by matching article.tags (IDs) with availableTags
+  // Update local state when article or availableTags props change
+  useEffect(() => {
+    if (article?.tags) {
+      setCurrentArticleTags(Array.isArray(article.tags) ? [...article.tags] : []);
+    } else {
+      setCurrentArticleTags([]);
+    }
+  }, [article?.tags]);
+
+  // Get current tag objects by matching currentArticleTags (IDs) with availableTags
   const currentTags = useMemo(() => {
     return availableTags.filter(tag => {
-      const articleTagIds = Array.isArray(article?.tags) ? article.tags : [];
-      return articleTagIds.some(artTagId => String(artTagId) === String(tag.id));
+      return currentArticleTags.some(artTagId => String(artTagId) === String(tag.id));
     });
-  }, [availableTags, article?.tags]);
+  }, [availableTags, currentArticleTags]);
 
   // Get set of current tag IDs for faster lookup
   const currentTagIds = useMemo(() => {
@@ -112,9 +123,16 @@ export default function TagManagerModal({
       if (tag.isCreateNew) {
         // Delegate tag creation to parent - parent will handle everything
         if (onCreateTag) {
-          await onCreateTag(tag.name);
+          const createdTag = await onCreateTag(tag.name);
+          // Update local state if we get the created tag back
+          if (createdTag && createdTag.id) {
+            setCurrentArticleTags(prev => [...prev, createdTag.id]);
+          }
         }
       } else {
+        // Update local state immediately for instant UI feedback
+        setCurrentArticleTags(prev => [...prev, tag.id]);
+        
         // Add existing tag via parent callback
         if (onAddTag) {
           await onAddTag(article.id, tag.id);
@@ -127,6 +145,12 @@ export default function TagManagerModal({
       setSelectedIndex(-1);
     } catch (error) {
       console.error('Failed to add tag:', error);
+      
+      // Revert local state on error (only for existing tags, not newly created ones)
+      if (!tag.isCreateNew) {
+        setCurrentArticleTags(prev => prev.filter(tagId => String(tagId) !== String(tag.id)));
+      }
+      
       const errorMsg = String(error?.message || 'Unknown error');
       // Don't show alert for duplicate errors
       if (!errorMsg.toLowerCase().includes('already')) {
@@ -137,11 +161,17 @@ export default function TagManagerModal({
 
   const handleRemoveTag = async (tag) => {
     try {
+      // Update local state immediately for instant UI feedback
+      setCurrentArticleTags(prev => prev.filter(tagId => String(tagId) !== String(tag.id)));
+      
+      // Then call the parent's remove handler
       if (onRemoveTag) {
         await onRemoveTag(article.id, tag.id);
       }
     } catch (error) {
       console.error('Failed to remove tag:', error);
+      // Revert local state on error
+      setCurrentArticleTags(prev => [...prev, tag.id]);
       alert(`Failed to remove tag: ${error.message}`);
     }
   };
