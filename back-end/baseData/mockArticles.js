@@ -62,29 +62,7 @@ const mockArticles = [
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     "userId": 1
   },
-  {
-    "id": 4,
-    "title": "The Future of JavaScript - Tech Podcast",
-    "url": "https://example.com/future-javascript-podcast",
-    "author": "Tech Podcast Network",
-    "source": "JavaScript Weekly",
-    "feedId": 7,
-    "readingTime": "52 min",
-    "status": "continue",
-    "isFavorite": false,
-    "tags": [
-      1,
-      17,
-      5,
-      13
-    ],
-    "dateAdded": "2024-01-12T00:00:00.000Z",
-    "hasAnnotations": true,
-    "readProgress": 35,
-    "mediaType": "audio",
-    "podcastUrl": "https://example.com/podcast.mp3",
-    "userId": 2
-  },
+  
   {
     "id": 5,
     "title": "CSS Grid vs Flexbox: When to Use What",
@@ -342,28 +320,7 @@ const mockArticles = [
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     "userId": 2
   },
-  {
-    "id": 17,
-    "title": "Intro to React Native - Video",
-    "url": "https://youtube.com/watch?v=TNhaISOUy6Q",
-    "author": "React University",
-    "source": "React Blog",
-    "feedId": 8,
-    "readingTime": "35 min",
-    "status": "inbox",
-    "isFavorite": false,
-    "tags": [
-      42,
-      43,
-      44
-    ],
-    "dateAdded": "2024-01-16T00:00:00.000Z",
-    "hasAnnotations": false,
-    "readProgress": 0,
-    "mediaType": "video",
-    "videoId": "TNhaISOUy6Q",
-    "userId": 1
-  },
+  
   {
     "id": 18,
     "title": "Understanding Web Security Best Practices",
