@@ -1,10 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const daoFactory = require('../lib/daoFactory');
-const { highlightsDao } = require('../lib/daoFactory');
-
-// Get articlesDao for updating hasAnnotations
-const getArticlesDao = () => daoFactory.getArticlesDao();
+const { articlesDao, highlightsDao } = require('../lib/daoFactory');
 
 // --- Helpers (exposed on router for easier testing) ----------------------
 
@@ -194,7 +190,6 @@ router.post('/', async (req, res) => {
 
     // Update article's hasAnnotations to true
     try {
-      const articlesDao = getArticlesDao();
       await articlesDao.update(articleId, { hasAnnotations: true });
     } catch (e) {
       console.error('Failed to update article hasAnnotations:', e);
@@ -283,7 +278,6 @@ router.delete('/:id', async (req, res) => {
 
     // Check if article still has any highlights
     try {
-      const articlesDao = getArticlesDao();
       const remainingHighlights = await highlightsDao.getByArticle(articleId);
       const hasAnnotations = remainingHighlights && remainingHighlights.length > 0;
       await articlesDao.update(articleId, { hasAnnotations });
