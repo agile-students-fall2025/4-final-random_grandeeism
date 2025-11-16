@@ -80,18 +80,6 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Check for existing tag (case-insensitive)
-    const allTags = await tagsDao.getAll({});
-    const existingTag = allTags.find(t => t.name.toLowerCase() === name.toLowerCase());
-    
-    if (existingTag) {
-      return res.status(409).json({ 
-        success: false, 
-        error: 'Tag already exists', 
-        data: existingTag 
-      });
-    }
-
     const newTag = await tagsDao.create({
       name: name.toLowerCase(),
       description: description || ''
@@ -103,6 +91,15 @@ router.post('/', async (req, res) => {
       message: 'Tag created successfully' 
     });
   } catch (error) {
+    // Handle specific "already exists" error
+    if (error.message && error.message.includes('already exists')) {
+      return res.status(409).json({ 
+        success: false, 
+        error: 'Tag already exists', 
+        message: error.message 
+      });
+    }
+    
     res.status(500).json({ 
       success: false, 
       error: 'Server Error', 

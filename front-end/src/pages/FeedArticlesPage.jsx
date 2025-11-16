@@ -24,7 +24,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { resolveArticleTags } = useTagResolution();
+  const { resolveArticleTags, refreshTags } = useTagResolution();
   // Base locked filters - always include the feed
   const baseLockedFilters = useMemo(() => ({ feed: feed || "" }), [feed]);
 
@@ -170,12 +170,17 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
       const response = await tagsAPI.create({ name: newTag.name, color: newTag.color });
       if (response.success) {
         setAvailableTags(prevTags => [...prevTags, response.data]);
+        // Refresh the global tag resolution mapping
+        await refreshTags();
+        // Return the created tag for use by child components
+        return response.data;
       } else {
         throw new Error(response.error || 'Failed to create tag');
       }
     } catch (error) {
       console.error('Failed to create tag:', error);
       alert(`Failed to create tag: ${error.message}`);
+      throw error; // Re-throw so child components can handle it
     }
   };
 
