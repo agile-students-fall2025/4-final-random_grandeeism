@@ -2,14 +2,15 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const daoFactory = require('../lib/daoFactory');
+const { usersDao } = require('../lib/daoFactory');
 
 /**
  * GET /api/users/profile/:id
  * Get user profile by ID
  */
-router.get('/profile/:id', (req, res) => {
+router.get('/profile/:id', async (req, res) => {
   try {
-    const user = mockUsers.find(u => u.id === req.params.id);
+    const user = await usersDao.getById(req.params.id);
     
     if (!user) {
       return res.status(404).json({
@@ -38,9 +39,9 @@ router.get('/profile/:id', (req, res) => {
  * PUT /api/users/profile/:id
  * Update user profile (mock - doesn't persist)
  */
-router.put('/profile/:id', (req, res) => {
+router.put('/profile/:id', async (req, res) => {
   try {
-    const user = mockUsers.find(u => u.id === req.params.id);
+    const user = await usersDao.getById(req.params.id);
     
     if (!user) {
       return res.status(404).json({
@@ -52,14 +53,13 @@ router.put('/profile/:id', (req, res) => {
     // Fields that can be updated
     const { displayName, bio, avatar, preferences } = req.body;
 
-    const updatedUser = {
-      ...user,
+    const updatedUser = await usersDao.update(req.params.id, {
       displayName: displayName !== undefined ? displayName : user.displayName,
       bio: bio !== undefined ? bio : user.bio,
       avatar: avatar !== undefined ? avatar : user.avatar,
       preferences: preferences ? { ...user.preferences, ...preferences } : user.preferences,
       updatedAt: new Date()
-    };
+    });
 
     // Don't send password in response
     const { password, ...userWithoutPassword } = updatedUser;
@@ -93,7 +93,7 @@ router.put('/password/:id', async (req, res) => {
       });
     }
 
-    const user = mockUsers.find(u => u.id === req.params.id);
+    const user = await usersDao.getById(req.params.id, true); // includePassword = true for verification
     
     if (!user) {
       return res.status(404).json({
@@ -131,9 +131,9 @@ router.put('/password/:id', async (req, res) => {
  * GET /api/users/stats/:id
  * Get user reading statistics
  */
-router.get('/stats/:id', (req, res) => {
+router.get('/stats/:id', async (req, res) => {
   try {
-    const user = mockUsers.find(u => u.id === req.params.id);
+    const user = await usersDao.getById(req.params.id);
     
     if (!user) {
       return res.status(404).json({
@@ -159,9 +159,9 @@ router.get('/stats/:id', (req, res) => {
  * DELETE /api/users/:id
  * Delete user account (mock - doesn't persist)
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const user = mockUsers.find(u => u.id === req.params.id);
+    const user = await usersDao.getById(req.params.id);
     
     if (!user) {
       return res.status(404).json({
@@ -170,10 +170,12 @@ router.delete('/:id', (req, res) => {
       });
     }
 
+    await usersDao.delete(req.params.id);
+
     res.json({
       success: true,
       message: 'User account deleted successfully',
-      data: { id: req.params.id }
+      data: { id: Number(req.params.id) || req.params.id }
     });
   } catch (error) {
     res.status(500).json({

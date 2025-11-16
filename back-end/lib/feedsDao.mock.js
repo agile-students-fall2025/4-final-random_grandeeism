@@ -11,10 +11,13 @@ const { mockFeeds } = require('../data/mockFeeds');
 // In-memory storage - clone the mock data to avoid mutations
 let feeds = [...mockFeeds.map(feed => ({ ...feed }))];
 
+// Next numeric ID helper
+let nextId = (feeds.length ? Math.max(...feeds.map(f => Number(f.id))) : 0) + 1;
+
 /**
  * Generate a new ID for created feeds
  */
-const generateId = () => `feed-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const generateId = () => nextId++;
 
 const feedsDao = {
   /**
@@ -56,7 +59,7 @@ const feedsDao = {
    * @returns {Promise<Object|null>} Feed object or null if not found
    */
   async getById(id) {
-    const feed = feeds.find(f => f.id === id);
+  const feed = feeds.find(f => f.id == id);
     return feed ? { ...feed } : null;
   },
 
@@ -91,7 +94,7 @@ const feedsDao = {
    * @returns {Promise<Object|null>} Updated feed or null if not found
    */
   async update(id, updateData) {
-    const index = feeds.findIndex(f => f.id === id);
+  const index = feeds.findIndex(f => f.id == id);
     if (index === -1) {
       return null;
     }
@@ -99,7 +102,7 @@ const feedsDao = {
     feeds[index] = {
       ...feeds[index],
       ...updateData,
-      id // Ensure ID doesn't change
+      id: Number(id) || id // Ensure ID doesn't change, keep numeric when possible
     };
 
     return { ...feeds[index] };
@@ -111,7 +114,7 @@ const feedsDao = {
    * @returns {Promise<boolean>} True if deleted, false if not found
    */
   async delete(id) {
-    const index = feeds.findIndex(f => f.id === id);
+  const index = feeds.findIndex(f => f.id == id);
     if (index === -1) {
       return false;
     }

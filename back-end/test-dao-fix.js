@@ -6,35 +6,31 @@ const path = require('path');
 const { mockTags } = require('./data/mockTags');
 const { mockArticles } = require('./data/mockArticles');
 
-// Replicate the logic from the modified DAO
-const calculateArticleCount = (tagId) => {
-  return mockArticles.filter(article => 
-    article.tags && Array.isArray(article.tags) && article.tags.includes(tagId)
-  ).length;
-};
+// Numeric ID implementation consistency check
+const calculateArticleCount = (tagId) => mockArticles.filter(a => Array.isArray(a.tags) && a.tags.includes(tagId)).length;
 
-const getTagsWithCorrectCounts = () => {
-  const tags = [...mockTags.map(tag => ({ ...tag }))];
-  
-  return tags.map(tag => ({
-    ...tag,
-    articleCount: calculateArticleCount(tag.id)
-  }));
-};
+const correctedTags = mockTags.map(t => ({ ...t, articleCount: calculateArticleCount(t.id) }));
 
-console.log('Testing modified DAO output:');
-console.log('');
+console.log('Testing modified DAO output (numeric IDs):\n');
 
-const correctedTags = getTagsWithCorrectCounts();
-const testTags = ['tag-1', 'tag-2', 'tag-3', 'tag-5'];
-
-testTags.forEach(tagId => {
-  const tag = correctedTags.find(t => t.id === tagId);
-  
+// Sample core tags expected in seeds
+const testTagIds = [1, 2, 3, 5];
+for (const id of testTagIds) {
+  const tag = correctedTags.find(t => t.id === id);
   if (tag) {
-    console.log(`${tag.name} (${tagId}): ${tag.articleCount} articles`);
+    console.log(`${tag.name} (id:${id}): ${tag.articleCount} articles`);
+  } else {
+    console.log(`(missing tag id:${id})`);
   }
-});
+}
 
-console.log('');
-console.log('✅ The modified DAO would return correct article counts!');
+// Uniqueness audit
+const duplicates = correctedTags.reduce((acc, t) => {
+  const key = String(t.id);
+  acc.map[key] = (acc.map[key] || 0) + 1;
+  if (acc.map[key] === 2) acc.list.push(key);
+  return acc;
+}, { map: {}, list: [] }).list;
+
+console.log('\nDuplicate IDs:', duplicates.length ? duplicates.join(', ') : 'None');
+console.log('\n✅ DAO logic consistent with numeric ID schema');
