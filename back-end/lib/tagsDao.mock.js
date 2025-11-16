@@ -190,6 +190,27 @@ const tagsDao = {
     const removed = tags.splice(index, 1)[0];
     if (removed) {
       seenIds.delete(String(removed.id));
+      
+      // Remove this tag from all articles
+      const articlesDao = getArticlesDao();
+      const allArticles = articlesDao.getAllArticlesForInternalUse();
+      
+      // Convert id to number for comparison (tags in articles are stored as numbers)
+      const numId = Number(id);
+      const strId = String(id);
+      
+      for (const article of allArticles) {
+        if (article.tags && Array.isArray(article.tags)) {
+          // Check if the article has this tag (using loose equality to handle both string and number)
+          const hasTag = article.tags.some(tagId => tagId == id || tagId == numId || tagId == strId);
+          
+          if (hasTag) {
+            // Remove the tag from this article (filter using loose equality)
+            const updatedTags = article.tags.filter(tagId => tagId != id && tagId != numId && tagId != strId);
+            articlesDao.update(article.id, { tags: updatedTags });
+          }
+        }
+      }
     }
     return true;
   },
