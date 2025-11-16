@@ -88,16 +88,19 @@ const VideosPage = ({ onNavigate }) => {
   };
 
   const handleCreateTag = async (newTag) => {
+    // This is called by TagManagerModal AFTER the tag has already been created
+    // Just update the local state, don't create the tag again
     try {
-      const response = await tagsAPI.create({ name: newTag.name, color: newTag.color });
-      if (response.success) {
-        setAvailableTags(prevTags => [...prevTags, response.data]);
-      } else {
-        throw new Error(response.error || 'Failed to create tag');
+      // Check if tag already exists in local state to avoid duplicates
+      const exists = availableTags.some(t => 
+        t.id === newTag.id || t.name.toLowerCase() === newTag.name.toLowerCase()
+      );
+      
+      if (!exists) {
+        setAvailableTags(prevTags => [...prevTags, newTag]);
       }
     } catch (error) {
-      console.error('Failed to create tag:', error);
-      alert(`Failed to create tag: ${error.message}`);
+      console.error('Failed to add tag to local state:', error);
     }
   };
 

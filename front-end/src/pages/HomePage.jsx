@@ -237,7 +237,7 @@ const HomePage = ({ onNavigate }) => {
   const handleManageTags = (article) => {
     // Find the raw article (with tag IDs) instead of using the resolved article (with tag names)  
     const rawArticle = rawArticles.find(raw => raw.id === article.id);
-    setSelectedArticleForTags(resolveArticleTags([rawArticle || article])[0]);
+    setSelectedArticleForTags(rawArticle || article);
     setShowTagManagerModal(true);
   };
 
@@ -279,12 +279,11 @@ const HomePage = ({ onNavigate }) => {
       setArticles(resolved);
       setDisplayedArticles(applyFiltersAndSort(resolved, baseLockedFilters));
 
-      // Update selected article for tag modal (resolved form)
+      // Update selected article for tag modal (use raw article with tag IDs, not resolved)
       if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
         const updatedRaw = nextRaw.find(a => a.id === articleId);
         if (updatedRaw) {
-          const [resolvedArticle] = resolveArticleTags([updatedRaw]);
-          setSelectedArticleForTags(resolvedArticle);
+          setSelectedArticleForTags(updatedRaw);
         }
       }
     } catch (error) {

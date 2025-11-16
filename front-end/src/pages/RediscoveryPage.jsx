@@ -104,13 +104,20 @@ const RediscoveryPage = ({ onNavigate }) => {
 
   const handleAddTag = async (articleId, tagId) => {
     try {
-      await articlesAPI.addTag(articleId, tagId);
-      // Update the raw articles with the new tag
+      // Optimistic update: Update BOTH rawArticles AND articles immediately for instant UI feedback
       setRawArticles(prev => prev.map(article => 
         article.id === articleId 
           ? { ...article, tags: [...(article.tags || []), tagId] }
           : article
       ));
+      
+      // ALSO update the resolved articles state immediately
+      setArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: [...(article.tags || []), tagId] }
+          : article
+      ));
+      
       // Update the selected article for the modal to show the new tag immediately
       if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
         setSelectedArticleForTags(prev => ({
@@ -118,29 +125,64 @@ const RediscoveryPage = ({ onNavigate }) => {
           tags: [...(prev.tags || []), tagId]
         }));
       }
+      
+      // Make API call
+      await articlesAPI.addTag(articleId, tagId);
     } catch (error) {
       console.error('Error adding tag:', error);
+      // Rollback on error
+      setRawArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: (article.tags || []).filter(t => t !== tagId) }
+          : article
+      ));
+      setArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: (article.tags || []).filter(t => t !== tagId) }
+          : article
+      ));
     }
   };
 
   const handleRemoveTag = async (articleId, tagId) => {
     try {
-      await articlesAPI.removeTag(articleId, tagId);
-      // Update the raw articles by removing the tag
+      // Optimistic update: Update BOTH rawArticles AND articles immediately for instant UI feedback
       setRawArticles(prev => prev.map(article => 
         article.id === articleId 
-          ? { ...article, tags: (article.tags || []).filter(id => id !== tagId) }
+          ? { ...article, tags: (article.tags || []).filter(id => String(id) !== String(tagId)) }
           : article
       ));
+      
+      // ALSO update the resolved articles state immediately
+      setArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: (article.tags || []).filter(id => String(id) !== String(tagId)) }
+          : article
+      ));
+      
       // Update the selected article for the modal to remove the tag immediately
       if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
         setSelectedArticleForTags(prev => ({
           ...prev,
-          tags: (prev.tags || []).filter(id => id !== tagId)
+          tags: (prev.tags || []).filter(id => String(id) !== String(tagId))
         }));
       }
+      
+      // Make API call
+      await articlesAPI.removeTag(articleId, tagId);
     } catch (error) {
       console.error('Error removing tag:', error);
+      // Rollback on error
+      setRawArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: [...(article.tags || []), tagId] }
+          : article
+      ));
+      setArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: [...(article.tags || []), tagId] }
+          : article
+      ));
     }
   };
 
