@@ -5,7 +5,7 @@
  * Purpose: Tracks reading progress and helps users resume where they left off
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
@@ -16,7 +16,7 @@ import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
 import useTagResolution from "../hooks/useTagResolution.js";
 
-const ContinueReadingPage = ({ onNavigate }) => {
+const ContinueReadingPage = ({ onNavigate, setPageRefresh }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [showTagManagerModal, setShowTagManagerModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
@@ -33,44 +33,62 @@ const ContinueReadingPage = ({ onNavigate }) => {
   const { resolveArticleTags, refreshTags } = useTagResolution();
   const baseLockedFilters = useMemo(() => ({ status: STATUS.CONTINUE }), []);
 
+  // Define fetchData function with useCallback to prevent infinite re-renders
+  const fetchData = useCallback(async () => {
+    try {
+      console.log('ContinueReadingPage: fetchData called, loading data...');
+      setLoading(true);
+      setError(null);
+      
+      // Fetch articles and tags in parallel
+      const [articlesResponse, tagsResponse] = await Promise.all([
+        articlesAPI.getAll(baseLockedFilters),
+        tagsAPI.getAll()
+      ]);
+      
+      // Handle articles response
+      let articlesData = articlesResponse;
+      if (Array.isArray(articlesResponse)) {
+        articlesData = articlesResponse;
+      } else if (articlesResponse.data) {
+        articlesData = articlesResponse.data;
+      } else if (articlesResponse.articles) {
+        articlesData = articlesResponse.articles;
+      }
+      
+      setRawArticles(articlesData);
+      
+      // Handle tags response
+      if (tagsResponse.success && tagsResponse.data) {
+        setAvailableTags(tagsResponse.data);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      setError(err.message || "Failed to load data");
+      setLoading(false);
+    }
+  }, [baseLockedFilters]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Fetch articles and tags in parallel
-        const [articlesResponse, tagsResponse] = await Promise.all([
-          articlesAPI.getAll(baseLockedFilters),
-          tagsAPI.getAll()
-        ]);
-        
-        // Handle articles response
-        let articlesData = articlesResponse;
-        if (Array.isArray(articlesResponse)) {
-          articlesData = articlesResponse;
-        } else if (articlesResponse.data) {
-          articlesData = articlesResponse.data;
-        } else if (articlesResponse.articles) {
-          articlesData = articlesResponse.articles;
-        }
-        
-        setRawArticles(articlesData);
-        
-        // Handle tags response
-        if (tagsResponse.success && tagsResponse.data) {
-          setAvailableTags(tagsResponse.data);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        setError(err.message || "Failed to load data");
-        setLoading(false);
+    fetchData();
+  }, [fetchData]);
+
+  // Register refresh function with parent component
+  useEffect(() => {
+    if (setPageRefresh) {
+      console.log('ContinueReadingPage: Registering refresh function');
+      setPageRefresh(fetchData);
+    }
+    
+    // Cleanup: remove refresh function when component unmounts
+    return () => {
+      if (setPageRefresh) {
+        console.log('ContinueReadingPage: Cleaning up refresh function');
+        setPageRefresh(null);
       }
     };
-    
-    fetchData();
-  }, [baseLockedFilters]);
+  }, [setPageRefresh, fetchData]);
 
   // Tag resolution effect
   useEffect(() => {

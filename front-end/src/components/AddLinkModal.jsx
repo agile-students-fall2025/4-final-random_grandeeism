@@ -5,7 +5,7 @@
  * Purpose: Provides a comprehensive form to add URLs with metadata (tags, status, favorite)
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Star, 
   Tag, 
@@ -15,7 +15,8 @@ import {
   Archive, 
   BookOpen, 
   RotateCcw,
-  CheckCircle
+  CheckCircle,
+  Plus
 } from 'lucide-react';
 import {
   Dialog,
@@ -30,6 +31,7 @@ import { Button } from './ui/button.jsx';
 import { Input } from './ui/input.jsx';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem, SelectLabel } from './ui/select.jsx';
 import { STATUS } from "../constants/statuses.js";
+import { tagsAPI } from '../services/api.js';
 
 export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink }) {
   const [newLinkUrl, setNewLinkUrl] = useState('');
@@ -38,31 +40,189 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
   const [newLinkFavorite, setNewLinkFavorite] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  
+  // Enhanced tag management state
+  const [availableTags, setAvailableTags] = useState([]);
+  const [filteredTags, setFilteredTags] = useState([]);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [selectedTagIndex, setSelectedTagIndex] = useState(-1);
+  
+  const tagInputRef = useRef(null);
+  const tagDropdownRef = useRef(null);
 
-  // Get all existing tags from articles for suggestions
+  // Load available tags from API
+  useEffect(() => {
+    const loadTags = async () => {
+      try {
+        const response = await tagsAPI.getAll();
+        if (response.success && response.data) {
+          setAvailableTags(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to load tags:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadTags();
+    }
+  }, [isOpen]);
+
+  // Filter tags based on search input
+  useEffect(() => {
+    if (newTagInput.trim() === '') {
+      setFilteredTags([]);
+      setShowTagDropdown(false);
+      return;
+    }
+
+    const searchLower = newTagInput.toLowerCase().trim();
+    const currentTagIds = new Set(newLinkTags.map(tag => typeof tag === 'object' ? tag.id : tag));
+
+    const filtered = availableTags.filter(tag => {
+      // Exclude already selected tags
+      if (currentTagIds.has(tag.id)) return false;
+      // Include tags that match the search
+      return tag.name.toLowerCase().includes(searchLower);
+    });
+
+    // Add "Create new tag" option if no exact match exists
+    const exactMatch = availableTags.find(tag => tag.name.toLowerCase() === searchLower);
+    if (!exactMatch && searchLower.length > 0) {
+      filtered.unshift({
+        id: `create-${Date.now()}`,
+        name: newTagInput.trim(),
+        isCreateNew: true
+      });
+    }
+
+    setFilteredTags(filtered);
+    setShowTagDropdown(filtered.length > 0);
+    setSelectedTagIndex(-1);
+  }, [newTagInput, availableTags, newLinkTags]);
+
+  // Get all existing tags from articles for suggestions (fallback)
   const allExistingTags = Array.from(new Set(articles.flatMap(a => a.tags || []))).sort();
 
-  const handleAddTag = (tag) => {
-    const trimmedTag = tag.trim();
-    if (trimmedTag && !newLinkTags.includes(trimmedTag)) {
-      setNewLinkTags([...newLinkTags, trimmedTag]);
+  const handleAddTag = async (tag) => {
+    try {
+      let tagToAdd;
+
+      if (typeof tag === 'string') {
+        // Handle legacy string tags or direct tag names
+        const trimmedTag = tag.trim();
+        if (!trimmedTag) return;
+
+        // Check if tag already exists
+        const existingTag = availableTags.find(t => t.name.toLowerCase() === trimmedTag.toLowerCase());
+        if (existingTag) {
+          tagToAdd = existingTag;
+        } else {
+          // Create new tag
+          const response = await tagsAPI.create({ name: trimmedTag });
+          if (response.success && response.data) {
+            tagToAdd = response.data;
+            setAvailableTags(prev => [...prev, response.data]);
+          } else {
+            throw new Error('Failed to create tag');
+          }
+        }
+      } else if (tag.isCreateNew) {
+        // Create new tag from dropdown
+        const response = await tagsAPI.create({ name: tag.name });
+        if (response.success && response.data) {
+          tagToAdd = response.data;
+          setAvailableTags(prev => [...prev, response.data]);
+        } else {
+          throw new Error('Failed to create tag');
+        }
+      } else {
+        // Use existing tag object
+        tagToAdd = tag;
+      }
+
+      // Check if tag is already selected
+      const isAlreadySelected = newLinkTags.some(selectedTag => 
+        (typeof selectedTag === 'object' ? selectedTag.id : selectedTag) === tagToAdd.id
+      );
+
+      if (!isAlreadySelected) {
+        setNewLinkTags([...newLinkTags, tagToAdd]);
+      }
+
+      // Clear input and hide dropdown
+      setNewTagInput('');
+      setShowTagDropdown(false);
+      setSelectedTagIndex(-1);
+    } catch (error) {
+      console.error('Failed to add tag:', error);
+      alert(`Failed to add tag: ${error.message}`);
     }
   };
 
   const handleRemoveTag = (tagToRemove) => {
-    setNewLinkTags(newLinkTags.filter(tag => tag !== tagToRemove));
+    setNewLinkTags(newLinkTags.filter(tag => {
+      const tagId = typeof tag === 'object' ? tag.id : tag;
+      const removeId = typeof tagToRemove === 'object' ? tagToRemove.id : tagToRemove;
+      return tagId !== removeId;
+    }));
   };
 
   const handleTagInputKeyDown = (e) => {
-    if (e.key === 'Enter' && newTagInput.trim()) {
+    if (showTagDropdown && filteredTags.length > 0) {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedTagIndex(prev => 
+            prev < filteredTags.length - 1 ? prev + 1 : 0
+          );
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setSelectedTagIndex(prev => 
+            prev > 0 ? prev - 1 : filteredTags.length - 1
+          );
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (selectedTagIndex >= 0 && selectedTagIndex < filteredTags.length) {
+            handleAddTag(filteredTags[selectedTagIndex]);
+          } else if (filteredTags.length > 0) {
+            handleAddTag(filteredTags[0]);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          setShowTagDropdown(false);
+          setSelectedTagIndex(-1);
+          break;
+      }
+    } else if (e.key === 'Enter' && newTagInput.trim()) {
       e.preventDefault();
       handleAddTag(newTagInput);
-      setNewTagInput('');
     }
   };
 
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target)) {
+        setShowTagDropdown(false);
+        setSelectedTagIndex(-1);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleAddLinkSubmit = () => {
     if (newLinkUrl.trim()) {
+      // Convert tag objects to tag IDs for the API
+      const tagIds = newLinkTags.map(tag => 
+        typeof tag === 'object' ? tag.id : tag
+      );
+
       const newArticle = {
         id: Date.now().toString(),
         title: 'New Article',
@@ -71,7 +231,7 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
         readingTime: '2 min',
         isFavorite: newLinkFavorite,
         status: newLinkStatus,
-        tags: newLinkTags,
+        tags: tagIds,
         dateAdded: new Date(),
         isRead: false,
         hasAnnotations: false
@@ -95,9 +255,12 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
   const resetForm = () => {
     setNewLinkUrl('');
     setNewLinkTags([]);
-  setNewLinkStatus(STATUS.INBOX);
+    setNewLinkStatus(STATUS.INBOX);
     setNewLinkFavorite(false);
     setNewTagInput('');
+    setShowTagDropdown(false);
+    setSelectedTagIndex(-1);
+    setFilteredTags([]);
     onClose();
   };
 
@@ -124,54 +287,89 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
         {/* Tags Section */}
         <div className="mb-6">
           <label className="block text-[14px] text-foreground mb-2" htmlFor="tags-input">Tags</label>
-          <Input className="mb-3" id="tags-input" type="text" value={newTagInput} onChange={(e) => setNewTagInput(e.target.value)} onKeyDown={handleTagInputKeyDown} placeholder="Add tags (press Enter)" />
-
+          
           {/* Selected Tags Display */}
           {newLinkTags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {newLinkTags.map(tag => (
-                <span key={tag} className="inline-flex items-center gap-1 text-[12px] text-foreground bg-accent px-2 py-1 rounded">
-                  <Tag size={12} />
-                  {tag}
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="ml-1 hover:text-destructive hover:cursor-pointer"
-                    type="button"
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {newLinkTags.map((tag, index) => {
+                const tagName = typeof tag === 'object' ? tag.name : tag;
+                const tagKey = typeof tag === 'object' ? `tag-${tag.id}` : `tag-${index}`;
+                return (
+                  <span key={tagKey} className="inline-flex items-center gap-1 text-[12px] text-foreground bg-accent px-2 py-1 rounded">
+                    <Tag size={12} />
+                    {tagName}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-1 hover:text-destructive hover:cursor-pointer"
+                      type="button"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                );
+              })}
             </div>
           )}
-          
-          {/* Tag Input */}
-          {/* <input
-            id="tags-input"
-            type="text"
-            value={newTagInput}
-            onChange={(e) => setNewTagInput(e.target.value)}
-            onKeyDown={handleTagInputKeyDown}
-            placeholder="Add tags (press Enter)"
-            className="w-full p-2 border border-border bg-background text-foreground rounded text-[14px] outline-none focus:border-primary"
-          /> */}
-          
-          {/* Existing Tags Suggestions */}
-          {allExistingTags.length > 0 && (
-            <div className="mt-2">
-              <p className="text-[12px] text-muted-foreground mb-1">Existing tags:</p>
-              <div className="flex flex-wrap gap-1">
-                {allExistingTags
-                  .filter(tag => !newLinkTags.includes(tag))
-                  .slice(0, 10)
+
+          {/* Tag Input with Dropdown */}
+          <div className="relative" ref={tagDropdownRef}>
+            <Input 
+              ref={tagInputRef}
+              id="tags-input" 
+              type="text" 
+              value={newTagInput} 
+              onChange={(e) => setNewTagInput(e.target.value)} 
+              onKeyDown={handleTagInputKeyDown} 
+              placeholder="Search tags or create new..." 
+              className="mb-0"
+            />
+
+            {/* Autocomplete Dropdown */}
+            {showTagDropdown && filteredTags.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto z-50">
+                {filteredTags.map((tag, index) => (
+                  <button
+                    key={tag.isCreateNew ? `create-${tag.name}` : `tag-${tag.id}`}
+                    onClick={() => handleAddTag(tag)}
+                    className={`w-full px-3 py-2 text-left hover:bg-accent transition-colors flex items-center gap-2 ${
+                      index === selectedTagIndex ? 'bg-accent' : ''
+                    } ${tag.isCreateNew ? 'border-b border-border bg-muted/20 font-medium' : ''}`}
+                  >
+                    <Plus size={14} />
+                    <span>
+                      {tag.isCreateNew ? (
+                        <>Create new tag: <strong>{tag.name}</strong></>
+                      ) : (
+                        tag.name
+                      )}
+                    </span>
+                    {!tag.isCreateNew && (
+                      <span className="text-xs text-muted-foreground ml-auto">#{tag.id}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Add from Available Tags */}
+          {availableTags.length > 0 && newTagInput === '' && (
+            <div className="mt-3">
+              <p className="text-[12px] text-muted-foreground mb-2">Quick add:</p>
+              <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                {availableTags
+                  .filter(tag => !newLinkTags.some(selected => 
+                    (typeof selected === 'object' ? selected.id : selected) === tag.id
+                  ))
+                  .slice(0, 15)
                   .map(tag => (
                     <button
-                      key={tag}
+                      key={tag.id}
                       onClick={() => handleAddTag(tag)}
                       type="button"
                       className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded hover:bg-accent hover:text-foreground transition-colors"
                     >
-                      + {tag}
+                      + {tag.name}
                     </button>
                   ))
                 }

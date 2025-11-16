@@ -5,8 +5,7 @@
  * Purpose: Root component that manages page navigation and renders the appropriate page
  */
 
-import { useState } from 'react';
-// import { useRef } from 'react'; // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
+import { useState, useRef } from 'react';
 
 // Import all pages
 import HomePage from './pages/HomePage.jsx';
@@ -56,6 +55,15 @@ function App() {
   const [currentTag, setCurrentTag] = useState(null);
   const [currentFeed, setCurrentFeed] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  
+  // Reference to the current page's refresh function
+  const currentPageRefreshRef = useRef(null);
+  
+  // Function to set the current page's refresh callback
+  const setPageRefresh = (refreshFunction) => {
+    currentPageRefreshRef.current = refreshFunction;
+  };
+  
   // const dragOffset = useRef({ x: 0, y: 0 });
 
   /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation drag handlers */
@@ -168,41 +176,41 @@ function App() {
       case 'auth':
         return <AuthPage onNavigate={handleNavigate} />;
       case 'home':
-        return <HomePage onNavigate={handleNavigate} />;
+        return <HomePage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'search':
         if (currentTag) {
-          return <TagArticlesPage onNavigate={handleNavigate} tag={currentTag} />;
+          return <TagArticlesPage onNavigate={handleNavigate} tag={currentTag} setPageRefresh={setPageRefresh} />;
         } else {
-          return <SearchPage onNavigate={handleNavigate} initialTag={currentTag} />;
+          return <SearchPage onNavigate={handleNavigate} initialTag={currentTag} setPageRefresh={setPageRefresh} />;
         }
       case 'inbox':
-        return <InboxPage onNavigate={handleNavigate} />;
+        return <InboxPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'daily-reading':
-        return <DailyReadingPage onNavigate={handleNavigate} />;
+        return <DailyReadingPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'continue-reading':
-        return <ContinueReadingPage onNavigate={handleNavigate} />;
+        return <ContinueReadingPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'rediscovery':
-        return <RediscoveryPage onNavigate={handleNavigate} />;
+        return <RediscoveryPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'text':
-        return <TextPage onNavigate={handleNavigate} />;
+        return <TextPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'videos':
-        return <VideosPage onNavigate={handleNavigate} />;
+        return <VideosPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'audio':
-        return <AudioPage onNavigate={handleNavigate} />;
+        return <AudioPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'archive':
-        return <ArchivePage onNavigate={handleNavigate} />;
+        return <ArchivePage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'statistics':
-        return <StatisticsPage onNavigate={handleNavigate} />;
+        return <StatisticsPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'settings':
-        return <SettingsPage onNavigate={handleNavigate} />;
+        return <SettingsPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'feeds':
-        return <FeedsPage onNavigate={handleNavigate} />;
+        return <FeedsPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'feed-articles':
-        return <FeedArticlesPage onNavigate={handleNavigate} feed={currentFeed} />;
+        return <FeedArticlesPage onNavigate={handleNavigate} feed={currentFeed} setPageRefresh={setPageRefresh} />;
       case 'tags':
-        return <TagsPage onNavigate={handleNavigate} />;
+        return <TagsPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'favorites':
-        return <FavoritesPage onNavigate={handleNavigate} />;
+        return <FavoritesPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'text-reader':
         return <TextReader onNavigate={handleNavigate} article={selectedArticle} />;
       case 'audio-player':
@@ -449,7 +457,14 @@ function App() {
             if (response.success) {
               console.log('Article created successfully:', response.data);
               setIsAddLinkModalOpen(false);
-              // Optionally show success toast or refresh current page data
+              
+              // Refresh the current page's data
+              if (currentPageRefreshRef.current) {
+                console.log('Refreshing current page data...');
+                await currentPageRefreshRef.current();
+              } else {
+                console.log('No refresh function available');
+              }
             } else {
               throw new Error('Failed to create article');
             }

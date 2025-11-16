@@ -5,7 +5,7 @@
  * Purpose: Shows articles marked as favorites with full search and filtering capabilities
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
@@ -15,7 +15,7 @@ import { articlesAPI, feedsAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import useTagResolution from "../hooks/useTagResolution.js";
 
-const FavoritesPage = ({ onNavigate }) => {
+const FavoritesPage = ({ onNavigate, setPageRefresh }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [showTagManagerModal, setShowTagManagerModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
@@ -34,50 +34,68 @@ const FavoritesPage = ({ onNavigate }) => {
   // Backend expects favorite=true for favorites (not isFavorite=true)
   const baseLockedFilters = useMemo(() => ({ favorite: 'true' }), []);
 
+  // Define fetchData function with useCallback to prevent infinite re-renders
+  const fetchData = useCallback(async () => {
+    try {
+      console.log('FavoritesPage: fetchData called, loading data...');
+      setLoading(true);
+      setError(null);
+      
+      // Fetch articles, feeds, and tags in parallel
+      const [articlesResponse, feedsResponse, tagsResponse] = await Promise.all([
+        articlesAPI.getAll(baseLockedFilters),
+        feedsAPI.getAll(),
+        tagsAPI.getAll()
+      ]);
+      
+      // Handle articles response
+      let articlesData = articlesResponse;
+      if (Array.isArray(articlesResponse)) {
+        articlesData = articlesResponse;
+      } else if (articlesResponse.data) {
+        articlesData = articlesResponse.data;
+      } else if (articlesResponse.articles) {
+        articlesData = articlesResponse.articles;
+      }
+      
+      setRawArticles(articlesData);
+      
+      // Handle feeds response
+      if (feedsResponse.success && feedsResponse.data) {
+        setFeeds(feedsResponse.data);
+      }
+      
+      // Handle tags response
+      if (tagsResponse.success && tagsResponse.data) {
+        setAvailableTags(tagsResponse.data);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      setError(err.message || "Failed to load data");
+      setLoading(false);
+    }
+  }, [baseLockedFilters]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Fetch articles, feeds, and tags in parallel
-        const [articlesResponse, feedsResponse, tagsResponse] = await Promise.all([
-          articlesAPI.getAll(baseLockedFilters),
-          feedsAPI.getAll(),
-          tagsAPI.getAll()
-        ]);
-        
-        // Handle articles response
-        let articlesData = articlesResponse;
-        if (Array.isArray(articlesResponse)) {
-          articlesData = articlesResponse;
-        } else if (articlesResponse.data) {
-          articlesData = articlesResponse.data;
-        } else if (articlesResponse.articles) {
-          articlesData = articlesResponse.articles;
-        }
-        
-        setRawArticles(articlesData);
-        
-        // Handle feeds response
-        if (feedsResponse.success && feedsResponse.data) {
-          setFeeds(feedsResponse.data);
-        }
-        
-        // Handle tags response
-        if (tagsResponse.success && tagsResponse.data) {
-          setAvailableTags(tagsResponse.data);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        setError(err.message || "Failed to load data");
-        setLoading(false);
+    fetchData();
+  }, [fetchData]);
+
+  // Register refresh function with parent component
+  useEffect(() => {
+    if (setPageRefresh) {
+      console.log('FavoritesPage: Registering refresh function');
+      setPageRefresh(fetchData);
+    }
+    
+    // Cleanup: remove refresh function when component unmounts
+    return () => {
+      if (setPageRefresh) {
+        console.log('FavoritesPage: Cleaning up refresh function');
+        setPageRefresh(null);
       }
     };
-
-    fetchData();
-  }, [baseLockedFilters]);
+  }, [setPageRefresh, fetchData]);
 
   // Tag resolution effect
   useEffect(() => {

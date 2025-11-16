@@ -5,7 +5,7 @@
  * Purpose: Displays articles marked for daily reading, helping users maintain reading habits
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
@@ -16,7 +16,7 @@ import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
 import useTagResolution from "../hooks/useTagResolution.js";
 
-const DailyReadingPage = ({ onNavigate }) => {
+const DailyReadingPage = ({ onNavigate, setPageRefresh }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [showTagManagerModal, setShowTagManagerModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
@@ -33,44 +33,62 @@ const DailyReadingPage = ({ onNavigate }) => {
   const { resolveArticleTags, refreshTags } = useTagResolution();
   const baseLockedFilters = useMemo(() => ({ status: STATUS.DAILY }), []);
 
+  // Define fetchData function with useCallback to prevent infinite re-renders
+  const fetchData = useCallback(async () => {
+    try {
+      console.log('DailyReadingPage: fetchData called, loading data...');
+      setLoading(true);
+      setError(null);
+      
+      // Fetch articles and tags in parallel
+      const [articlesResponse, tagsResponse] = await Promise.all([
+        articlesAPI.getAll(baseLockedFilters),
+        tagsAPI.getAll()
+      ]);
+      
+      // Handle articles response
+      let articlesData = articlesResponse;
+      if (Array.isArray(articlesResponse)) {
+        articlesData = articlesResponse;
+      } else if (articlesResponse.data) {
+        articlesData = articlesResponse.data;
+      } else if (articlesResponse.articles) {
+        articlesData = articlesResponse.articles;
+      }
+      
+      setRawArticles(articlesData);
+      
+      // Handle tags response
+      if (tagsResponse.success && tagsResponse.data) {
+        setAvailableTags(tagsResponse.data);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      setError(err.message || "Failed to load data");
+      setLoading(false);
+    }
+  }, [baseLockedFilters]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Fetch articles and tags in parallel
-        const [articlesResponse, tagsResponse] = await Promise.all([
-          articlesAPI.getAll(baseLockedFilters),
-          tagsAPI.getAll()
-        ]);
-        
-        // Handle articles response
-        let articlesData = articlesResponse;
-        if (Array.isArray(articlesResponse)) {
-          articlesData = articlesResponse;
-        } else if (articlesResponse.data) {
-          articlesData = articlesResponse.data;
-        } else if (articlesResponse.articles) {
-          articlesData = articlesResponse.articles;
-        }
-        
-        setRawArticles(articlesData);
-        
-        // Handle tags response
-        if (tagsResponse.success && tagsResponse.data) {
-          setAvailableTags(tagsResponse.data);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        setError(err.message || "Failed to load data");
-        setLoading(false);
+    fetchData();
+  }, [fetchData]);
+
+  // Register refresh function with parent component
+  useEffect(() => {
+    if (setPageRefresh) {
+      console.log('DailyReadingPage: Registering refresh function');
+      setPageRefresh(fetchData);
+    }
+    
+    // Cleanup: remove refresh function when component unmounts
+    return () => {
+      if (setPageRefresh) {
+        console.log('DailyReadingPage: Cleaning up refresh function');
+        setPageRefresh(null);
       }
     };
-    
-    fetchData();
-  }, [baseLockedFilters]);
+  }, [setPageRefresh, fetchData]);
 
   // Tag resolution effect
   useEffect(() => {

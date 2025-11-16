@@ -10,7 +10,7 @@
  *  - Save searches as Stacks
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Inbox, Calendar, BookOpen, RotateCcw } from "lucide-react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
@@ -31,7 +31,7 @@ const tabs = [
   { name: "Rediscovery", icon: RotateCcw, status: STATUS.REDISCOVERY }
 ];
 
-const HomePage = ({ onNavigate }) => {
+const HomePage = ({ onNavigate, setPageRefresh }) => {
   const [articles, setArticles] = useState([]);
   const [rawArticles, setRawArticles] = useState([]); // Store raw articles
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
@@ -55,41 +55,60 @@ const HomePage = ({ onNavigate }) => {
   // Base locked filters based on active tab
   const baseLockedFilters = useMemo(() => ({ status: currentStatus }), [currentStatus]);
 
+  // Define fetchData function with useCallback to prevent infinite re-renders
+  const fetchData = useCallback(async () => {
+    try {
+      console.log('HomePage: fetchData called, loading data...');
+      setLoading(true);
+      setError(null);
+
+      // Step 1: Load tags first so resolution never flashes IDs
+      const tagsResponse = await tagsAPI.getAll({ sort: 'alphabetical' });
+      if (tagsResponse.success && tagsResponse.data) {
+        setAvailableTags(tagsResponse.data);
+        // Preload cache for downstream components
+        await ensureTagsLoaded(async () => ({ data: tagsResponse.data }));
+      }
+
+      // Step 2: Fetch articles after tags ready
+      const articlesResponse = await articlesAPI.getAll({});
+      let articlesData = articlesResponse;
+      if (Array.isArray(articlesResponse)) {
+        articlesData = articlesResponse;
+      } else if (articlesResponse.data) {
+        articlesData = articlesResponse.data;
+      } else if (articlesResponse.articles) {
+        articlesData = articlesResponse.articles;
+      }
+      setRawArticles(articlesData);
+
+      setLoading(false);
+    } catch (err) {
+      setError(err.message || "Failed to load data");
+      setLoading(false);
+    }
+  }, []);
+
   // Fetch articles and tags from backend on mount
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    fetchData();
+  }, [fetchData]);
 
-        // Step 1: Load tags first so resolution never flashes IDs
-        const tagsResponse = await tagsAPI.getAll({ sort: 'alphabetical' });
-        if (tagsResponse.success && tagsResponse.data) {
-          setAvailableTags(tagsResponse.data);
-          // Preload cache for downstream components
-          await ensureTagsLoaded(async () => ({ data: tagsResponse.data }));
-        }
-
-        // Step 2: Fetch articles after tags ready
-        const articlesResponse = await articlesAPI.getAll({});
-        let articlesData = articlesResponse;
-        if (Array.isArray(articlesResponse)) {
-          articlesData = articlesResponse;
-        } else if (articlesResponse.data) {
-          articlesData = articlesResponse.data;
-        } else if (articlesResponse.articles) {
-          articlesData = articlesResponse.articles;
-        }
-        setRawArticles(articlesData);
-
-        setLoading(false);
-      } catch (err) {
-        setError(err.message || "Failed to load data");
-        setLoading(false);
+  // Register refresh function with parent component
+  useEffect(() => {
+    if (setPageRefresh) {
+      console.log('HomePage: Registering refresh function');
+      setPageRefresh(fetchData);
+    }
+    
+    // Cleanup: remove refresh function when component unmounts
+    return () => {
+      if (setPageRefresh) {
+        console.log('HomePage: Cleaning up refresh function');
+        setPageRefresh(null);
       }
     };
-    fetchData();
-  }, []);
+  }, [setPageRefresh, fetchData]);
 
   // Resolve tags when raw articles or tag resolution function changes
   useEffect(() => {
