@@ -103,6 +103,12 @@ const SearchPage = ({ onNavigate, initialTag }) => {
     alert(`Stack "${stackData.name}" saved successfully!`);
   };
 
+  const handleArticleClick = (article) => {
+    // Navigate to the appropriate viewer based on media type with returnTo info
+    const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
+    onNavigate && onNavigate(destination, { article, returnTo: 'search' });
+  };
+
   const handleManageTags = (article) => {
     // Find the raw article (with tag IDs) instead of using the resolved article (with tag names)
     const rawArticle = rawArticles.find(raw => raw.id === article.id);
@@ -200,20 +206,66 @@ const SearchPage = ({ onNavigate, initialTag }) => {
     }
   };
 
-  const handleCreateTag = async (newTag) => {
-    // This is called by TagManagerModal AFTER the tag has already been created
-    // Just update the local state, don't create the tag again
+  const handleCreateTag = async (tagName) => {
     try {
-      // Check if tag already exists in local state to avoid duplicates
-      const exists = availableTags.some(t => 
-        t.id === newTag.id || t.name.toLowerCase() === newTag.name.toLowerCase()
-      );
-      
-      if (!exists) {
-        setAvailableTags(prevTags => [...prevTags, newTag]);
+      if (!selectedArticleForTags) {
+        throw new Error('No article selected');
       }
+
+      // 1. Check if tag already exists
+      let existingTag = availableTags.find(t => 
+        t.name.toLowerCase() === tagName.toLowerCase()
+      );
+
+      let tagId;
+      if (existingTag) {
+        tagId = existingTag.id;
+      } else {
+        // 2. Create new tag via API
+        const createResponse = await tagsAPI.create({ name: tagName });
+        if (!createResponse.success || !createResponse.data) {
+          throw new Error('Failed to create tag');
+        }
+        existingTag = createResponse.data;
+        tagId = existingTag.id;
+        setAvailableTags(prev => [...prev, existingTag]);
+      }
+
+      // 3. Add tag to article via API
+      const addResponse = await articlesAPI.addTag(selectedArticleForTags.id, tagId);
+      if (!addResponse.success) {
+        throw new Error(addResponse.error || 'Failed to add tag to article');
+      }
+
+      // 4. Create updated raw articles data first
+      const nextRaw = rawArticles.map(article => 
+        article.id === selectedArticleForTags.id 
+          ? { ...article, tags: [...(article.tags || []), tagId] }
+          : article
+      );
+
+      // 5. Update all state with the new data
+      setRawArticles(nextRaw);
+      const resolved = resolveArticleTags(nextRaw);
+      setArticles(resolved);
+      setDisplayedArticles(applyFiltersAndSort(resolved, currentFilters || {}));
+
+      // 6. Update selected article for modal with fresh tag
+      setSelectedArticleForTags(prev => ({
+        ...prev,
+        tags: [...(prev.tags || []), tagId]
+      }));
+
+      // 7. Return the created/existing tag for the modal
+      return existingTag;
+
     } catch (error) {
-      console.error('Failed to add tag to local state:', error);
+      console.error('Failed to create/add tag:', error);
+      const errorMsg = String(error?.message || 'Unknown error');
+      if (!errorMsg.toLowerCase().includes('already')) {
+        alert(`Failed to create tag: ${errorMsg}`);
+      }
+      throw error; // Re-throw so modal can handle it
     }
   };
 
@@ -245,15 +297,23 @@ const SearchPage = ({ onNavigate, initialTag }) => {
         return;
       }
 
+      console.log('Toggling favorite for article:', articleId, 'from', currentArticle.isFavorite, 'to', !currentArticle.isFavorite);
+
       // Call the API to toggle favorite status
       const response = await articlesAPI.toggleFavorite(articleId, !currentArticle.isFavorite);
       
+      console.log('API response:', response);
+      
       if (response.success) {
+        console.log('API success, refetching articles...');
         // Refetch all articles to get the updated state
-        const articlesResponse = await articlesAPI.getAll(currentFilters || {});
-        if (articlesResponse.success) {
-          setRawArticles(articlesResponse.data);
-        }
+        const articlesResponse = await articlesAPI.getAll({});
+        let articlesData = articlesResponse;
+        if (articlesResponse.data) articlesData = articlesResponse.data;
+        
+        setRawArticles(articlesData);
+      } else {
+        console.error('API response indicated failure:', response);
       }
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
@@ -351,10 +411,7 @@ const SearchPage = ({ onNavigate, initialTag }) => {
                   <ArticleCard
                     key={article.id}
                     article={article}
-                    onArticleClick={() => {
-                      const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
-                      onNavigate && onNavigate(destination, { article });
-                    }}
+                    onArticleClick={handleArticleClick}
                     onToggleFavorite={handleToggleFavorite}
                     onManageTags={handleManageTags}
                     onStatusChange={handleStatusChange}

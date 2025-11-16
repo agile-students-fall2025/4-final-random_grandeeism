@@ -176,7 +176,7 @@ export default function ArticleCard({
   };
 
   // Handle export
-  const handleExport = (format, destination) => {
+  const handleExport = async (format, destination) => {
     console.log('🔄 Starting export process:', { format, destination, article: article.title });
     
     // Close modal FIRST to prevent any interaction issues
@@ -187,10 +187,10 @@ export default function ArticleCard({
       
       // Handle PDF export differently - generate PDF directly
       if (format === 'pdf') {
-        generatePDFFile(article, filename);
+        await generatePDFFile(article, filename);
       } else {
         // Generate content for text-based formats
-        const content = generateExportContent(article, format);
+        const content = await generateExportContent(article, format);
         const mimeType = getMimeType(format);
         downloadFile(content, filename, mimeType);
       }
@@ -199,9 +199,13 @@ export default function ArticleCard({
       
     } catch (error) {
       console.error('❌ Export failed:', error);
-      // You could show an error toast here
+      toast.error('Export failed', {
+        description: 'There was an error exporting your notes. Please try again.',
+      });
     }
-  };  return (
+  };
+
+  return (
     <div 
       onClick={handleCardClick}
       className={`bg-card border rounded-lg overflow-hidden hover:border-primary/50 transition-colors cursor-pointer ${
