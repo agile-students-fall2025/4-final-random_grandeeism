@@ -8,8 +8,16 @@
 
 const { mockTags } = require('../data/mockTags');
 
-// Import the articles DAO to get current article state
-const getArticlesDao = () => require('./daoFactory').articlesDao;
+// Import the articles DAO directly to avoid circular dependency with daoFactory
+// We'll use a lazy getter to ensure articlesDao is loaded after both modules are initialized
+let articlesDaoInstance = null;
+const getArticlesDao = () => {
+  if (!articlesDaoInstance) {
+    // Directly require articlesDao.mock to avoid circular dependency
+    articlesDaoInstance = require('./articlesDao.mock');
+  }
+  return articlesDaoInstance;
+};
 
 // In-memory storage - clone the mock data to avoid mutations
 let tags = [...mockTags.map(tag => ({ ...tag }))];
@@ -53,11 +61,21 @@ const generateId = () => {
  * @returns {number} Number of articles with this tag
  */
 const calculateArticleCount = (tagId) => {
-  const articlesDao = getArticlesDao();
-  const allArticles = articlesDao.getAllArticlesForInternalUse();
-  return allArticles.filter(article => 
-    article.tags && Array.isArray(article.tags) && article.tags.includes(tagId)
-  ).length;
+  try {
+    const articlesDao = getArticlesDao();
+    if (!articlesDao || !articlesDao.getAllArticlesForInternalUse) {
+      // If articlesDao is not available yet, return 0
+      return 0;
+    }
+    const allArticles = articlesDao.getAllArticlesForInternalUse();
+    return allArticles.filter(article => 
+      article.tags && Array.isArray(article.tags) && article.tags.includes(tagId)
+    ).length;
+  } catch (error) {
+    // If there's an error accessing articlesDao, return 0 to avoid breaking tag operations
+    console.warn('Error calculating article count for tag', tagId, ':', error.message);
+    return 0;
+  }
 };
 
 const tagsDao = {
