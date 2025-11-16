@@ -83,9 +83,11 @@ router.post('/', async (req, res) => {
     const feedData = {
       ...req.body,
       userId,
+      status: 'success',
       lastFetched: new Date(),
       lastUpdated: new Date(),
-      addedDate: new Date()
+      addedDate: new Date(),
+      createdAt: new Date()
     };
 
     const newFeed = await feedsDao.create(feedData);

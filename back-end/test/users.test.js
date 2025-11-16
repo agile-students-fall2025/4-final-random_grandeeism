@@ -2,6 +2,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const express = require('express');
 const usersRouter = require('../routes/users');
+const daoFactory = require('../lib/daoFactory');
 const expect = chai.expect;
 
 // Create minimal Express app for testing
@@ -12,16 +13,21 @@ app.use('/api/users', usersRouter);
 chai.use(chaiHttp);
 
 describe('Users API', () => {
+  // Reset mock data before each test to ensure isolation
+  beforeEach(() => {
+    daoFactory.resetMockData();
+  });
+
   // Test GET /api/users/profile/:id
   describe('GET /api/users/profile/:id', () => {
     it('should return user profile by ID', (done) => {
       chai.request(app)
-        .get('/api/users/profile/user-1')
+  .get('/api/users/profile/1')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success').eql(true);
           expect(res.body).to.have.property('data').to.be.an('object');
-          expect(res.body.data).to.have.property('id').eql('user-1');
+          expect(res.body.data).to.have.property('id').eql(1);
           expect(res.body.data).to.have.property('username');
           expect(res.body.data).to.have.property('email');
           expect(res.body.data).to.not.have.property('password');
@@ -42,7 +48,7 @@ describe('Users API', () => {
 
     it('should not include password in response', (done) => {
       chai.request(app)
-        .get('/api/users/profile/user-1')
+  .get('/api/users/profile/1')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body.data).to.not.have.property('password');
@@ -52,7 +58,7 @@ describe('Users API', () => {
 
     it('should include all user profile fields', (done) => {
       chai.request(app)
-        .get('/api/users/profile/user-2')
+  .get('/api/users/profile/2')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body.data).to.have.property('displayName');
@@ -73,7 +79,7 @@ describe('Users API', () => {
       };
 
       chai.request(app)
-        .put('/api/users/profile/user-1')
+  .put('/api/users/profile/1')
         .send(updateData)
         .end((err, res) => {
           expect(res).to.have.status(200);
@@ -94,7 +100,7 @@ describe('Users API', () => {
       };
 
       chai.request(app)
-        .put('/api/users/profile/user-1')
+  .put('/api/users/profile/1')
         .send(updateData)
         .end((err, res) => {
           expect(res).to.have.status(200);
@@ -110,7 +116,7 @@ describe('Users API', () => {
       };
 
       chai.request(app)
-        .put('/api/users/profile/user-1')
+  .put('/api/users/profile/1')
         .send(updateData)
         .end((err, res) => {
           expect(res).to.have.status(200);
@@ -141,7 +147,7 @@ describe('Users API', () => {
       };
 
       chai.request(app)
-        .put('/api/users/profile/user-1')
+  .put('/api/users/profile/1')
         .send(updateData)
         .end((err, res) => {
           expect(res).to.have.status(200);
@@ -152,13 +158,13 @@ describe('Users API', () => {
 
     it('should preserve existing fields when only updating some', (done) => {
       chai.request(app)
-        .get('/api/users/profile/user-2')
+  .get('/api/users/profile/2')
         .end((err, res) => {
           const originalEmail = res.body.data.email;
           const originalUsername = res.body.data.username;
 
           chai.request(app)
-            .put('/api/users/profile/user-2')
+            .put('/api/users/profile/2')
             .send({ displayName: 'New Display Name' })
             .end((err, res) => {
               expect(res).to.have.status(200);
@@ -179,7 +185,7 @@ describe('Users API', () => {
       };
 
       chai.request(app)
-        .put('/api/users/password/user-1')
+  .put('/api/users/password/1')
         .send(updateData)
         .end((err, res) => {
           expect(res).to.have.status(400);
@@ -195,7 +201,7 @@ describe('Users API', () => {
       };
 
       chai.request(app)
-        .put('/api/users/password/user-1')
+  .put('/api/users/password/1')
         .send(updateData)
         .end((err, res) => {
           expect(res).to.have.status(400);
@@ -207,7 +213,7 @@ describe('Users API', () => {
 
     it('should return 400 when both passwords are missing', (done) => {
       chai.request(app)
-        .put('/api/users/password/user-1')
+  .put('/api/users/password/1')
         .send({})
         .end((err, res) => {
           expect(res).to.have.status(400);
@@ -241,7 +247,7 @@ describe('Users API', () => {
       };
 
       chai.request(app)
-        .put('/api/users/password/user-1')
+  .put('/api/users/password/1')
         .send(updateData)
         .end((err, res) => {
           expect(res).to.have.status(401);
@@ -266,7 +272,7 @@ describe('Users API', () => {
       };
 
       chai.request(app)
-        .put('/api/users/password/user-1')
+  .put('/api/users/password/1')
         .send(updateData)
         .end((err, res) => {
           // This will likely return 401 (incorrect password) or 200 (if password matches)
@@ -284,7 +290,7 @@ describe('Users API', () => {
   describe('GET /api/users/stats/:id', () => {
     it('should return user reading statistics', (done) => {
       chai.request(app)
-        .get('/api/users/stats/user-1')
+  .get('/api/users/stats/1')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success').eql(true);
@@ -299,7 +305,7 @@ describe('Users API', () => {
 
     it('should return stats for different user', (done) => {
       chai.request(app)
-        .get('/api/users/stats/user-2')
+  .get('/api/users/stats/2')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body.data).to.have.property('articlesRead');
@@ -323,7 +329,7 @@ describe('Users API', () => {
 
     it('should return stats with correct data types', (done) => {
       chai.request(app)
-        .get('/api/users/stats/user-1')
+  .get('/api/users/stats/1')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body.data.articlesRead).to.be.a('number');
@@ -339,12 +345,12 @@ describe('Users API', () => {
   describe('DELETE /api/users/:id', () => {
     it('should delete user account', (done) => {
       chai.request(app)
-        .delete('/api/users/user-1')
+  .delete('/api/users/1')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success').eql(true);
           expect(res.body).to.have.property('message').eql('User account deleted successfully');
-          expect(res.body.data).to.have.property('id').eql('user-1');
+          expect(res.body.data).to.have.property('id').eql(1);
           done();
         });
     });
@@ -362,7 +368,7 @@ describe('Users API', () => {
 
     it('should return correct response structure on successful deletion', (done) => {
       chai.request(app)
-        .delete('/api/users/user-2')
+  .delete('/api/users/2')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success').eql(true);
@@ -379,7 +385,7 @@ describe('Users API', () => {
     it('should handle invalid request gracefully', (done) => {
       // Test with empty body on PUT request
       chai.request(app)
-        .put('/api/users/profile/user-1')
+  .put('/api/users/profile/1')
         .send(null)
         .end((err, res) => {
           // Should handle gracefully - might return 200 (no changes) or error
