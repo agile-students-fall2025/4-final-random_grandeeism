@@ -38,7 +38,7 @@ export default function TagArticlesPage({ onNavigate, tag }) {
   const [error, setError] = useState(null);
 
   // Use shared tag resolution hook
-  const { tags, resolveTagName, resolveArticleTags, resolveTagId } = useTagResolution();
+  const { tags, resolveTagName, resolveArticleTags, resolveTagId, refreshTags } = useTagResolution();
 
   // Create base filters for search functionality (convert tag name to ID if needed)
   const baseLockedFilters = useMemo(() => {

@@ -24,7 +24,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { resolveArticleTags } = useTagResolution();
+  const { resolveArticleTags, refreshTags } = useTagResolution();
   // Base locked filters - always include the feed
   const baseLockedFilters = useMemo(() => ({ feed: feed || "" }), [feed]);
 

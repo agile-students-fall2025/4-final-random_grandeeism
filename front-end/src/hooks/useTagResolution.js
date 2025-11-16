@@ -13,27 +13,28 @@ export const useTagResolution = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Fetch tags function
+  const fetchTags = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await tagsAPI.getAll();
+      
+      if (response.success && response.data) {
+        setTags(response.data);
+      }
+      setLoading(false);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch tags');
+      setTags([]);
+      setLoading(false);
+    }
+  }, []);
+
   // Fetch tags on mount
   useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await tagsAPI.getAll();
-        
-        if (response.success && response.data) {
-          setTags(response.data);
-        }
-        setLoading(false);
-      } catch (err) {
-        setError(err.message || 'Failed to fetch tags');
-        setTags([]);
-        setLoading(false);
-      }
-    };
-
     fetchTags();
-  }, []);
+  }, [fetchTags]);
 
   // Create tag mapping from ID to name
   const tagMapping = useMemo(() => {
@@ -74,7 +75,8 @@ export const useTagResolution = () => {
     tagMapping,
     resolveTagId,
     resolveTagName,
-    resolveArticleTags
+    resolveArticleTags,
+    refreshTags: fetchTags
   };
 };
 

@@ -22,6 +22,7 @@ export default function TagManagerModal({
   const [filteredTags, setFilteredTags] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [currentArticleTags, setCurrentArticleTags] = useState(article?.tags || []);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
   
@@ -51,12 +52,16 @@ export default function TagManagerModal({
     return tagArray.some(t => String(t) === idStr);
   };
 
+  // Update local article tags when the article prop changes
+  useEffect(() => {
+    setCurrentArticleTags(article?.tags || []);
+  }, [article]);
+
   // Get current tag IDs and resolve them to tag objects
   // Handle both cases: tags as IDs or tags as names (after resolution)
   const currentTags = availableTags.filter(tag => {
-    const articleTags = article?.tags || [];
-    // Check if article tags contain either the tag ID or tag name
-    return articleTags.includes(tag.id) || articleTags.includes(tag.name);
+    // Check if current article tags contain either the tag ID or tag name
+    return currentArticleTags.includes(tag.id) || currentArticleTags.includes(tag.name);
   });
 
   // Filter available tags based on search term and exclude already added tags
@@ -67,10 +72,9 @@ export default function TagManagerModal({
       return;
     }
 
-    const currentTagIds = article?.tags || [];
     const filtered = availableTags.filter(tag => {
       // Check if tag is already added (by ID or name)
-      const isAlreadyAdded = currentTagIds.includes(tag.id) || currentTagIds.includes(tag.name);
+      const isAlreadyAdded = currentArticleTags.includes(tag.id) || currentArticleTags.includes(tag.name);
       // Check if tag name matches search term
       const matchesSearch = tag.name.toLowerCase().includes(searchTerm.toLowerCase());
       return !isAlreadyAdded && matchesSearch;
@@ -96,7 +100,7 @@ export default function TagManagerModal({
     setFilteredTags(optionsToShow);
     setShowDropdown(optionsToShow.length > 0);
     setSelectedIndex(-1);
-  }, [searchTerm, availableTags, article?.tags]);
+  }, [searchTerm, availableTags, currentArticleTags]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e) => {
@@ -251,6 +255,8 @@ export default function TagManagerModal({
             tags: [...(prev.tags || []), tag.id]
           }));
         }
+        // Update local state to immediately show the new tag
+        setCurrentArticleTags(prev => [...prev, tag.id]);
       }
 
       setSearchTerm('');

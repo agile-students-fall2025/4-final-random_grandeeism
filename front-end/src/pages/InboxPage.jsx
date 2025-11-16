@@ -32,7 +32,7 @@ const InboxPage = ({ onNavigate }) => {
   const [error, setError] = useState(null);
 
   // Use tag resolution hook
-  const { resolveArticleTags } = useTagResolution();
+  const { resolveArticleTags, refreshTags } = useTagResolution();
 
   const baseLockedFilters = useMemo(() => ({ status: STATUS.INBOX }), []);
 

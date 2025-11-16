@@ -31,7 +31,7 @@ const SearchPage = ({ onNavigate, initialTag }) => {
   const [error, setError] = useState(null);
 
   // Use tag resolution hook
-  const { resolveArticleTags } = useTagResolution();
+  const { resolveArticleTags, refreshTags } = useTagResolution();
 
   useEffect(() => {
     const fetchData = async () => {

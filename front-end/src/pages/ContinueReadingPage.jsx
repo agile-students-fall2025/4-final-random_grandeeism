@@ -30,7 +30,7 @@ const ContinueReadingPage = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { resolveArticleTags } = useTagResolution();
+  const { resolveArticleTags, refreshTags } = useTagResolution();
   const baseLockedFilters = useMemo(() => ({ status: STATUS.CONTINUE }), []);
 
   useEffect(() => {

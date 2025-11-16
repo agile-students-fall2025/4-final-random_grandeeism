@@ -30,7 +30,7 @@ const FavoritesPage = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { resolveArticleTags } = useTagResolution();
+  const { resolveArticleTags, refreshTags } = useTagResolution();
   // Backend expects favorite=true for favorites (not isFavorite=true)
   const baseLockedFilters = useMemo(() => ({ favorite: 'true' }), []);
 

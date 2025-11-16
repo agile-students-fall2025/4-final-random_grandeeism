@@ -28,7 +28,7 @@ const VideosPage = ({ onNavigate }) => {
   const [articleToDelete, setArticleToDelete] = useState(null);
   const [availableTags, setAvailableTags] = useState([]);
 
-  const { resolveArticleTags } = useTagResolution();
+  const { resolveArticleTags, refreshTags } = useTagResolution();
   const baseLockedFilters = useMemo(() => ({ mediaType: 'video' }), []);
 
   useEffect(() => {
