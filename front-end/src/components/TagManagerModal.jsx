@@ -24,6 +24,16 @@ export default function TagManagerModal({
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
 
+  // Helper: determine if a tag (id or name) is already on the article to avoid duplicate API calls
+  const isTagAlreadyOnArticle = (art, tagIdentifier) => {
+    if (!art) return false;
+    const tagArray = Array.isArray(art.tags) ? art.tags : [];
+    if (tagIdentifier == null) return false;
+    const idStr = String(tagIdentifier);
+    // Tag may be stored as numeric id or as name string after resolution
+    return tagArray.some(t => String(t) === idStr);
+  };
+
   // Get current tag IDs and resolve them to tag objects
   // Handle both cases: tags as IDs or tags as names (after resolution)
   const currentTags = availableTags.filter(tag => {
@@ -117,10 +127,19 @@ export default function TagManagerModal({
           if (createResponse.success && createResponse.data) {
             const newTag = createResponse.data;
             // Add the new tag to the article
-            if (onAddTag) {
-              await onAddTag(article.id, newTag.id);
-            } else {
-              await articlesAPI.addTag(article.id, newTag.id);
+            if (!isTagAlreadyOnArticle(article, newTag.id) && !isTagAlreadyOnArticle(article, newTag.name)) {
+              if (onAddTag) {
+                try { await onAddTag(article.id, newTag.id); } catch (e) {
+                  const em = String(e?.message || '').toLowerCase();
+                  if (!em.includes('already')) throw e; // escalate only non-duplicate errors
+                }
+              } else {
+                try { await articlesAPI.addTag(article.id, newTag.id); } catch (e) {
+                  const em = String(e?.message || '').toLowerCase();
+                  // Suppress harmless duplicate errors (409) that occasionally surface
+                  if (!em.includes('already')) throw e;
+                }
+              }
             }
             // Inform parent so local tag list updates without duplicate API call
             onCreateTag && onCreateTag(newTag);
@@ -135,10 +154,18 @@ export default function TagManagerModal({
               ? list.data.find(t => t.name.toLowerCase() === tag.name.toLowerCase())
               : null;
             if (existing) {
-              if (onAddTag) {
-                await onAddTag(article.id, existing.id);
-              } else {
-                await articlesAPI.addTag(article.id, existing.id);
+              if (!isTagAlreadyOnArticle(article, existing.id) && !isTagAlreadyOnArticle(article, existing.name)) {
+                if (onAddTag) {
+                  try { await onAddTag(article.id, existing.id); } catch (e2) {
+                    const em2 = String(e2?.message || '').toLowerCase();
+                    if (!em2.includes('already')) throw e2;
+                  }
+                } else {
+                  try { await articlesAPI.addTag(article.id, existing.id); } catch (e2) {
+                    const em2 = String(e2?.message || '').toLowerCase();
+                    if (!em2.includes('already')) throw e2;
+                  }
+                }
               }
               onCreateTag && onCreateTag(existing);
             } else {
@@ -151,10 +178,18 @@ export default function TagManagerModal({
         }
       } else {
         // Add existing tag
-        if (onAddTag) {
-          await onAddTag(article.id, tag.id);
-        } else {
-          await articlesAPI.addTag(article.id, tag.id);
+        if (!isTagAlreadyOnArticle(article, tag.id) && !isTagAlreadyOnArticle(article, tag.name)) {
+          if (onAddTag) {
+            try { await onAddTag(article.id, tag.id); } catch (e) {
+              const em = String(e?.message || '').toLowerCase();
+              if (!em.includes('already')) throw e;
+            }
+          } else {
+            try { await articlesAPI.addTag(article.id, tag.id); } catch (e) {
+              const em = String(e?.message || '').toLowerCase();
+              if (!em.includes('already')) throw e;
+            }
+          }
         }
       }
 
@@ -164,9 +199,13 @@ export default function TagManagerModal({
     } catch (error) {
       // Only log true errors; 'already on article' is handled by HomePage
       const errorMsg = String(error?.message || '').toLowerCase();
-      if (!errorMsg.includes('already on article')) {
+      // Suppress duplicate-related messages universally
+      if (!errorMsg.includes('already on article') && !errorMsg.includes('already exists') && !errorMsg.includes('duplicate')) {
         console.error('Failed to add tag:', error);
         alert(`Failed to add tag: ${error.message}`);
+      } else {
+        // Quiet log for diagnostics
+        console.debug('Suppressed duplicate tag add error:', error.message);
       }
     }
   };

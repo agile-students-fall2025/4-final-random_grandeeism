@@ -3,8 +3,9 @@ import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } 
 import { ThemeContext } from '../../contexts/ThemeContext.jsx';
 import CompletionModal from '../../components/CompletionModal.jsx';
 import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
-import TagManager from '../../components/TagManager.jsx';
-import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar } from 'lucide-react';
+import TagManagerModal from '../../components/TagManagerModal.jsx';
+import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon } from 'lucide-react';
+import { ensureTagsLoaded, getTagName, getTagMapSnapshot, addSingleTag } from '../../utils/tagsCache.js';
 import { articlesAPI, tagsAPI, highlightsAPI } from '../../services/api.js';
 import '../../styles/textReader.css';
 
@@ -45,6 +46,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   // Track completion shown for current article only (ephemeral, not persisted)
   const [completionShown, setCompletionShown] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tagModalOpen, setTagModalOpen] = useState(false);
 
   // Reader settings persisted locally (frontend only)
   const { setTheme: setAppTheme, effectiveTheme } = useContext(ThemeContext);
@@ -76,6 +78,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   const contentRef = useRef(null);
   const [allTags, setAllTags] = useState([]);
+  // maintain a local snapshot of tagMap for possible future reactive displays; unused directly for resolution
+  const [tagMap, setTagMap] = useState(getTagMapSnapshot()); // eslint-disable-line no-unused-vars
   
   // computed reader classes/styles based on settings
   const fontSizePx = fontSize === 'small' ? 18 : fontSize === 'large' ? 22 : 20;
@@ -110,28 +114,30 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     return () => { cancelled = true; };
   }, [article, articleId]);
 
-  // Load available tags from backend once article is known
+  // Load available tags using shared cache once article is known
   useEffect(() => {
     let cancelled = false;
     const loadTags = async () => {
+      if (!current?.id) return;
       try {
-        const res = await tagsAPI.getAll({ sort: 'alphabetical' });
-        if (!cancelled) setAllTags(res?.data || []);
+        const { tags, map } = await ensureTagsLoaded(() => tagsAPI.getAll({ sort: 'alphabetical' }));
+        if (!cancelled) {
+          setAllTags(tags);
+          setTagMap(map);
+        }
       } catch (e) {
-        console.error('Failed to load tags', e);
-        if (!cancelled) setAllTags([]);
+        console.error('Failed to load tags (TextReader)', e);
+        if (!cancelled) {
+          setAllTags([]);
+        }
       }
     };
     loadTags();
     return () => { cancelled = true; };
   }, [current?.id]);
 
-  const resolveTagName = useCallback((tagIdOrName) => {
-    // if already a string name (no numeric id), return as-is
-    if (typeof tagIdOrName === 'string' && isNaN(Number(tagIdOrName))) return tagIdOrName;
-    const t = (allTags || []).find(t => String(t.id) === String(tagIdOrName) || String(t.name) === String(tagIdOrName));
-    return t ? t.name : String(tagIdOrName);
-  }, [allTags]);
+  // tagMap snapshot not strictly needed as dependency; getTagName reads cache
+  const resolveTagName = useCallback((tagIdOrName) => getTagName(tagIdOrName), []);
 
   
 
@@ -160,7 +166,19 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     if (!current) return;
     try {
       const res = await highlightsAPI.getByArticle(current.id);
-      setHighlights(res?.data || []);
+      const fetchedHighlights = res?.data || [];
+      setHighlights(fetchedHighlights);
+      
+      // Update article's hasAnnotations property based on highlights presence
+      const hasAnnotations = fetchedHighlights.length > 0;
+      if (current.hasAnnotations !== hasAnnotations) {
+        try {
+          await articlesAPI.update(current.id, { hasAnnotations });
+          setCurrent(prev => prev ? { ...prev, hasAnnotations } : prev);
+        } catch (e) {
+          console.error('Failed to update hasAnnotations', e);
+        }
+      }
     } catch (e) {
       console.error('Failed to load highlights', e);
       setHighlights([]);
@@ -368,48 +386,120 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     }
   };
 
-  // Accept TagManager's new tag names list, compute diff, sync with backend (create tags if needed), then reload article
-  const handleUpdateTags = useCallback(async (articleId, newTagNames) => {
+  // Handle adding a tag (signature (articleId, tagIdOrName) expected by TagManagerModal)
+  const handleAddTag = async (articleId, tagIdOrName) => {
     if (!current || String(current.id) !== String(articleId)) return;
     try {
-      const currentNames = (current.tags || []).map(tid => resolveTagName(tid)).filter(Boolean);
-      const toAdd = newTagNames.filter(n => !currentNames.includes(n));
-      const toRemove = currentNames.filter(n => !newTagNames.includes(n));
-
-      // add missing tags
-      for (const name of toAdd) {
-        // find tag id or create
-        let t = (allTags || []).find(t => t.name.toLowerCase() === name.toLowerCase());
-        if (!t) {
+      let tagId = null;
+      let tagObj = null;
+      // Support object, numeric id, or name string
+      if (tagIdOrName && typeof tagIdOrName === 'object') {
+        tagId = tagIdOrName.id;
+        tagObj = tagIdOrName;
+      } else if (/^\d+$/.test(String(tagIdOrName))) {
+        tagId = Number(tagIdOrName);
+      } else if (typeof tagIdOrName === 'string') {
+        const existing = allTags.find(t => t.name.toLowerCase() === tagIdOrName.toLowerCase());
+        if (existing) {
+          tagId = existing.id;
+          tagObj = existing;
+        } else {
+          // Fallback: attempt to create if not found (defensive in case modal didn't create)
           try {
-            const created = await tagsAPI.create({ name });
-            if (created?.data) {
-              t = created.data;
-              // refresh allTags cache quickly
-              setAllTags(prev => [...prev, t]);
+            const createResp = await tagsAPI.create({ name: tagIdOrName });
+            if (createResp?.data) {
+              tagId = createResp.data.id;
+              tagObj = createResp.data;
+              setAllTags(prev => prev.some(t => t.id === tagId) ? prev : [...prev, tagObj]);
             }
-          } catch (e) { console.error('Failed creating tag', name, e); }
-        }
-        if (t) {
-          try { await articlesAPI.addTag(current.id, t.id); } catch (e) { console.error('Add tag failed', t, e); }
+          } catch (e) {
+            // If already exists, refetch list and resolve
+            const msg = String(e?.message || '').toLowerCase();
+            if (msg.includes('already exists')) {
+              const list = await tagsAPI.getAll({ search: tagIdOrName });
+              const resolved = list?.data?.find(t => t.name.toLowerCase() === tagIdOrName.toLowerCase());
+              if (resolved) {
+                tagId = resolved.id;
+                tagObj = resolved;
+                setAllTags(prev => prev.some(t => t.id === tagId) ? prev : [...prev, tagObj]);
+              }
+            } else {
+              throw e;
+            }
+          }
         }
       }
 
-      // remove tags
-      for (const name of toRemove) {
-        const t = (allTags || []).find(t => t.name.toLowerCase() === name.toLowerCase());
-        if (t) {
-          try { await articlesAPI.removeTag(current.id, t.id); } catch (e) { console.error('Remove tag failed', t, e); }
-        }
+      if (tagId == null) {
+        console.warn('Tag add aborted: unable to resolve tag reference', tagIdOrName);
+        return;
       }
 
-      // reload article to get canonical list of tag IDs
+      // Defensive duplicate check
+      if ((current.tags || []).map(t => String(t)).includes(String(tagId))) {
+        // Already present; just refresh article to ensure latest names/state
+        const res = await articlesAPI.getById(current.id);
+        if (res?.data) setCurrent(res.data);
+        return;
+      }
+
+      await articlesAPI.addTag(current.id, tagId);
+      // Merge tag into shared cache & local state (only if new)
+      if (tagObj) {
+        addSingleTag(tagObj);
+        setAllTags(prev => prev.some(t => t.id === tagObj.id) ? prev : [...prev, tagObj]);
+        // Note: no setTagMap needed; getTagName reads cache directly
+      }
       const res = await articlesAPI.getById(current.id);
       if (res?.data) setCurrent(res.data);
-    } catch (e) {
-      console.error('handleUpdateTags failed', e);
+    } catch (error) {
+      if (error?.status === 409) {
+        // treat as success; refresh article
+        const res = await articlesAPI.getById(current.id);
+        if (res?.data) setCurrent(res.data);
+      } else {
+        console.error('Failed to add tag:', error);
+      }
     }
-  }, [current, allTags, resolveTagName]);
+  };
+
+  // Handle removing a tag (signature (articleId, tagIdOrName))
+  const handleRemoveTag = async (articleId, tagIdOrName) => {
+    if (!current || String(current.id) !== String(articleId)) return;
+    try {
+      let tagId = null;
+      if (tagIdOrName && typeof tagIdOrName === 'object') tagId = tagIdOrName.id;
+      else if (/^\d+$/.test(String(tagIdOrName))) tagId = Number(tagIdOrName);
+      else if (typeof tagIdOrName === 'string') {
+        const existing = allTags.find(t => t.name.toLowerCase() === tagIdOrName.toLowerCase());
+        if (existing) tagId = existing.id;
+      }
+      if (tagId == null) {
+        console.warn('Tag remove aborted: unresolved tag', tagIdOrName);
+        return;
+      }
+      await articlesAPI.removeTag(current.id, tagId);
+      const res = await articlesAPI.getById(current.id);
+      if (res?.data) setCurrent(res.data);
+    } catch (error) {
+      console.error('Failed to remove tag:', error);
+    }
+  };
+
+  // Handle created tag notification from modal (already created & attached via handleAddTag)
+  // This callback ONLY updates local tag list; attachment already handled by handleAddTag
+  const handleCreateTag = (newTagObj) => {
+    if (!newTagObj || !newTagObj.id) return;
+    // Only update local state if tag is truly new (prevent duplicate updates)
+    setAllTags(prev => {
+      const exists = prev.some(t => t.id === newTagObj.id);
+      if (exists) return prev; // no change needed
+      // Add to shared cache and local state
+      addSingleTag(newTagObj);
+      return [...prev, newTagObj];
+    });
+    // Note: setTagMap not needed here since getTagName reads from cache directly
+  };
 
   const handleCompletion = () => {
     if (!current) return;
@@ -492,21 +582,27 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               </p>
 
               <div className="flex items-center gap-2">
-                {Array.isArray(current.tags) && current.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {current.tags.map(tid => (
-                      <span key={tid} className="text-[12px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded reader-tag">{resolveTagName(tid)}</span>
-                    ))}
-                  </div>
-                )}
-                <div className="ml-4">
-                  <TagManager
-                    articleId={current.id}
-                    currentTags={(current.tags || []).map(tid => resolveTagName(tid)).filter(Boolean)}
-                    allTags={(allTags || []).map(t => t.name)}
-                    onUpdateTags={handleUpdateTags}
-                  />
-                </div>
+                {Array.isArray(current.tags) && current.tags.length > 0 && (() => {
+                  const resolved = current.tags
+                    .map(t => ({ raw: t, name: resolveTagName(t) }))
+                    .filter(t => t.name && t.name.trim().length > 0);
+                  if (resolved.length === 0) return null; // suppress empty placeholder chips
+                  return (
+                    <div className="flex flex-wrap gap-2">
+                      {resolved.map(t => (
+                        <span key={t.raw} className="text-[12px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded reader-tag">{t.name}</span>
+                      ))}
+                    </div>
+                  );
+                })()}
+                <button 
+                  onClick={() => setTagModalOpen(true)}
+                  className="px-3 py-1.5 text-sm bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-md flex items-center gap-1.5 transition-colors"
+                  title="Manage Tags"
+                >
+                  <TagIcon size={14} />
+                  Manage Tags
+                </button>
               </div>
             </>
           ) : (
@@ -722,6 +818,17 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           readerTheme={readerTheme}
           onReaderThemeChange={onReaderThemeChange}
         />
+        {current && (
+          <TagManagerModal
+            isOpen={tagModalOpen}
+            onClose={() => setTagModalOpen(false)}
+            article={current}
+            availableTags={allTags}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            onCreateTag={handleCreateTag}
+          />
+        )}
       </div>
     </div>
   );

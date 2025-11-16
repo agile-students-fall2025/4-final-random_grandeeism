@@ -3,6 +3,9 @@ const router = express.Router();
 const daoFactory = require('../lib/daoFactory');
 const { highlightsDao } = require('../lib/daoFactory');
 
+// Get articlesDao for updating hasAnnotations
+const getArticlesDao = () => daoFactory.getArticlesDao();
+
 // --- Helpers (exposed on router for easier testing) ----------------------
 
 /**
@@ -189,6 +192,14 @@ router.post('/', async (req, res) => {
     const highlightData = router._helpers.buildNewHighlight({ articleId, userId, text, color, position, annotations });
     const newHighlight = await highlightsDao.create(highlightData);
 
+    // Update article's hasAnnotations to true
+    try {
+      const articlesDao = getArticlesDao();
+      await articlesDao.update(articleId, { hasAnnotations: true });
+    } catch (e) {
+      console.error('Failed to update article hasAnnotations:', e);
+    }
+
     res.status(201).json({
       success: true,
       data: newHighlight,
@@ -267,7 +278,18 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
+    const articleId = highlight.articleId;
     await highlightsDao.delete(req.params.id);
+
+    // Check if article still has any highlights
+    try {
+      const articlesDao = getArticlesDao();
+      const remainingHighlights = await highlightsDao.getByArticle(articleId);
+      const hasAnnotations = remainingHighlights && remainingHighlights.length > 0;
+      await articlesDao.update(articleId, { hasAnnotations });
+    } catch (e) {
+      console.error('Failed to update article hasAnnotations:', e);
+    }
 
     res.json({
       success: true,

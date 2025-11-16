@@ -35,23 +35,6 @@ const mockHighlights = [
     "updatedAt": "2024-01-13T15:00:00.000Z"
   },
   {
-    "id": 3,
-    "articleId": 4,
-    "userId": 1,
-    "text": "",
-    "annotations": {
-      "title": "Async/await simplifies promises",
-      "note": "Use this pattern more often"
-    },
-    "color": "#86efac",
-    "position": {
-      "start": 0,
-      "end": 0
-    },
-    "createdAt": "2024-01-12T10:15:00.000Z",
-    "updatedAt": "2024-01-12T10:15:00.000Z"
-  },
-  {
     "id": 4,
     "articleId": 6,
     "userId": 1,

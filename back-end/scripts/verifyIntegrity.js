@@ -4,11 +4,11 @@
  * Purpose: Ensures uniqueness of IDs and referential integrity across mock data.
  */
 
-const { mockUsers } = require('../data/mockUsers');
-const { mockFeeds } = require('../data/mockFeeds');
-const { mockArticles } = require('../data/mockArticles');
-const { mockTags } = require('../data/mockTags');
-const { mockHighlights } = require('../data/mockHighlights');
+const { mockUsers } = require('../baseData/mockUsers');
+const { mockFeeds } = require('../baseData/mockFeeds');
+const { mockArticles } = require('../baseData/mockArticles');
+const { mockTags } = require('../baseData/mockTags');
+const { mockHighlights } = require('../baseData/mockHighlights');
 
 function auditUniqueness(label, items, idSelector = i => i.id) {
   const seen = new Map();
@@ -94,11 +94,67 @@ function main() {
     console.error('Highlight integrity validation failed:', e);
     process.exit(1);
   }
-  console.log('\nIntegrity check complete.');
+
+  // Determine overall integrity status BEFORE attempting any refresh.
+  const duplicateProblems = audits.some(a => a.duplicates.length > 0);
+  const referentialProblems = refs.feedsMissingUsers.length || refs.articlesMissingUsers.length || refs.articlesMissingTags.length || refs.highlightsMissingRefs.length;
+  const tagCountProblems = mismatches.length > 0;
+
+  const overallOk = !duplicateProblems && !referentialProblems && !tagCountProblems; // highlight failures already exited.
+
+  if (!overallOk) {
+    console.log('\n⚠️ Integrity issues detected. Refresh & parity verification skipped.');
+    console.log(' - Duplicates present:', duplicateProblems);
+    console.log(' - Referential issues present:', !!referentialProblems);
+    console.log(' - Tag count mismatches present:', !!tagCountProblems);
+    console.log('\nResolve the above issues, then re-run this script.');
+    console.log('\nIntegrity check complete (FAILED).');
+    return; // Do not refresh.
+  }
+
+  console.log('\n✅ All integrity checks passed. Proceeding to refresh data seeds...');
+  // Perform refresh from baseData to data
+  try {
+    const { main: refreshMain } = require('./refreshDataFromBase');
+    refreshMain();
+  } catch (e) {
+    console.error('❌ Refresh failed:', e);
+    process.exit(1);
+  }
+
+  // After refresh, verify parity
+  console.log('\n🔍 Verifying parity after refresh...');
+  try {
+    const { compareFiles } = require('./verifyDataParity');
+    const parityFiles = [ 'mockArticles.js', 'mockFeeds.js', 'mockTags.js', 'mockUsers.js', 'mockHighlights.js' ];
+    let allMatch = true;
+    for (const file of parityFiles) {
+      const result = compareFiles(file);
+      if (result.match) {
+        console.log(`  ✅ ${file} parity OK`);
+      } else {
+        allMatch = false;
+        console.log(`  ❌ ${file} parity MISMATCH: ${result.reason}`);
+      }
+    }
+    if (!allMatch) {
+      console.error('\n❌ Post-refresh parity verification failed. Investigate discrepancies.');
+      process.exit(1);
+    }
+  } catch (e) {
+    console.error('❌ Parity verification script failed:', e);
+    process.exit(1);
+  }
+
+  console.log('\n🎉 Integrity, refresh, and parity verification all succeeded.');
+  console.log('\nIntegrity check complete (PASSED).');
 }
 
+// Run when executed directly
 if (require.main === module) {
   main();
 }
+
+module.exports = { auditUniqueness, verifyReferentialIntegrity, recomputeTagCounts };
 
 module.exports = { auditUniqueness, verifyReferentialIntegrity, recomputeTagCounts };

@@ -67,29 +67,6 @@ const mockArticles = [
     "userId": 1
   },
   {
-    "id": 4,
-    "title": "The Future of JavaScript - Tech Podcast",
-    "url": "https://example.com/future-javascript-podcast",
-    "author": "Tech Podcast Network",
-    "source": "JavaScript Weekly",
-    "feedId": 7,
-    "readingTime": "52 min",
-    "status": "continue",
-    "isFavorite": false,
-    "tags": [
-      1,
-      17,
-      5,
-      13
-    ],
-    "dateAdded": "2024-01-12T00:00:00.000Z",
-    "hasAnnotations": true,
-    "readProgress": 35,
-    "mediaType": "audio",
-    "podcastUrl": "https://example.com/podcast.mp3",
-    "userId": 2
-  },
-  {
     "id": 5,
     "title": "CSS Grid vs Flexbox: When to Use What",
     "url": "https://examplelink.com/css-grid-flexbox",
@@ -231,7 +208,7 @@ const mockArticles = [
       1
     ],
     "dateAdded": "2024-01-05T00:00:00.000Z",
-    "hasAnnotations": true,
+    "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     "userId": 1
@@ -253,7 +230,7 @@ const mockArticles = [
       30
     ],
     "dateAdded": "2024-01-04T00:00:00.000Z",
-    "hasAnnotations": true,
+    "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     "userId": 2
@@ -275,7 +252,7 @@ const mockArticles = [
       34
     ],
     "dateAdded": "2024-01-03T00:00:00.000Z",
-    "hasAnnotations": true,
+    "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     "userId": 1
@@ -297,7 +274,7 @@ const mockArticles = [
       37
     ],
     "dateAdded": "2024-01-02T00:00:00.000Z",
-    "hasAnnotations": true,
+    "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     "userId": 2
@@ -319,7 +296,7 @@ const mockArticles = [
       41
     ],
     "dateAdded": "2024-01-01T00:00:00.000Z",
-    "hasAnnotations": true,
+    "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     "userId": 1
@@ -341,32 +318,10 @@ const mockArticles = [
       24
     ],
     "dateAdded": "2024-01-15T00:00:00.000Z",
-    "hasAnnotations": true,
+    "hasAnnotations": false,
     "readProgress": 50,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     "userId": 2
-  },
-  {
-    "id": 17,
-    "title": "Intro to React Native - Video",
-    "url": "https://youtube.com/watch?v=TNhaISOUy6Q",
-    "author": "React University",
-    "source": "React Blog",
-    "feedId": 8,
-    "readingTime": "35 min",
-    "status": "inbox",
-    "isFavorite": false,
-    "tags": [
-      42,
-      43,
-      44
-    ],
-    "dateAdded": "2024-01-16T00:00:00.000Z",
-    "hasAnnotations": false,
-    "readProgress": 0,
-    "mediaType": "video",
-    "videoId": "TNhaISOUy6Q",
-    "userId": 1
   },
   {
     "id": 18,
@@ -384,7 +339,7 @@ const mockArticles = [
       22
     ],
     "dateAdded": "2023-12-20T00:00:00.000Z",
-    "hasAnnotations": true,
+    "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     "userId": 2
@@ -406,7 +361,7 @@ const mockArticles = [
       8
     ],
     "dateAdded": "2023-12-15T00:00:00.000Z",
-    "hasAnnotations": true,
+    "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     "userId": 1
@@ -428,7 +383,7 @@ const mockArticles = [
       19
     ],
     "dateAdded": "2023-12-10T00:00:00.000Z",
-    "hasAnnotations": true,
+    "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     "userId": 2

@@ -210,7 +210,7 @@ function App() {
           <AudioPlayer 
             article={selectedArticle}
             onUpdateArticle={(updatedArticle) => setSelectedArticle(updatedArticle)}
-            onClose={() => handleNavigate('audio')}
+            onClose={() => handleNavigate('home')}
           />
         );
       case 'video-player':
@@ -218,7 +218,7 @@ function App() {
           <VideoPlayer 
             article={selectedArticle}
             onUpdateArticle={(updatedArticle) => setSelectedArticle(updatedArticle)}
-            onClose={() => handleNavigate('videos')}
+            onClose={() => handleNavigate('home')}
           />
         );
       default:

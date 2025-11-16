@@ -10,7 +10,7 @@ const mockTags = [
     "description": "JavaScript programming language",
     "createdAt": "2024-01-01T00:00:00.000Z",
     "lastUsed": "2024-01-15T00:00:00.000Z",
-    "articleCount": 3
+    "articleCount": 2
   },
   {
     "id": 2,
@@ -43,7 +43,7 @@ const mockTags = [
     "description": "General web development topics",
     "createdAt": "2024-01-05T00:00:00.000Z",
     "lastUsed": "2024-01-14T00:00:00.000Z",
-    "articleCount": 2
+    "articleCount": 1
   },
   {
     "id": 6,
@@ -107,7 +107,7 @@ const mockTags = [
     "description": "Technology category",
     "createdAt": "2025-11-14T03:29:25.007Z",
     "lastUsed": "2025-11-14T03:29:25.007Z",
-    "articleCount": 2
+    "articleCount": 1
   },
   {
     "id": 14,
@@ -139,7 +139,7 @@ const mockTags = [
     "description": "Podcast content",
     "createdAt": "2025-11-14T03:29:25.007Z",
     "lastUsed": "2025-11-14T03:29:25.007Z",
-    "articleCount": 1
+    "articleCount": 0
   },
   {
     "id": 18,
@@ -339,7 +339,7 @@ const mockTags = [
     "description": "React Native mobile development",
     "createdAt": "2025-11-14T03:29:25.007Z",
     "lastUsed": "2025-11-14T03:29:25.007Z",
-    "articleCount": 1
+    "articleCount": 0
   },
   {
     "id": 43,
@@ -347,7 +347,7 @@ const mockTags = [
     "description": "Mobile development",
     "createdAt": "2025-11-14T03:29:25.007Z",
     "lastUsed": "2025-11-14T03:29:25.007Z",
-    "articleCount": 1
+    "articleCount": 0
   },
   {
     "id": 44,
@@ -355,7 +355,7 @@ const mockTags = [
     "description": "Video media type",
     "createdAt": "2025-11-14T03:29:25.007Z",
     "lastUsed": "2025-11-14T03:29:25.007Z",
-    "articleCount": 1
+    "articleCount": 0
   },
   {
     "id": 45,
