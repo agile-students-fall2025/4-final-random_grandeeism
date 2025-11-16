@@ -108,23 +108,47 @@ const DailyReadingPage = ({ onNavigate }) => {
   const handleManageTags = (article) => {
     // Find the raw article (with tag IDs) instead of using the resolved article (with tag names)
     const rawArticle = rawArticles.find(raw => raw.id === article.id);
-    setSelectedArticleForTags(resolveArticleTags([rawArticle || article])[0]);
+    setSelectedArticleForTags(rawArticle || article);
     setShowTagManagerModal(true);
   };
 
   const handleAddTag = async (articleId, tagId) => {
     try {
+      // Optimistic update: Update BOTH rawArticles AND articles immediately for instant UI feedback
+      setRawArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: [...(article.tags || []), tagId] }
+          : article
+      ));
+      
+      // ALSO update the resolved articles state immediately
+      setArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: [...(article.tags || []), tagId] }
+          : article
+      ));
+      
+      // Update selected article for modal
+      setSelectedArticleForTags(prev => 
+        prev?.id === articleId 
+          ? { ...prev, tags: [...(prev.tags || []), tagId] }
+          : prev
+      );
+
+      // Then make the API call
       const response = await articlesAPI.addTag(articleId, tagId);
-      if (response.success) {
-        const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
-        let articlesData = articlesResponse;
-        if (articlesResponse.data) articlesData = articlesResponse.data;
-        setRawArticles(articlesData);
-        const updatedArticle = articlesData.find(a => a.id === articleId);
-        if (updatedArticle) {
-          setSelectedArticleForTags(resolveArticleTags([updatedArticle])[0]);
-        }
-      } else {
+      if (!response.success) {
+        // Rollback on failure
+        setRawArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, tags: (article.tags || []).filter(t => t !== tagId) }
+            : article
+        ));
+        setArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, tags: (article.tags || []).filter(t => t !== tagId) }
+            : article
+        ));
         throw new Error(response.error || 'Failed to add tag');
       }
     } catch (error) {
@@ -135,17 +159,41 @@ const DailyReadingPage = ({ onNavigate }) => {
 
   const handleRemoveTag = async (articleId, tagId) => {
     try {
+      // Optimistic update: Update BOTH rawArticles AND articles immediately for instant UI feedback
+      setRawArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: (article.tags || []).filter(t => String(t) !== String(tagId)) }
+          : article
+      ));
+      
+      // ALSO update the resolved articles state immediately
+      setArticles(prev => prev.map(article => 
+        article.id === articleId 
+          ? { ...article, tags: (article.tags || []).filter(t => String(t) !== String(tagId)) }
+          : article
+      ));
+      
+      // Update selected article for modal
+      setSelectedArticleForTags(prev => 
+        prev?.id === articleId 
+          ? { ...prev, tags: (prev.tags || []).filter(t => String(t) !== String(tagId)) }
+          : prev
+      );
+
+      // Then make the API call
       const response = await articlesAPI.removeTag(articleId, tagId);
-      if (response.success) {
-        const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
-        let articlesData = articlesResponse;
-        if (articlesResponse.data) articlesData = articlesResponse.data;
-        setRawArticles(articlesData);
-        const updatedArticle = articlesData.find(a => a.id === articleId);
-        if (updatedArticle) {
-          setSelectedArticleForTags(resolveArticleTags([updatedArticle])[0]);
-        }
-      } else {
+      if (!response.success) {
+        // Rollback on failure
+        setRawArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, tags: [...(article.tags || []), tagId] }
+            : article
+        ));
+        setArticles(prev => prev.map(article => 
+          article.id === articleId 
+            ? { ...article, tags: [...(article.tags || []), tagId] }
+            : article
+        ));
         throw new Error(response.error || 'Failed to remove tag');
       }
     } catch (error) {
@@ -154,22 +202,60 @@ const DailyReadingPage = ({ onNavigate }) => {
     }
   };
 
-  const handleCreateTag = async (newTag) => {
+  const handleCreateTag = async (tagName) => {
     try {
-      const response = await tagsAPI.create({ name: newTag.name, color: newTag.color });
-      if (response.success) {
-        setAvailableTags(prevTags => [...prevTags, response.data]);
-        // Refresh the global tag resolution mapping
-        await refreshTags();
-        // Return the created tag for use by child components
-        return response.data;
-      } else {
-        throw new Error(response.error || 'Failed to create tag');
+      if (!selectedArticleForTags) {
+        throw new Error('No article selected');
       }
+
+      // 1. Check if tag already exists
+      let existingTag = availableTags.find(t => 
+        t.name.toLowerCase() === tagName.toLowerCase()
+      );
+
+      let tagId;
+      if (existingTag) {
+        tagId = existingTag.id;
+      } else {
+        // 2. Create new tag via API
+        const createResponse = await tagsAPI.create({ name: tagName });
+        if (!createResponse.success || !createResponse.data) {
+          throw new Error('Failed to create tag');
+        }
+        existingTag = createResponse.data;
+        tagId = existingTag.id;
+        setAvailableTags(prev => [...prev, existingTag]);
+      }
+
+      // 3. Add tag to article via API
+      const addResponse = await articlesAPI.addTag(selectedArticleForTags.id, tagId);
+      if (!addResponse.success) {
+        throw new Error(addResponse.error || 'Failed to add tag to article');
+      }
+
+      // 4. Refetch articles from API to get latest data
+      const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+      let articlesData = articlesResponse;
+      if (Array.isArray(articlesResponse)) {
+        articlesData = articlesResponse;
+      } else if (articlesResponse.data) {
+        articlesData = articlesResponse.data;
+      }
+      
+      setRawArticles(articlesData);
+      
+      // Update selected article for modal
+      const updatedArticle = articlesData.find(a => a.id === selectedArticleForTags.id);
+      if (updatedArticle) {
+        setSelectedArticleForTags(updatedArticle);
+      }
+
     } catch (error) {
-      console.error('Failed to create tag:', error);
-      alert(`Failed to create tag: ${error.message}`);
-      throw error; // Re-throw so child components can handle it
+      console.error('Failed to create/add tag:', error);
+      const errorMsg = String(error?.message || 'Unknown error');
+      if (!errorMsg.toLowerCase().includes('already')) {
+        alert(`Failed to create tag: ${errorMsg}`);
+      }
     }
   };
 

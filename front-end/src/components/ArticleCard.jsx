@@ -8,7 +8,7 @@
  * NOTE: Automatic queue advancement (status icon hover) shows the NEXT STATUS icon for clarity.
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { STATUS } from '../constants/statuses.js';
 import { 
   generateExportContent, 
@@ -34,6 +34,8 @@ import {
 } from 'lucide-react';
 import ExportNotesModal from './ExportNotesModal.jsx';
 import StatusChangeModal from './StatusChangeModal.jsx';
+import { tagsAPI } from '../services/api.js';
+import { ensureTagsLoaded, getTagName, getTagMapSnapshot } from '../utils/tagsCache.js';
 
 export default function ArticleCard({
   article,
@@ -49,6 +51,35 @@ export default function ArticleCard({
   const [isStatusHovered, setIsStatusHovered] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [tagMap, setTagMap] = useState(getTagMapSnapshot());
+  const loadingRef = useRef(false);
+  const lastArticleTagsRef = useRef(null);
+
+  useEffect(() => {
+    const maybeLoad = async () => {
+      // Serialize tags for comparison to avoid reference changes causing re-runs
+      const currentTagsKey = Array.isArray(article?.tags) ? article.tags.slice().sort().join(',') : '';
+      if (lastArticleTagsRef.current === currentTagsKey) return; // no change
+      lastArticleTagsRef.current = currentTagsKey;
+      
+      const needsNumericResolution = Array.isArray(article?.tags) && article.tags.some(t => /^\d+$/.test(String(t)) && !tagMap[String(t)]);
+      if (!needsNumericResolution) return;
+      if (loadingRef.current) return;
+      loadingRef.current = true;
+      try {
+        await ensureTagsLoaded(() => tagsAPI.getAll({ sort: 'alphabetical' }));
+        setTagMap(getTagMapSnapshot());
+      } catch (e) {
+        console.error('ArticleCard ensureTagsLoaded failed', e);
+      } finally {
+        loadingRef.current = false;
+      }
+    };
+    maybeLoad();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [article?.tags]); // tagMap intentionally omitted to prevent infinite loop
+
+  const resolveTagDisplay = (t) => getTagName(t);
 
   // Get status icon information
   const getStatusIconInfo = (status) => {
@@ -245,14 +276,17 @@ export default function ArticleCard({
         {/* Tags */}
         {article.tags && article.tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {article.tags.map(tag => (
-              <span 
-                key={tag}
-                className="inline-flex items-center gap-1 text-[11px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded"
-              >
-                {tag}
-              </span>
-            ))}
+            {article.tags
+              .map(tag => ({ raw: tag, name: resolveTagDisplay(tag) }))
+              .filter(t => t.name) // suppress empty while mapping not ready
+              .map(t => (
+                <span 
+                  key={t.raw}
+                  className="inline-flex items-center gap-1 text-[11px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded"
+                >
+                  {t.name}
+                </span>
+              ))}
           </div>
         )}
 

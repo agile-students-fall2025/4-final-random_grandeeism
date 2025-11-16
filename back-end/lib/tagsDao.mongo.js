@@ -157,6 +157,18 @@ const tagsDao = {
     }
 
     const result = await Tag.deleteOne(query);
+    
+    if (result.deletedCount > 0) {
+      // Remove this tag from all articles
+      const { Article } = require('./models');
+      const updateQuery = userId ? { userId } : {};
+      
+      await Article.updateMany(
+        { ...updateQuery, tags: id },
+        { $pull: { tags: id } }
+      );
+    }
+    
     return result.deletedCount > 0;
   },
 

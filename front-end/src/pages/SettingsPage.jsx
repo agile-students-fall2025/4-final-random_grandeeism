@@ -243,7 +243,7 @@ const SettingsPage = ({ onNavigate }) => {
               </div> */}
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label for="reader-mode" className="font-medium select-none">Reader Mode</label>
+                  <label htmlFor="reader-mode" className="font-medium select-none">Reader Mode</label>
                   <p className="text-sm text-muted-foreground mt-1">Clean, distraction-free reading experience.</p>
                 </div>
                 <div>
@@ -252,7 +252,7 @@ const SettingsPage = ({ onNavigate }) => {
               </div>
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label for="images-mode" className="font-medium select-none">Show Images</label>
+                  <label htmlFor="images-mode" className="font-medium select-none">Show Images</label>
                   <p className="text-sm text-muted-foreground mt-1">Display images in the reader.</p>
                 </div>
                 <div>
@@ -261,7 +261,7 @@ const SettingsPage = ({ onNavigate }) => {
               </div>
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label for="reading-time" className="font-medium select-none">Estimated Reading Time</label>
+                  <label htmlFor="reading-time" className="font-medium select-none">Estimated Reading Time</label>
                   <p className="text-sm text-muted-foreground mt-1">Show reading time estimate on cards.</p>
                 </div>
                 <div>
@@ -270,7 +270,7 @@ const SettingsPage = ({ onNavigate }) => {
               </div>
               <div className="py-4 border-border flex items-center justify-between">
                 <div>
-                  <label for="auto-archive" className="font-medium select-none">Auto-archive after reading</label>
+                  <label htmlFor="auto-archive" className="font-medium select-none">Auto-archive after reading</label>
                   <p className="text-sm text-muted-foreground mt-1">Automatically archive articles after reading.</p>
                 </div>
                 <div>
@@ -284,7 +284,7 @@ const SettingsPage = ({ onNavigate }) => {
             <div className="bg-card border border-border rounded-lg px-6">
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label for="reading-reminders" className="font-medium select-none">Daily Reading Reminders</label>
+                  <label htmlFor="reading-reminders" className="font-medium select-none">Daily Reading Reminders</label>
                   <p className="text-sm text-muted-foreground mt-0">Receive daily reminders to read.</p>
                 </div>
                 <div>
@@ -293,7 +293,7 @@ const SettingsPage = ({ onNavigate }) => {
               </div>
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label for="new-content-notifications" className="font-medium select-none">New Content Notifications</label>
+                  <label htmlFor="new-content-notifications" className="font-medium select-none">New Content Notifications</label>
                   <p className="text-sm text-muted-foreground mt-0">Receive notifications for new articles, notes, and highlights.</p>
                 </div>
                 <div>
@@ -302,7 +302,7 @@ const SettingsPage = ({ onNavigate }) => {
               </div>
               <div className="py-4 border-border border-b flex items-center justify-between">
                 <div>
-                  <label for="preferences" className="font-medium select-none">Email Digest Preferences</label>
+                  <label htmlFor="preferences" className="font-medium select-none">Email Digest Preferences</label>
                   <p className="text-sm text-muted-foreground mt-0">Choose how often you want to receive email digests.</p>
                 </div>
                 <div>
@@ -321,7 +321,7 @@ const SettingsPage = ({ onNavigate }) => {
               </div>
               <div className="py-4 border-border flex items-center justify-between">
                 <div>
-                  <label for="marketing-notifications" className="font-medium select-none">Marketing Emails</label>
+                  <label htmlFor="marketing-notifications" className="font-medium select-none">Marketing Emails</label>
                   <p className="text-sm text-muted-foreground mt-0">Receive emails about new products, features, and more.</p>
                 </div>
                 <div>
@@ -449,7 +449,7 @@ const SettingsPage = ({ onNavigate }) => {
               </div>
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label for="email" className="font-medium select-none">Email</label>
+                  <label htmlFor="email" className="font-medium select-none">Email</label>
                   {/* <p className="text-sm text-muted-foreground mt-1">Clean, distraction-free reading experience.</p> */}
                 </div>
                 <div>
@@ -465,7 +465,7 @@ const SettingsPage = ({ onNavigate }) => {
               </div>
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label for="name" className="font-medium select-none">Name</label>
+                  <label htmlFor="name" className="font-medium select-none">Name</label>
                   {/* <p className="text-sm text-muted-foreground mt-1">Clean, distraction-free reading experience.</p> */}
                 </div>
                 <div>
@@ -480,7 +480,7 @@ const SettingsPage = ({ onNavigate }) => {
               </div>
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label for="username" className="font-medium select-none">Username</label>
+                  <label htmlFor="username" className="font-medium select-none">Username</label>
                   {/* <p className="text-sm text-muted-foreground mt-1">Clean, distraction-free reading experience.</p> */}
                 </div>
                 <div>
@@ -497,7 +497,7 @@ const SettingsPage = ({ onNavigate }) => {
               {/* Sign Out Button */}
               <div className="py-4 flex items-center justify-between">
                 <div>
-                  <label for="sign-out" className="font-medium select-none">Sign Out</label>
+                  <label htmlFor="sign-out" className="font-medium select-none">Sign Out</label>
                   {/* <p className="text-sm text-muted-foreground mt-1">Clean, distraction-free reading experience.</p> */}
                 </div>
                 <div>
@@ -541,7 +541,7 @@ const SettingsPage = ({ onNavigate }) => {
                         <p className="mb-3">This action is irreversible.</p>
                         <p className="">All data including but not limited to articles, notes, highlights, and reading progress will be permanently deleted.</p>
                     </DialogDescription>
-                    <label for="delete-email"className="text-sm text-foreground mt-1">Enter your account email to confirm deletion:</label>
+                    <label htmlFor="delete-email"className="text-sm text-foreground mt-1">Enter your account email to confirm deletion:</label>
                     <Input type="email" id="delete-email" value={deleteEmail} onChange={(e) => setDeleteEmail(e.target.value)} />
                     <div className="flex items-center gap-4 mt-2">
                       <Checkbox id="confirm" checked={deleteConfirm} onCheckedChange={setDeleteConfirm} />

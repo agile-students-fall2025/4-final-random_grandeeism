@@ -41,7 +41,7 @@ const mockTags = [
     "description": "General web development topics",
     "createdAt": new Date("2024-01-05T00:00:00.000Z"),
     "lastUsed": new Date("2024-01-14T00:00:00.000Z"),
-    "articleCount": 2
+    "articleCount": 1
   },
   {
     "id": 6,
@@ -105,7 +105,7 @@ const mockTags = [
     "description": "Technology category",
     "createdAt": new Date("2025-11-14T03:29:25.007Z"),
     "lastUsed": new Date("2025-11-14T03:29:25.007Z"),
-    "articleCount": 2
+    "articleCount": 1
   },
   {
     "id": 14,
@@ -137,7 +137,7 @@ const mockTags = [
     "description": "Podcast content",
     "createdAt": new Date("2025-11-14T03:29:25.007Z"),
     "lastUsed": new Date("2025-11-14T03:29:25.007Z"),
-    "articleCount": 1
+    "articleCount": 0
   },
   {
     "id": 18,
@@ -337,7 +337,7 @@ const mockTags = [
     "description": "React Native mobile development",
     "createdAt": new Date("2025-11-14T03:29:25.007Z"),
     "lastUsed": new Date("2025-11-14T03:29:25.007Z"),
-    "articleCount": 1
+    "articleCount": 0
   },
   {
     "id": 43,
@@ -345,7 +345,7 @@ const mockTags = [
     "description": "Mobile development",
     "createdAt": new Date("2025-11-14T03:29:25.007Z"),
     "lastUsed": new Date("2025-11-14T03:29:25.007Z"),
-    "articleCount": 1
+    "articleCount": 0
   },
   {
     "id": 44,
@@ -353,7 +353,7 @@ const mockTags = [
     "description": "Video media type",
     "createdAt": new Date("2025-11-14T03:29:25.007Z"),
     "lastUsed": new Date("2025-11-14T03:29:25.007Z"),
-    "articleCount": 1
+    "articleCount": 0
   },
   {
     "id": 45,

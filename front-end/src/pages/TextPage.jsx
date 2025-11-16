@@ -87,22 +87,61 @@ const TextPage = ({ onNavigate }) => {
     }
   };
 
-  const handleCreateTag = async (newTag) => {
+  const handleCreateTag = async (tagName) => {
     try {
-      const response = await tagsAPI.create({ name: newTag.name, color: newTag.color });
-      if (response.success) {
-        setAvailableTags(prevTags => [...prevTags, response.data]);
-        // Refresh the global tag resolution mapping
-        await refreshTags();
-        // Return the created tag for use by child components
-        return response.data;
-      } else {
-        throw new Error(response.error || 'Failed to create tag');
+      if (!selectedArticleForTags) {
+        throw new Error('No article selected');
       }
+
+      // 1. Check if tag already exists
+      let existingTag = availableTags.find(t => 
+        t.name.toLowerCase() === tagName.toLowerCase()
+      );
+
+      let tagId;
+      if (existingTag) {
+        tagId = existingTag.id;
+      } else {
+        // 2. Create new tag via API
+        const createResponse = await tagsAPI.create({ name: tagName });
+        if (!createResponse.success || !createResponse.data) {
+          throw new Error('Failed to create tag');
+        }
+        existingTag = createResponse.data;
+        tagId = existingTag.id;
+        setAvailableTags(prev => [...prev, existingTag]);
+      }
+
+      // 3. Add tag to article via API
+      const addResponse = await articlesAPI.addTag(selectedArticleForTags.id, tagId);
+      if (!addResponse.success) {
+        throw new Error(addResponse.error || 'Failed to add tag to article');
+      }
+
+      // 4. Refetch articles from API to get latest data
+      const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+      let articlesData = articlesResponse;
+      if (Array.isArray(articlesResponse)) {
+        articlesData = articlesResponse;
+      } else if (articlesResponse.data) {
+        articlesData = articlesResponse.data;
+      }
+      
+      setArticles(articlesData);
+      setDisplayedArticles(applyFiltersAndSort(articlesData, baseLockedFilters));
+      
+      // Update selected article for modal
+      const updatedArticle = articlesData.find(a => a.id === selectedArticleForTags.id);
+      if (updatedArticle) {
+        setSelectedArticleForTags(updatedArticle);
+      }
+
     } catch (error) {
-      console.error('Failed to create tag:', error);
-      alert(`Failed to create tag: ${error.message}`);
-      throw error; // Re-throw so child components can handle it
+      console.error('Failed to create/add tag:', error);
+      const errorMsg = String(error?.message || 'Unknown error');
+      if (!errorMsg.toLowerCase().includes('already')) {
+        alert(`Failed to create tag: ${errorMsg}`);
+      }
     }
   };
 

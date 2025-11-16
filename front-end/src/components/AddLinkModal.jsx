@@ -117,13 +117,13 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
         
         {/* URL Input */}
         <div className="mb-4">
-          <label className="block text-[14px] text-foreground mb-2" for="url-input">URL</label>
+          <label className="block text-[14px] text-foreground mb-2" htmlFor="url-input">URL</label>
           <Input id="url-input" onChange={(e) => setNewLinkUrl(e.target.value)} placeholder="https://example.com/article"></Input>
         </div>
 
         {/* Tags Section */}
         <div className="mb-6">
-          <label className="block text-[14px] text-foreground mb-2" for="tags-input">Tags</label>
+          <label className="block text-[14px] text-foreground mb-2" htmlFor="tags-input">Tags</label>
           <Input className="mb-3" id="tags-input" type="text" value={newTagInput} onChange={(e) => setNewTagInput(e.target.value)} onKeyDown={handleTagInputKeyDown} placeholder="Add tags (press Enter)" />
 
           {/* Selected Tags Display */}

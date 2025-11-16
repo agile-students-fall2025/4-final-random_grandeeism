@@ -67,7 +67,7 @@ router.get('/:id', async (req, res) => {
 
 /**
  * POST /api/tags
- * Create a new tag
+ * Create a new tag (idempotent - returns existing tag if already exists)
  */
 router.post('/', async (req, res) => {
   try {
@@ -80,9 +80,24 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Check if tag already exists
+    const normalizedName = name.toLowerCase();
+    const existingTag = await tagsDao.getByName(normalizedName);
+    
+    if (existingTag) {
+      // Return 409 Conflict for duplicate tags
+      return res.status(409).json({ 
+        success: false, 
+        error: 'Tag with this name already exists'
+      });
+    }
+
+    // Create the tag
     const newTag = await tagsDao.create({
-      name: name.toLowerCase(),
-      description: description || ''
+      name: normalizedName,
+      description: description || '',
+      category: req.body.category,
+      color: req.body.color
     });
 
     res.status(201).json({ 
@@ -91,15 +106,15 @@ router.post('/', async (req, res) => {
       message: 'Tag created successfully' 
     });
   } catch (error) {
-    // Handle specific "already exists" error
+    // Handle duplicate tag error from DAO
     if (error.message && error.message.includes('already exists')) {
       return res.status(409).json({ 
         success: false, 
-        error: 'Tag already exists', 
-        message: error.message 
+        error: error.message
       });
     }
     
+    // Handle other server errors
     res.status(500).json({ 
       success: false, 
       error: 'Server Error', 

@@ -620,7 +620,8 @@ describe('Integration: Tag Management Across Articles', function() {
         // Should get 409 Conflict since tag exists in mock data
         expect(res).to.have.status(409);
         expect(res.body).to.have.property('success', false);
-        expect(res.body).to.have.property('error', 'Tag already exists');
+        expect(res.body).to.have.property('error');
+        expect(res.body.error).to.include('already exists');
         done();
       });
   });

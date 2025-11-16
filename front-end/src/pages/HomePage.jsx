@@ -21,6 +21,7 @@ import { articlesAPI, tagsAPI } from "../services/api.js";
 import { STATUS } from "../constants/statuses.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { useTagResolution } from "../hooks/useTagResolution.js";
+import { ensureTagsLoaded } from "../utils/tagsCache.js";
 
 // Tab configuration with icons and status mapping
 const tabs = [
@@ -60,14 +61,17 @@ const HomePage = ({ onNavigate }) => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Fetch articles and tags in parallel
-        const [articlesResponse, tagsResponse] = await Promise.all([
-          articlesAPI.getAll({}),
-          tagsAPI.getAll()
-        ]);
-        
-        // Handle articles response
+
+        // Step 1: Load tags first so resolution never flashes IDs
+        const tagsResponse = await tagsAPI.getAll({ sort: 'alphabetical' });
+        if (tagsResponse.success && tagsResponse.data) {
+          setAvailableTags(tagsResponse.data);
+          // Preload cache for downstream components
+          await ensureTagsLoaded(async () => ({ data: tagsResponse.data }));
+        }
+
+        // Step 2: Fetch articles after tags ready
+        const articlesResponse = await articlesAPI.getAll({});
         let articlesData = articlesResponse;
         if (Array.isArray(articlesResponse)) {
           articlesData = articlesResponse;
@@ -76,21 +80,14 @@ const HomePage = ({ onNavigate }) => {
         } else if (articlesResponse.articles) {
           articlesData = articlesResponse.articles;
         }
-        
         setRawArticles(articlesData);
-        
-        // Handle tags response
-        if (tagsResponse.success && tagsResponse.data) {
-          setAvailableTags(tagsResponse.data);
-        }
-        
+
         setLoading(false);
       } catch (err) {
         setError(err.message || "Failed to load data");
         setLoading(false);
       }
     };
-    
     fetchData();
   }, []);
 
@@ -109,13 +106,7 @@ const HomePage = ({ onNavigate }) => {
   }, [articles, baseLockedFilters]);
 
   // Get article counts for display
-  const articleCounts = useMemo(() => {
-    const counts = {};
-    for (const tab of tabs) {
-      counts[tab.status] = articles.filter(a => a.status === tab.status).length;
-    }
-    return counts;
-  }, [articles]);
+  // Removed unused articleCounts (was causing lint warning). Re-add if needed for tab badges.
 
   // Article management functions
   const handleArticleClick = (article) => {
@@ -246,36 +237,72 @@ const HomePage = ({ onNavigate }) => {
   const handleManageTags = (article) => {
     // Find the raw article (with tag IDs) instead of using the resolved article (with tag names)  
     const rawArticle = rawArticles.find(raw => raw.id === article.id);
-    setSelectedArticleForTags(resolveArticleTags([rawArticle || article])[0]);
+    setSelectedArticleForTags(rawArticle || article);
     setShowTagManagerModal(true);
   };
 
   const handleAddTag = async (articleId, tagId) => {
     try {
+      // Check if tag is already on article before making API call
+      const currentArticle = rawArticles.find(a => a.id === articleId);
+      const tagAlreadyExists = currentArticle?.tags?.some(t => 
+        String(t).toLowerCase() === String(tagId).toLowerCase()
+      );
+      
+      if (tagAlreadyExists) {
+        console.log('Tag already on article, skipping API call');
+        return; // Silently succeed - tag is already attached
+      }
+      // Perform API call to attach tag
       const response = await articlesAPI.addTag(articleId, tagId);
-      if (response.success) {
-        // First, optimistically update the selected article for immediate UI feedback
-        if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
-          const updatedTags = [...(selectedArticleForTags.tags || []), tagId];
-          const optimisticUpdate = { ...selectedArticleForTags, tags: updatedTags };
-          setSelectedArticleForTags(optimisticUpdate);
+      if (!response.success) throw new Error(response.error || 'Failed to add tag');
+
+      // Optimistically update rawArticles locally (avoid full refetch for responsiveness)
+      setRawArticles(prev => {
+        const updated = prev.map(a => {
+          if (a.id !== articleId) return a;
+          const existing = Array.isArray(a.tags) ? a.tags : [];
+          if (existing.some(t => String(t).toLowerCase() === String(tagId).toLowerCase())) return a;
+          return { ...a, tags: [...existing, tagId] };
+        });
+        return updated;
+      });
+
+      // Update resolved articles & displayedArticles immediately
+      const nextRaw = rawArticles.map(a => {
+        if (a.id !== articleId) return a;
+        const existing = Array.isArray(a.tags) ? a.tags : [];
+        if (existing.some(t => String(t).toLowerCase() === String(tagId).toLowerCase())) return a;
+        return { ...a, tags: [...existing, tagId] };
+      });
+      const resolved = resolveArticleTags(nextRaw);
+      setArticles(resolved);
+      setDisplayedArticles(applyFiltersAndSort(resolved, baseLockedFilters));
+
+      // Update selected article for tag modal (use raw article with tag IDs, not resolved)
+      if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
+        const updatedRaw = nextRaw.find(a => a.id === articleId);
+        if (updatedRaw) {
+          setSelectedArticleForTags(updatedRaw);
         }
-        
-        // Refetch articles to show updated tags
-        const articlesResponse = await articlesAPI.getAll({});
-        let articlesData = articlesResponse;
-        if (articlesResponse.data) articlesData = articlesResponse.data;
-        
-        setRawArticles(articlesData);
-        // Update the selected article for the modal with fresh server data
-        const updatedArticle = articlesData.find(a => a.id === articleId);
-        if (updatedArticle) {
-          setSelectedArticleForTags(updatedArticle);
-        }
-      } else {
-        throw new Error(response.error || 'Failed to add tag');
       }
     } catch (error) {
+      // If tag is already on article (409), treat as success
+      const errorMsg = String(error?.message || '').toLowerCase();
+      if (errorMsg.includes('already on article')) {
+        console.log('Tag already on article (409), treating as success');
+        // Refetch to sync state
+        const articlesResponse = await articlesAPI.getAll({});
+        if (articlesResponse.data) {
+          setRawArticles(articlesResponse.data);
+          const updatedArticle = articlesResponse.data.find(a => a.id === articleId);
+          if (updatedArticle) {
+            setSelectedArticleForTags(updatedArticle);
+          }
+        }
+        return; // Don't show error to user
+      }
+      
       console.error('Failed to add tag:', error);
       alert(`Failed to add tag: ${error.message}`);
     }
@@ -284,27 +311,36 @@ const HomePage = ({ onNavigate }) => {
   const handleRemoveTag = async (articleId, tagId) => {
     try {
       const response = await articlesAPI.removeTag(articleId, tagId);
-      if (response.success) {
-        // First, optimistically update the selected article for immediate UI feedback
-        if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
-          const updatedTags = selectedArticleForTags.tags.filter(tag => tag !== tagId);
-          const optimisticUpdate = { ...selectedArticleForTags, tags: updatedTags };
-          setSelectedArticleForTags(optimisticUpdate);
+      if (!response.success) throw new Error(response.error || 'Failed to remove tag');
+
+      // Optimistically update rawArticles by removing tagId (handle both id and name forms)
+      setRawArticles(prev => prev.map(a => {
+        if (a.id !== articleId) return a;
+        const existing = Array.isArray(a.tags) ? a.tags : [];
+        const filtered = existing.filter(t => {
+          const s = String(t).toLowerCase();
+          const target = String(tagId).toLowerCase();
+          return s !== target; // if tags are names OR ids
+        });
+        return { ...a, tags: filtered };
+      }));
+
+      const nextRaw = rawArticles.map(a => {
+        if (a.id !== articleId) return a;
+        const existing = Array.isArray(a.tags) ? a.tags : [];
+        const filtered = existing.filter(t => String(t).toLowerCase() !== String(tagId).toLowerCase());
+        return { ...a, tags: filtered };
+      });
+      const resolved = resolveArticleTags(nextRaw);
+      setArticles(resolved);
+      setDisplayedArticles(applyFiltersAndSort(resolved, baseLockedFilters));
+
+      if (selectedArticleForTags && selectedArticleForTags.id === articleId) {
+        const updatedRaw = nextRaw.find(a => a.id === articleId);
+        if (updatedRaw) {
+          const [resolvedArticle] = resolveArticleTags([updatedRaw]);
+          setSelectedArticleForTags(resolvedArticle);
         }
-        
-        // Refetch articles to show updated tags
-        const articlesResponse = await articlesAPI.getAll({});
-        let articlesData = articlesResponse;
-        if (articlesResponse.data) articlesData = articlesResponse.data;
-        
-        setRawArticles(articlesData);
-        // Update the selected article for the modal with fresh server data
-        const updatedArticle = articlesData.find(a => a.id === articleId);
-        if (updatedArticle) {
-          setSelectedArticleForTags(updatedArticle);
-        }
-      } else {
-        throw new Error(response.error || 'Failed to remove tag');
       }
     } catch (error) {
       console.error('Failed to remove tag:', error);
@@ -312,23 +348,15 @@ const HomePage = ({ onNavigate }) => {
     }
   };
 
-  const handleCreateTag = async (newTag) => {
-    try {
-      const response = await tagsAPI.create({ name: newTag.name, color: newTag.color });
-      if (response.success) {
-        setAvailableTags(prevTags => [...prevTags, response.data]);
-        // Refresh the global tag resolution mapping
-        await refreshTags();
-        // Return the created tag for use by child components
-        return response.data;
-      } else {
-        throw new Error(response.error || 'Failed to create tag');
-      }
-    } catch (error) {
-      console.error('Failed to create tag:', error);
-      alert(`Failed to create tag: ${error.message}`);
-      throw error; // Re-throw so child components can handle it
-    }
+  // Note: TagManagerModal already creates the tag via API and passes the created tag here.
+  // Avoid creating again (which caused 409 conflicts). Just update local state.
+  const handleCreateTag = (createdTag) => {
+    if (!createdTag || !createdTag.id) return;
+    setAvailableTags(prev => {
+      // Prevent duplicates if callback fires multiple times
+      const exists = prev.some(t => t.id === createdTag.id || t.name.toLowerCase() === createdTag.name.toLowerCase());
+      return exists ? prev : [...prev, createdTag];
+    });
   };
 
   return (
