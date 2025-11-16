@@ -486,19 +486,60 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     }
   };
 
-  // Handle created tag notification from modal (already created & attached via handleAddTag)
-  // This callback ONLY updates local tag list; attachment already handled by handleAddTag
-  const handleCreateTag = (newTagObj) => {
-    if (!newTagObj || !newTagObj.id) return;
-    // Only update local state if tag is truly new (prevent duplicate updates)
-    setAllTags(prev => {
-      const exists = prev.some(t => t.id === newTagObj.id);
-      if (exists) return prev; // no change needed
-      // Add to shared cache and local state
-      addSingleTag(newTagObj);
-      return [...prev, newTagObj];
-    });
-    // Note: setTagMap not needed here since getTagName reads from cache directly
+  // Handle created tag notification from modal - create tag and add it to article
+  const handleCreateTag = async (tagName) => {
+    if (!current || !tagName) return;
+    try {
+      // Create the tag first
+      const createResp = await tagsAPI.create({ name: tagName });
+      if (!createResp?.data) {
+        throw new Error('Failed to create tag');
+      }
+      
+      const newTag = createResp.data;
+      
+      // Add to local tag list and cache
+      addSingleTag(newTag);
+      setAllTags(prev => {
+        const exists = prev.some(t => t.id === newTag.id);
+        return exists ? prev : [...prev, newTag];
+      });
+      
+      // Add tag to the current article
+      await articlesAPI.addTag(current.id, newTag.id);
+      
+      // Reload article to get updated tags
+      const res = await articlesAPI.getById(current.id);
+      if (res?.data) setCurrent(res.data);
+    } catch (error) {
+      // If tag already exists, try to find it and add it
+      const msg = String(error?.message || '').toLowerCase();
+      if (msg.includes('already exists')) {
+        try {
+          const list = await tagsAPI.getAll({ search: tagName });
+          const existing = list?.data?.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+          if (existing) {
+            // Add to cache and local state
+            addSingleTag(existing);
+            setAllTags(prev => {
+              const exists = prev.some(t => t.id === existing.id);
+              return exists ? prev : [...prev, existing];
+            });
+            // Add to article
+            await articlesAPI.addTag(current.id, existing.id);
+            // Reload article
+            const res = await articlesAPI.getById(current.id);
+            if (res?.data) setCurrent(res.data);
+          }
+        } catch (e2) {
+          console.error('Failed to handle existing tag:', e2);
+          throw e2;
+        }
+      } else {
+        console.error('Failed to create tag:', error);
+        throw error;
+      }
+    }
   };
 
   const handleCompletion = () => {

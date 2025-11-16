@@ -5,18 +5,17 @@
  * This component is self-contained and manages its own state for real-time updates
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { X, Plus, Minus, Tag } from "lucide-react";
-import { tagsAPI, articlesAPI } from "../services/api.js";
 
 export default function TagManagerModal({ 
   isOpen, 
   onClose, 
-  article: initialArticle,
-  availableTags: initialAvailableTags = [], 
+  article,
+  availableTags = [], 
   onAddTag, 
   onRemoveTag,
-  onCreateTag // New prop for creating tags
+  onCreateTag
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredTags, setFilteredTags] = useState([]);
@@ -24,45 +23,19 @@ export default function TagManagerModal({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
-  
-  // Internal state for article and tags - this is the source of truth
-  const [article, setArticle] = useState(initialArticle);
-  const [availableTags, setAvailableTags] = useState(initialAvailableTags);
-  const [currentArticleTags, setCurrentArticleTags] = useState(article?.tags || []);
 
-  // Sync with props when modal opens or article changes
-  useEffect(() => {
-    if (isOpen && initialArticle) {
-      setArticle(initialArticle);
-    }
-  }, [isOpen, initialArticle]);
+  // Get current tag objects by matching article.tags (IDs) with availableTags
+  const currentTags = useMemo(() => {
+    return availableTags.filter(tag => {
+      const articleTagIds = Array.isArray(article?.tags) ? article.tags : [];
+      return articleTagIds.some(artTagId => String(artTagId) === String(tag.id));
+    });
+  }, [availableTags, article?.tags]);
 
-  // Sync available tags
-  useEffect(() => {
-    setAvailableTags(initialAvailableTags);
-  }, [initialAvailableTags]);
-
-  // Helper: determine if a tag (id or name) is already on the article to avoid duplicate API calls
-  const isTagAlreadyOnArticle = (art, tagIdentifier) => {
-    if (!art) return false;
-    const tagArray = Array.isArray(art.tags) ? art.tags : [];
-    if (tagIdentifier == null) return false;
-    const idStr = String(tagIdentifier);
-    // Tag may be stored as numeric id or as name string after resolution
-    return tagArray.some(t => String(t) === idStr);
-  };
-
-  // Update local article tags when the article prop changes
-  useEffect(() => {
-    setCurrentArticleTags(article?.tags || []);
-  }, [article]);
-
-  // Get current tag IDs and resolve them to tag objects
-  // Handle both cases: tags as IDs or tags as names (after resolution)
-  const currentTags = availableTags.filter(tag => {
-    // Check if current article tags contain either the tag ID or tag name
-    return currentArticleTags.includes(tag.id) || currentArticleTags.includes(tag.name);
-  });
+  // Get set of current tag IDs for faster lookup
+  const currentTagIds = useMemo(() => {
+    return new Set(currentTags.map(tag => String(tag.id)));
+  }, [currentTags]);
 
   // Filter available tags based on search term and exclude already added tags
   useEffect(() => {
@@ -72,27 +45,28 @@ export default function TagManagerModal({
       return;
     }
 
+    const searchLower = searchTerm.toLowerCase().trim();
+
     const filtered = availableTags.filter(tag => {
-      // Check if tag is already added (by ID or name)
-      const isAlreadyAdded = currentArticleTags.includes(tag.id) || currentArticleTags.includes(tag.name);
+      // Check if tag is already added (by ID)
+      const isAlreadyAdded = currentTagIds.has(String(tag.id));
       // Check if tag name matches search term
-      const matchesSearch = tag.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = tag.name.toLowerCase().includes(searchLower);
       return !isAlreadyAdded && matchesSearch;
     });
     
     // Check if search term exactly matches any existing tag
     const exactMatch = availableTags.find(tag => 
-      tag.name.toLowerCase() === searchTerm.toLowerCase()
+      tag.name.toLowerCase() === searchLower
     );
 
     // Build options; prefer showing "Create new" at the top when applicable
     let optionsToShow = filtered;
     if (!exactMatch && searchTerm.trim().length >= 2) {
       const createNewOption = {
-        id: `create-new-${searchTerm.trim().toLowerCase()}`,
+        id: `create-new-${searchLower}`,
         name: searchTerm.trim(),
         isCreateNew: true,
-        color: '#6b7280' // Default color
       };
       optionsToShow = [createNewOption, ...filtered];
     }
@@ -100,7 +74,7 @@ export default function TagManagerModal({
     setFilteredTags(optionsToShow);
     setShowDropdown(optionsToShow.length > 0);
     setSelectedIndex(-1);
-  }, [searchTerm, availableTags, currentArticleTags]);
+  }, [searchTerm, availableTags, currentTagIds]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e) => {
@@ -136,158 +110,27 @@ export default function TagManagerModal({
   const handleAddTag = async (tag) => {
     try {
       if (tag.isCreateNew) {
-        // Try to create the tag
-        const newTagData = {
-          name: tag.name,
-          color: tag.color || '#6b7280',
-          description: `Tag for ${tag.name}`
-        };
-
-        try {
-          const createResponse = await tagsAPI.create(newTagData);
-          if (createResponse.success && createResponse.data) {
-            const newTag = createResponse.data;
-
-            // Add to available tags list immediately (local state)
-            setAvailableTags(prev => {
-              const exists = prev.some(t => t.id === newTag.id || t.name.toLowerCase() === newTag.name.toLowerCase());
-              return exists ? prev : [...prev, newTag];
-            });
-
-            // Inform parent about the newly created tag BEFORE attaching to article
-            if (onCreateTag) {
-              try {
-                await Promise.resolve(onCreateTag(newTag));
-              } catch (e) {
-                console.error('onCreateTag handler failed:', e);
-              }
-            }
-
-            // Add the new tag to the article
-            if (!isTagAlreadyOnArticle(article, newTag.id) && !isTagAlreadyOnArticle(article, newTag.name)) {
-              if (onAddTag) {
-                try {
-                  await onAddTag(article.id, newTag.id);
-                } catch (e) {
-                  const em = String(e?.message || '').toLowerCase();
-                  if (!em.includes('already')) throw e;
-                }
-              } else {
-                try {
-                  await articlesAPI.addTag(article.id, newTag.id);
-                } catch (e) {
-                  const em = String(e?.message || '').toLowerCase();
-                  if (!em.includes('already')) throw e;
-                }
-              }
-
-              // Update internal article state immediately
-              setArticle(prev => ({
-                ...prev,
-                tags: [...(prev.tags || []), newTag.id]
-              }));
-              // Also optimistically update currentArticleTags to avoid UI lag
-              setCurrentArticleTags(prev => [...prev, newTag.id]);
-            }
-          }
-        } catch (err) {
-          // If tag already exists in system, fetch it and attach
-          const msg = String(err?.message || '').toLowerCase();
-          if (msg.includes('already exists') && !msg.includes('already on article')) {
-            console.log('Tag exists in system, fetching and attaching...');
-            const list = await tagsAPI.getAll({ search: tag.name });
-            const existing = Array.isArray(list?.data)
-              ? list.data.find(t => t.name.toLowerCase() === tag.name.toLowerCase())
-              : null;
-            if (existing) {
-              // Add to available tags if not already there
-              setAvailableTags(prev => {
-                const exists = prev.some(t => t.id === existing.id);
-                return exists ? prev : [...prev, existing];
-              });
-              
-              // Inform parent about the existing (found) tag BEFORE attaching to article
-              if (onCreateTag) {
-                try {
-                  await Promise.resolve(onCreateTag(existing));
-                } catch (e) {
-                  console.error('onCreateTag handler failed:', e);
-                }
-              }
-
-              if (!isTagAlreadyOnArticle(article, existing.id) && !isTagAlreadyOnArticle(article, existing.name)) {
-                if (onAddTag) {
-                  try { 
-                    await onAddTag(article.id, existing.id);
-                  } catch (e2) {
-                    const em2 = String(e2?.message || '').toLowerCase();
-                    if (!em2.includes('already')) throw e2;
-                  }
-                } else {
-                  try { 
-                    await articlesAPI.addTag(article.id, existing.id);
-                  } catch (e2) {
-                    const em2 = String(e2?.message || '').toLowerCase();
-                    if (!em2.includes('already')) throw e2;
-                  }
-                }
-                
-                // Update internal article state immediately
-                setArticle(prev => ({
-                  ...prev,
-                  tags: [...(prev.tags || []), existing.id]
-                }));
-                // Also optimistically update currentArticleTags
-                setCurrentArticleTags(prev => [...prev, existing.id]);
-              }
-              
-            } else {
-              throw err;
-            }
-          } else {
-            throw err;
-          }
+        // Delegate tag creation to parent - parent will handle everything
+        if (onCreateTag) {
+          await onCreateTag(tag.name);
         }
       } else {
-        // Add existing tag
-        if (!isTagAlreadyOnArticle(article, tag.id) && !isTagAlreadyOnArticle(article, tag.name)) {
-          if (onAddTag) {
-            try { 
-              await onAddTag(article.id, tag.id);
-            } catch (e) {
-              const em = String(e?.message || '').toLowerCase();
-              if (!em.includes('already')) throw e;
-            }
-          } else {
-            try { 
-              await articlesAPI.addTag(article.id, tag.id);
-            } catch (e) {
-              const em = String(e?.message || '').toLowerCase();
-              if (!em.includes('already')) throw e;
-            }
-          }
-          
-          // Update internal article state immediately
-          setArticle(prev => ({
-            ...prev,
-            tags: [...(prev.tags || []), tag.id]
-          }));
+        // Add existing tag via parent callback
+        if (onAddTag) {
+          await onAddTag(article.id, tag.id);
         }
-        // Update local state to immediately show the new tag
-        setCurrentArticleTags(prev => [...prev, tag.id]);
       }
 
+      // Clear search after successful add
       setSearchTerm('');
       setShowDropdown(false);
       setSelectedIndex(-1);
     } catch (error) {
-      // Only log true errors
-      const errorMsg = String(error?.message || '').toLowerCase();
-      if (!errorMsg.includes('already on article') && !errorMsg.includes('already exists') && !errorMsg.includes('duplicate')) {
-        console.error('Failed to add tag:', error);
-        alert(`Failed to add tag: ${error.message}`);
-      } else {
-        console.debug('Suppressed duplicate tag add error:', error.message);
+      console.error('Failed to add tag:', error);
+      const errorMsg = String(error?.message || 'Unknown error');
+      // Don't show alert for duplicate errors
+      if (!errorMsg.toLowerCase().includes('already')) {
+        alert(`Failed to add tag: ${errorMsg}`);
       }
     }
   };
@@ -296,15 +139,7 @@ export default function TagManagerModal({
     try {
       if (onRemoveTag) {
         await onRemoveTag(article.id, tag.id);
-      } else {
-        await articlesAPI.removeTag(article.id, tag.id);
       }
-      
-      // Update internal article state immediately
-      setArticle(prev => ({
-        ...prev,
-        tags: (prev.tags || []).filter(t => String(t) !== String(tag.id) && String(t) !== String(tag.name))
-      }));
     } catch (error) {
       console.error('Failed to remove tag:', error);
       alert(`Failed to remove tag: ${error.message}`);
@@ -361,7 +196,7 @@ export default function TagManagerModal({
               <div className="flex flex-wrap gap-2">
                 {currentTags.map(tag => (
                   <div 
-                    key={tag.id}
+                    key={`current-tag-${tag.id}`}
                     className="flex items-center gap-1 px-2 py-1 bg-accent rounded-md text-sm"
                   >
                     <Tag size={12} />
@@ -399,11 +234,11 @@ export default function TagManagerModal({
                 <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-lg max-h-48 overflow-y-auto z-10">
                   {filteredTags.map((tag, index) => (
                     <button
-                      key={tag.id}
+                      key={tag.isCreateNew ? tag.id : `dropdown-tag-${tag.id}`}
                       onClick={() => handleAddTag(tag)}
                       className={`w-full px-3 py-2 text-left hover:bg-accent transition-colors flex items-center gap-2 ${
                         index === selectedIndex ? 'bg-accent' : ''
-                      } ${tag.isCreateNew ? 'border-t border-border bg-muted/20' : ''}`}
+                      } ${tag.isCreateNew ? 'border-b border-border bg-muted/20 font-medium' : ''}`}
                     >
                       <Plus size={14} />
                       <span>
