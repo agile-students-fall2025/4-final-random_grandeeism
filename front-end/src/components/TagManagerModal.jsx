@@ -53,19 +53,17 @@ export default function TagManagerModal({
     const exactMatch = availableTags.find(tag => 
       tag.name.toLowerCase() === searchTerm.toLowerCase()
     );
-    
-    // Add "Create new tag" option if no exact match exists and search term is valid
+
+    // Build options; prefer showing "Create new" at the top when applicable
     let optionsToShow = filtered;
     if (!exactMatch && searchTerm.trim().length >= 2) {
-      optionsToShow = [
-        ...filtered,
-        {
-          id: 'create-new',
-          name: searchTerm.trim(),
-          isCreateNew: true,
-          color: '#6b7280' // Default color
-        }
-      ];
+      const createNewOption = {
+        id: `create-new-${searchTerm.trim().toLowerCase()}`,
+        name: searchTerm.trim(),
+        isCreateNew: true,
+        color: '#6b7280' // Default color
+      };
+      optionsToShow = [createNewOption, ...filtered];
     }
     
     setFilteredTags(optionsToShow);
@@ -92,6 +90,9 @@ export default function TagManagerModal({
         e.preventDefault();
         if (selectedIndex >= 0 && filteredTags[selectedIndex]) {
           handleAddTag(filteredTags[selectedIndex]);
+        } else if (filteredTags.length > 0) {
+          // Default to first option (usually "Create new") when nothing selected
+          handleAddTag(filteredTags[0]);
         }
         break;
       case 'Escape':
@@ -104,25 +105,48 @@ export default function TagManagerModal({
   const handleAddTag = async (tag) => {
     try {
       if (tag.isCreateNew) {
-        // Create new tag first
+        // Try to create the tag
         const newTagData = {
           name: tag.name,
           color: tag.color || '#6b7280',
           description: `Tag for ${tag.name}`
         };
-        
-        const createResponse = await tagsAPI.create(newTagData);
-        if (createResponse.success && createResponse.data) {
-          const newTag = createResponse.data;
-          // Add the new tag to the article
-          if (onAddTag) {
-            await onAddTag(article.id, newTag.id);
-          } else {
-            await articlesAPI.addTag(article.id, newTag.id);
+
+        try {
+          const createResponse = await tagsAPI.create(newTagData);
+          if (createResponse.success && createResponse.data) {
+            const newTag = createResponse.data;
+            // Add the new tag to the article
+            if (onAddTag) {
+              await onAddTag(article.id, newTag.id);
+            } else {
+              await articlesAPI.addTag(article.id, newTag.id);
+            }
+            // Inform parent so local tag list updates without duplicate API call
+            onCreateTag && onCreateTag(newTag);
           }
-          // Notify parent component about the new tag
-          if (onCreateTag) {
-            onCreateTag(newTag);
+        } catch (err) {
+          // If tag already exists in system (409 from POST /tags), fetch it and attach
+          const msg = String(err?.message || '').toLowerCase();
+          if (msg.includes('already exists') && !msg.includes('already on article')) {
+            console.log('Tag exists in system, fetching and attaching...');
+            const list = await tagsAPI.getAll({ search: tag.name });
+            const existing = Array.isArray(list?.data)
+              ? list.data.find(t => t.name.toLowerCase() === tag.name.toLowerCase())
+              : null;
+            if (existing) {
+              if (onAddTag) {
+                await onAddTag(article.id, existing.id);
+              } else {
+                await articlesAPI.addTag(article.id, existing.id);
+              }
+              onCreateTag && onCreateTag(existing);
+            } else {
+              throw err;
+            }
+          } else {
+            // Re-throw other errors (will be caught by outer try/catch)
+            throw err;
           }
         }
       } else {
@@ -133,12 +157,17 @@ export default function TagManagerModal({
           await articlesAPI.addTag(article.id, tag.id);
         }
       }
-      
+
       setSearchTerm('');
       setShowDropdown(false);
       setSelectedIndex(-1);
     } catch (error) {
-      console.error('Failed to add tag:', error);
+      // Only log true errors; 'already on article' is handled by HomePage
+      const errorMsg = String(error?.message || '').toLowerCase();
+      if (!errorMsg.includes('already on article')) {
+        console.error('Failed to add tag:', error);
+        alert(`Failed to add tag: ${error.message}`);
+      }
     }
   };
 

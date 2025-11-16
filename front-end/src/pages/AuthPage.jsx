@@ -58,14 +58,14 @@ const AuthPage = ({ onNavigate }) => {
                   <div className="flex-grow h-px bg-muted-foreground"></div>
                 </div>
                 <div className="text-left">
-                  <label for="email" className="inline-block mb-2 text-sm">Email</label>
+                  <label htmlFor="email" className="inline-block mb-2 text-sm">Email</label>
                   <input
                     type="email"
                     id="email"
                     placeholder="m@example.com"
                     className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
                   />
-                  <label for="password" className="inline-block mb-2 text-sm block mt-4">Password</label>
+                  <label htmlFor="password" className="inline-block mb-2 text-sm block mt-4">Password</label>
                   <input
                     type="password"
                     id="password"
@@ -74,7 +74,7 @@ const AuthPage = ({ onNavigate }) => {
                   />
                   {mode === 'register' ? 
                     <>
-                      <label for="confirm-password" className="inline-block mb-2 text-sm mt-4">Confirm Password</label>
+                      <label htmlFor="confirm-password" className="inline-block mb-2 text-sm mt-4">Confirm Password</label>
                       <input
                       type="password"
                       id="confirm-password"

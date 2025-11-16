@@ -252,6 +252,17 @@ const HomePage = ({ onNavigate }) => {
 
   const handleAddTag = async (articleId, tagId) => {
     try {
+      // Check if tag is already on article before making API call
+      const currentArticle = rawArticles.find(a => a.id === articleId);
+      const tagAlreadyExists = currentArticle?.tags?.some(t => 
+        String(t).toLowerCase() === String(tagId).toLowerCase()
+      );
+      
+      if (tagAlreadyExists) {
+        console.log('Tag already on article, skipping API call');
+        return; // Silently succeed - tag is already attached
+      }
+
       const response = await articlesAPI.addTag(articleId, tagId);
       if (response.success) {
         // First, optimistically update the selected article for immediate UI feedback
@@ -276,6 +287,22 @@ const HomePage = ({ onNavigate }) => {
         throw new Error(response.error || 'Failed to add tag');
       }
     } catch (error) {
+      // If tag is already on article (409), treat as success
+      const errorMsg = String(error?.message || '').toLowerCase();
+      if (errorMsg.includes('already on article')) {
+        console.log('Tag already on article (409), treating as success');
+        // Refetch to sync state
+        const articlesResponse = await articlesAPI.getAll({});
+        if (articlesResponse.data) {
+          setRawArticles(articlesResponse.data);
+          const updatedArticle = articlesResponse.data.find(a => a.id === articleId);
+          if (updatedArticle) {
+            setSelectedArticleForTags(updatedArticle);
+          }
+        }
+        return; // Don't show error to user
+      }
+      
       console.error('Failed to add tag:', error);
       alert(`Failed to add tag: ${error.message}`);
     }
@@ -312,18 +339,15 @@ const HomePage = ({ onNavigate }) => {
     }
   };
 
-  const handleCreateTag = async (newTag) => {
-    try {
-      const response = await tagsAPI.create({ name: newTag.name, color: newTag.color });
-      if (response.success) {
-        setAvailableTags(prevTags => [...prevTags, response.data]);
-      } else {
-        throw new Error(response.error || 'Failed to create tag');
-      }
-    } catch (error) {
-      console.error('Failed to create tag:', error);
-      alert(`Failed to create tag: ${error.message}`);
-    }
+  // Note: TagManagerModal already creates the tag via API and passes the created tag here.
+  // Avoid creating again (which caused 409 conflicts). Just update local state.
+  const handleCreateTag = (createdTag) => {
+    if (!createdTag || !createdTag.id) return;
+    setAvailableTags(prev => {
+      // Prevent duplicates if callback fires multiple times
+      const exists = prev.some(t => t.id === createdTag.id || t.name.toLowerCase() === createdTag.name.toLowerCase());
+      return exists ? prev : [...prev, createdTag];
+    });
   };
 
   return (
