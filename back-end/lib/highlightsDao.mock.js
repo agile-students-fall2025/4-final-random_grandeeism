@@ -11,10 +11,13 @@ const { mockHighlights } = require('../data/mockHighlights');
 // In-memory storage - clone the mock data to avoid mutations
 let highlights = [...mockHighlights.map(highlight => ({ ...highlight }))];
 
+// Next numeric ID helper
+let nextId = (highlights.length ? Math.max(...highlights.map(h => Number(h.id))) : 0) + 1;
+
 /**
  * Generate a new ID for created highlights
  */
-const generateId = () => `highlight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const generateId = () => nextId++;
 
 const highlightsDao = {
   /**
@@ -31,12 +34,12 @@ const highlightsDao = {
 
     // Article ID filter
     if (filters.articleId) {
-      filteredHighlights = filteredHighlights.filter(highlight => highlight.articleId === filters.articleId);
+      filteredHighlights = filteredHighlights.filter(highlight => highlight.articleId == filters.articleId);
     }
 
     // User ID filter
     if (filters.userId) {
-      filteredHighlights = filteredHighlights.filter(highlight => highlight.userId === filters.userId);
+      filteredHighlights = filteredHighlights.filter(highlight => highlight.userId == filters.userId);
     }
 
     // Color filter
@@ -62,7 +65,7 @@ const highlightsDao = {
    * @returns {Promise<Object|null>} Highlight object or null if not found
    */
   async getById(id) {
-    const highlight = highlights.find(h => h.id === id);
+  const highlight = highlights.find(h => h.id == id);
     return highlight ? { ...highlight } : null;
   },
 
@@ -102,7 +105,7 @@ const highlightsDao = {
    * @returns {Promise<Object|null>} Updated highlight or null if not found
    */
   async update(id, updateData) {
-    const index = highlights.findIndex(h => h.id === id);
+  const index = highlights.findIndex(h => h.id == id);
     if (index === -1) {
       return null;
     }
@@ -123,7 +126,7 @@ const highlightsDao = {
    * @returns {Promise<boolean>} True if deleted, false if not found
    */
   async delete(id) {
-    const index = highlights.findIndex(h => h.id === id);
+  const index = highlights.findIndex(h => h.id == id);
     if (index === -1) {
       return false;
     }
@@ -138,7 +141,7 @@ const highlightsDao = {
    * @returns {Promise<Array>} Highlights for the specified article
    */
   async getByArticleId(articleId) {
-    return highlights.filter(highlight => highlight.articleId === articleId);
+  return highlights.filter(highlight => highlight.articleId == articleId);
   },
 
   /**
@@ -147,7 +150,7 @@ const highlightsDao = {
    * @returns {Promise<Array>} Highlights for the specified user
    */
   async getByUserId(userId) {
-    return highlights.filter(highlight => highlight.userId === userId);
+  return highlights.filter(highlight => highlight.userId == userId);
   },
 
   /**

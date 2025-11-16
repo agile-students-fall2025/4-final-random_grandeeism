@@ -11,10 +11,13 @@ const { mockUsers } = require('../data/mockUsers');
 // In-memory storage - clone the mock data to avoid mutations
 let users = [...mockUsers.map(user => ({ ...user }))];
 
+// Next numeric ID helper
+let nextId = (users.length ? Math.max(...users.map(u => Number(u.id))) : 0) + 1;
+
 /**
  * Generate a new ID for created users
  */
-const generateId = () => `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const generateId = () => nextId++;
 
 const usersDao = {
   /**
@@ -55,7 +58,7 @@ const usersDao = {
    * @returns {Promise<Object|null>} User object or null if not found
    */
   async getById(id, includePassword = false) {
-    const user = users.find(u => u.id === id);
+  const user = users.find(u => u.id == id);
     if (!user) return null;
 
     if (includePassword) {
@@ -167,7 +170,7 @@ const usersDao = {
    * @returns {Promise<Object|null>} Updated user (without password) or null if not found
    */
   async update(id, updateData) {
-    const index = users.findIndex(u => u.id === id);
+  const index = users.findIndex(u => u.id == id);
     if (index === -1) {
       return null;
     }
@@ -205,7 +208,7 @@ const usersDao = {
    * @returns {Promise<boolean>} True if deleted, false if not found
    */
   async delete(id) {
-    const index = users.findIndex(u => u.id === id);
+  const index = users.findIndex(u => u.id == id);
     if (index === -1) {
       return false;
     }
@@ -221,7 +224,7 @@ const usersDao = {
    * @returns {Promise<boolean>} True if updated, false if user not found
    */
   async updatePassword(id, hashedPassword) {
-    const index = users.findIndex(u => u.id === id);
+  const index = users.findIndex(u => u.id == id);
     if (index === -1) {
       return false;
     }
@@ -236,7 +239,7 @@ const usersDao = {
    * @returns {Promise<boolean>} True if updated, false if user not found
    */
   async updateLastLogin(id) {
-    const index = users.findIndex(u => u.id === id);
+  const index = users.findIndex(u => u.id == id);
     if (index === -1) {
       return false;
     }

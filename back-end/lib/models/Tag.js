@@ -14,7 +14,8 @@ const tagSchema = new Schema({
     required: true,
     trim: true,
     maxlength: 100,
-    lowercase: true // Store tags in lowercase for consistency
+    lowercase: true,
+    index: true // quick lookup
   },
   description: {
     type: String,
@@ -38,6 +39,7 @@ const tagSchema = new Schema({
       message: 'Color must be a valid hex color code'
     }
   },
+  // Persisted denormalized count; always recomputed in service layer for consistency
   articleCount: {
     type: Number,
     default: 0,
@@ -54,7 +56,8 @@ const tagSchema = new Schema({
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
   }
 }, {
   timestamps: true,
@@ -103,12 +106,12 @@ tagSchema.methods.decrementCount = function(amount = 1) {
 
 tagSchema.methods.updateCount = async function() {
   const Article = mongoose.model('Article');
-  const count = await Article.countDocuments({ 
-    tags: this.name,
-    userId: this.userId 
-  });
-  this.articleCount = count;
-  return this.save();
+  const count = await Article.countDocuments({ tags: this.name, userId: this.userId });
+  if (this.articleCount !== count) {
+    this.articleCount = count;
+    await this.save();
+  }
+  return this;
 };
 
 // Static methods
@@ -201,17 +204,11 @@ tagSchema.pre('remove', async function(next) {
 
 // Post-save middleware to sync article count
 tagSchema.post('save', async function(doc) {
-  // Update live article count if needed
+  // Sync denormalized count post-save
   const Article = mongoose.model('Article');
-  const actualCount = await Article.countDocuments({ 
-    tags: doc.name,
-    userId: doc.userId 
-  });
-  
+  const actualCount = await Article.countDocuments({ tags: doc.name, userId: doc.userId });
   if (actualCount !== doc.articleCount) {
-    await this.constructor.findByIdAndUpdate(doc._id, { 
-      articleCount: actualCount 
-    });
+    await this.constructor.findByIdAndUpdate(doc._id, { articleCount: actualCount });
   }
 });
 

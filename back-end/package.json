@@ -5,8 +5,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "pretest": "node scripts/refreshDataFromBase.js",
     "test": "mocha",
-    "coverage": "c8 --include='routes/**' --include='utils/**' --include='index.js' --reporter=text --reporter=html mocha"
+    "coverage": "c8 --include='routes/**' --include='utils/**' --include='index.js' --reporter=text --reporter=html mocha",
+    "verify:integrity": "node scripts/verifyIntegrity.js",
+    "verify:parity": "node scripts/verifyDataParity.js"
   },
   "c8": {
     "include": [

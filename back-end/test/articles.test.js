@@ -2,6 +2,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const express = require('express');
 const articlesRouter = require('../routes/articles');
+const daoFactory = require('../lib/daoFactory');
 const expect = chai.expect;
 
 // Create minimal Express app for testing
@@ -12,6 +13,11 @@ app.use('/api/articles', articlesRouter);
 chai.use(chaiHttp);
 
 describe('Articles API', () => {
+  // Reset mock data before each test to ensure isolation
+  beforeEach(() => {
+    daoFactory.resetMockData();
+  });
+
   // Test GET /api/articles
   describe('GET /api/articles', () => {
     it('should return all articles', (done) => {
@@ -40,14 +46,14 @@ describe('Articles API', () => {
   });
 
   describe('Query Parameter Tests', () => {
-    it('should filter articles by tag', (done) => {
+    it('should filter articles by tag (by id)', (done) => {
       chai.request(app)
-        .get('/api/articles?tag=tech')
+        .get('/api/articles?tag=1')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body.data).to.be.an('array');
           res.body.data.forEach(article => {
-            expect(article.tags).to.include('tech');
+            expect(article.tags).to.include(1);
           });
           done();
         });
@@ -219,15 +225,14 @@ describe('Articles API', () => {
   // Tag management on articles
   describe('Tag management on articles', () => {
     it('should add a tag to an article', (done) => {
-      // article 1 does not originally include 'javascript'
+      // article 2 does not originally include 'javascript'
       chai.request(app)
-        .post('/api/articles/1/tags')
-        .send({ tagId: 'tag-1' })
+        .post('/api/articles/2/tags')
+        .send({ tagId: 1 })
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
-          const lowered = res.body.data.tags.map(t => String(t).toLowerCase());
-          expect(lowered.includes('tag-1') || lowered.includes('javascript')).to.equal(true);
+          expect(res.body.data.tags.includes(1)).to.equal(true);
           done();
         });
     });
@@ -236,7 +241,7 @@ describe('Articles API', () => {
       // article 4 already has 'javascript' in mockArticles
       chai.request(app)
         .post('/api/articles/4/tags')
-        .send({ tagId: 'tag-1' })
+        .send({ tagId: 1 })
         .end((err, res) => {
           expect(res).to.have.status(409);
           expect(res.body).to.have.property('success', false);
@@ -258,8 +263,8 @@ describe('Articles API', () => {
 
     it('should return 404 when adding a non-existent tag to an article', (done) => {
       chai.request(app)
-        .post('/api/articles/1/tags')
-        .send({ tagId: 'tag-999' })
+        .post('/api/articles/2/tags')
+        .send({ tagId: 999 })
         .end((err, res) => {
           expect(res).to.have.status(404);
           expect(res.body).to.have.property('success', false);
@@ -271,20 +276,19 @@ describe('Articles API', () => {
     it('should remove a tag from an article', (done) => {
       // article 4 has 'javascript'
       chai.request(app)
-        .delete('/api/articles/4/tags/tag-1')
+        .delete('/api/articles/4/tags/1')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
-          const lowered = res.body.data.tags.map(t => String(t).toLowerCase());
-          expect(lowered.includes('tag-1') || lowered.includes('javascript')).to.equal(false);
+          expect(res.body.data.tags.includes(1)).to.equal(false);
           done();
         });
     });
 
     it('should return 404 when removing a tag that is not on the article', (done) => {
-      // article 1 does not have 'react'
+      // article 2 does not have 'react'
       chai.request(app)
-        .delete('/api/articles/1/tags/tag-2')
+        .delete('/api/articles/2/tags/2')
         .end((err, res) => {
           expect(res).to.have.status(404);
           expect(res.body).to.have.property('success', false);

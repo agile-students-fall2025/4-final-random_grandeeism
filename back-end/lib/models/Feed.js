@@ -46,6 +46,7 @@ const feedSchema = new Schema({
     type: String,
     default: '/icons/rss.svg'
   },
+  // Denormalized count, recalculated periodically
   articleCount: {
     type: Number,
     default: 0,
@@ -85,7 +86,8 @@ const feedSchema = new Schema({
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
   }
 }, {
   timestamps: true,

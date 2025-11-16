@@ -37,14 +37,19 @@ const articleSchema = new Schema({
     trim: true,
     maxlength: 200
   },
+  // Numeric feedId reference in mock layer; Mongo layer keeps ObjectId but we
+  // document consistency via models.md. For persistence we still use ObjectId.
   feedId: {
     type: Schema.Types.ObjectId,
     ref: 'Feed',
-    default: null
+    default: null,
+    index: true
   },
-  readingTime: {
-    type: String,
-    default: '1 min'
+  // Store readingTime in minutes (number) for consistency; mock layer had strings
+  readingTimeMinutes: {
+    type: Number,
+    default: 1,
+    min: 0
   },
   wordCount: {
     type: Number,
@@ -61,10 +66,9 @@ const articleSchema = new Schema({
     type: Boolean,
     default: false
   },
-  tags: [{
-    type: String,
-    trim: true
-  }],
+  // Normalize tags to ObjectId references to Tag OR fallback to string name.
+  // For now we store lowercase names; in Mongo migrations we can switch to ObjectId.
+  tags: [{ type: String, trim: true, lowercase: true }],
   dateAdded: {
     type: Date,
     default: Date.now
@@ -82,6 +86,12 @@ const articleSchema = new Schema({
   content: {
     type: String,
     default: ''
+  },
+  // Derived field kept in mock layer; here maintained for parity
+  articleHash: {
+    type: String,
+    index: true,
+    sparse: true
   },
   excerpt: {
     type: String,
@@ -109,6 +119,7 @@ articleSchema.index({ status: 1, userId: 1 });
 articleSchema.index({ isFavorite: 1, userId: 1 });
 articleSchema.index({ tags: 1, userId: 1 });
 articleSchema.index({ feedId: 1 });
+articleSchema.index({ readingTimeMinutes: 1 });
 articleSchema.index({ dateAdded: -1 });
 articleSchema.index({ url: 1, userId: 1 }, { unique: true }); // Prevent duplicate URLs per user
 
@@ -135,15 +146,17 @@ articleSchema.methods.toggleFavorite = function() {
 };
 
 articleSchema.methods.addTag = function(tag) {
-  if (!this.tags.includes(tag)) {
-    this.tags.push(tag);
+  const normalized = String(tag).toLowerCase().trim();
+  if (!this.tags.includes(normalized)) {
+    this.tags.push(normalized);
     return this.save();
   }
   return Promise.resolve(this);
 };
 
 articleSchema.methods.removeTag = function(tag) {
-  this.tags = this.tags.filter(t => t !== tag);
+  const normalized = String(tag).toLowerCase().trim();
+  this.tags = this.tags.filter(t => t !== normalized);
   return this.save();
 };
 
@@ -157,7 +170,8 @@ articleSchema.statics.findFavorites = function(userId) {
 };
 
 articleSchema.statics.findByTag = function(tag, userId) {
-  return this.find({ tags: tag, userId }).sort({ dateAdded: -1 });
+  const normalized = String(tag).toLowerCase().trim();
+  return this.find({ tags: normalized, userId }).sort({ dateAdded: -1 });
 };
 
 articleSchema.statics.findUntagged = function(userId) {
@@ -174,10 +188,15 @@ articleSchema.statics.findUntagged = function(userId) {
 articleSchema.pre('save', function(next) {
   // Auto-generate excerpt from content if not provided
   if (!this.excerpt && this.content) {
-    this.excerpt = this.content.substring(0, 300).trim();
-    if (this.content.length > 300) {
+    const raw = this.content.replace(/\s+/g, ' ').trim();
+    this.excerpt = raw.substring(0, 300).trim();
+    if (raw.length > 300) {
       this.excerpt += '...';
     }
+  }
+  // Recompute articleHash if content changed
+  if (this.isModified('content')) {
+    this.articleHash = require('crypto').createHash('sha1').update(this.content).digest('hex');
   }
   
   // Update hasAnnotations based on highlights

@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { articlesDao } = require('../lib/daoFactory');
-const { mockArticles } = require('../data/mockArticles');
-const { mockTags } = require('../data/mockTags');
+const { articlesDao, tagsDao } = require('../lib/daoFactory');
 
 /**
  * GET /api/articles
@@ -21,7 +19,11 @@ router.get('/', async (req, res) => {
     }
 
     if (tag) {
-      filters.tag = tag;
+      // Support filtering by tag id or tag name
+      const tagLower = String(tag).toLowerCase();
+      const allTags = await tagsDao.getAll({});
+      const match = allTags.find(t => String(t.id) === String(tag) || String(t.name).toLowerCase() === tagLower);
+      filters.tag = match ? match.id : tag; // if not found, pass through for DAO to handle
     }
 
     if (untagged === 'true') {
@@ -32,7 +34,7 @@ router.get('/', async (req, res) => {
       filters.isFavorite = true;
     }
 
-    const articles = await articlesDao.getAll(filters);
+  const articles = await articlesDao.getAll(filters);
 
     res.json({
       success: true,
@@ -52,9 +54,9 @@ router.get('/', async (req, res) => {
  * GET /api/articles/:id
  * Retrieve a single article by ID
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const article = mockArticles.find(a => a.id === req.params.id);
+    const article = await articlesDao.getById(req.params.id);
     
     if (!article) {
       return res.status(404).json({
@@ -115,7 +117,7 @@ router.get('/:id', (req, res) => {
  * ============================================
  */
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { title, url } = req.body;
 
@@ -127,18 +129,15 @@ router.post('/', (req, res) => {
       });
     }
 
-    const newArticle = {
-      id: String(mockArticles.length + 1),
+    const newArticle = await articlesDao.create({
       ...req.body,
-      dateAdded: new Date(),
       status: req.body.status || 'inbox',
       isFavorite: false,
       hasAnnotations: false,
       readProgress: 0,
       tags: req.body.tags || [] // Default to empty array if no tags provided
-    };
+    });
 
-    // In a real implementation, this would save to a database
     res.status(201).json({
       success: true,
       data: newArticle,
@@ -155,11 +154,11 @@ router.post('/', (req, res) => {
 
 /**
  * PUT /api/articles/:id
- * Update an article (mock - doesn't persist)
+ * Update an article
  */
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
-    const article = mockArticles.find(a => a.id === req.params.id);
+    const article = await articlesDao.getById(req.params.id);
     
     if (!article) {
       return res.status(404).json({
@@ -168,11 +167,10 @@ router.put('/:id', (req, res) => {
       });
     }
 
-    const updatedArticle = {
-      ...article,
-      ...req.body,
-      id: req.params.id // Ensure ID doesn't change
-    };
+    // Don't allow ID to be changed
+    const { id, ...updates } = req.body;
+
+    const updatedArticle = await articlesDao.update(req.params.id, updates);
 
     res.json({
       success: true,
@@ -268,11 +266,11 @@ router.patch('/:id/status', async (req, res) => {
  */
 router.patch('/:id/progress', async (req, res) => {
   try {
-    const { readProgress } = req.body;
+    const { progress } = req.body;
     const articleId = req.params.id;
 
     // Use the DAO to properly persist the change
-    const updatedArticle = await articlesDao.updateProgress(articleId, readProgress);
+    const updatedArticle = await articlesDao.updateProgress(articleId, progress);
     
     if (!updatedArticle) {
       return res.status(404).json({
@@ -345,8 +343,9 @@ router.post('/:id/tags', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Article not found' });
     }
 
-    // Verify tag exists
-    const tag = mockTags.find(t => t.id === requestedTagId);
+    // Verify tag exists using DAO
+  const allTags = await tagsDao.getAll({});
+  const tag = allTags.find(t => String(t.id) === String(requestedTagId) || String(t.name).toLowerCase() === String(requestedTagId).toLowerCase());
     if (!tag) {
       return res.status(404).json({ success: false, error: 'Tag not found' });
     }
@@ -354,7 +353,7 @@ router.post('/:id/tags', async (req, res) => {
     const tagId = tag.id;
     const existingTags = (article.tags || []).map(t => String(t).toLowerCase());
 
-    if (existingTags.includes(tagId.toLowerCase())) {
+    if (existingTags.includes(String(tagId).toLowerCase())) {
       return res.status(409).json({ success: false, error: 'Tag already on article' });
     }
 
@@ -384,8 +383,9 @@ router.delete('/:id/tags/:tagId', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Article not found' });
     }
 
-    // Verify tag exists
-    const tag = mockTags.find(t => t.id === req.params.tagId);
+    // Verify tag exists using DAO
+  const allTags = await tagsDao.getAll({});
+  const tag = allTags.find(t => String(t.id) === String(req.params.tagId) || String(t.name).toLowerCase() === String(req.params.tagId).toLowerCase());
     if (!tag) {
       return res.status(404).json({ success: false, error: 'Tag not found' });
     }
@@ -393,12 +393,12 @@ router.delete('/:id/tags/:tagId', async (req, res) => {
     const tagId = tag.id;
     const existingTags = (article.tags || []).map(t => String(t).toLowerCase());
 
-    if (!existingTags.includes(tagId.toLowerCase())) {
+    if (!existingTags.includes(String(tagId).toLowerCase())) {
       return res.status(404).json({ success: false, error: 'Tag not found on article' });
     }
 
     // Use DAO to update the article with tag removed
-    const updatedTags = (article.tags || []).filter(t => String(t).toLowerCase() !== tagId.toLowerCase());
+  const updatedTags = (article.tags || []).filter(t => String(t).toLowerCase() !== String(tagId).toLowerCase());
     const updatedArticle = await articlesDao.update(req.params.id, { tags: updatedTags });
 
     if (!updatedArticle) {

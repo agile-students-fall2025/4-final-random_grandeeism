@@ -5,8 +5,13 @@ const { expect } = chai;
 chai.use(chaiHttp);
 
 const app = require('../index');
+const daoFactory = require('../lib/daoFactory');
 
 describe('Feeds API', () => {
+  // Reset mock data before each test to ensure isolation
+  beforeEach(() => {
+    daoFactory.resetMockData();
+  });
   
   describe('GET /api/feeds', () => {
     it('should return all feeds', (done) => {
@@ -81,14 +86,14 @@ describe('Feeds API', () => {
   });
 
   describe('GET /api/feeds/:id', () => {
-    it('should return a single feed by ID', (done) => {
+  it('should return a single feed by ID', (done) => {
       chai.request(app)
-        .get('/api/feeds/feed-1')
+        .get('/api/feeds/1')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
           expect(res.body.data).to.be.an('object');
-          expect(res.body.data).to.have.property('id', 'feed-1');
+          expect(res.body.data).to.have.property('id', 1);
           expect(res.body.data).to.have.property('name');
           expect(res.body.data).to.have.property('url');
           expect(res.body.data).to.have.property('category');
@@ -174,14 +179,14 @@ describe('Feeds API', () => {
       };
 
       chai.request(app)
-        .put('/api/feeds/feed-1')
+        .put('/api/feeds/1')
         .send(updatedData)
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
           expect(res.body).to.have.property('message', 'Feed updated successfully');
           expect(res.body.data).to.be.an('object');
-          expect(res.body.data).to.have.property('id', 'feed-1');
+          expect(res.body.data).to.have.property('id', 1);
           expect(res.body.data).to.have.property('name', updatedData.name);
           expect(res.body.data).to.have.property('category', updatedData.category);
           expect(res.body.data).to.have.property('description', updatedData.description);
@@ -199,12 +204,12 @@ describe('Feeds API', () => {
       };
 
       chai.request(app)
-        .put('/api/feeds/feed-1')
+        .put('/api/feeds/1')
         .send(updateWithId)
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
-          expect(res.body.data).to.have.property('id', 'feed-1'); // ID should remain unchanged
+          expect(res.body.data).to.have.property('id', 1); // ID should remain unchanged
           expect(res.body.data).to.have.property('name', updateWithId.name);
           
           done();
@@ -232,7 +237,7 @@ describe('Feeds API', () => {
   describe('DELETE /api/feeds/:id', () => {
     it('should delete an existing feed', (done) => {
       chai.request(app)
-        .delete('/api/feeds/feed-1')
+        .delete('/api/feeds/1')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
@@ -258,7 +263,7 @@ describe('Feeds API', () => {
   describe('GET /api/feeds/:id/articles', () => {
     it('should return articles from a specific feed', (done) => {
       chai.request(app)
-        .get('/api/feeds/feed-1/articles')
+        .get('/api/feeds/5/articles')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
@@ -267,7 +272,7 @@ describe('Feeds API', () => {
           expect(res.body.data).to.be.an('array');
           
           // Check feed information
-          expect(res.body.feed).to.have.property('id', 'feed-1');
+          expect(res.body.feed).to.have.property('id', 5);
           expect(res.body.feed).to.have.property('name');
           expect(res.body.feed).to.have.property('category');
           
@@ -278,7 +283,7 @@ describe('Feeds API', () => {
           if (res.body.data.length > 0) {
             const firstArticle = res.body.data[0];
             expect(firstArticle).to.have.property('id');
-            expect(firstArticle).to.have.property('feedId', 'feed-1');
+            expect(firstArticle).to.have.property('feedId', 5);
             expect(firstArticle).to.have.property('title');
             expect(firstArticle).to.have.property('url');
           }
@@ -290,7 +295,7 @@ describe('Feeds API', () => {
     it('should return correct count and data length match', (done) => {
       // Test that count property matches data array length
       chai.request(app)
-        .get('/api/feeds/feed-5/articles')
+        .get('/api/feeds/5/articles')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
@@ -299,7 +304,7 @@ describe('Feeds API', () => {
           expect(res.body.count).to.equal(res.body.data.length);
           
           // Verify feed info is included
-          expect(res.body.feed).to.have.property('id', 'feed-5');
+          expect(res.body.feed).to.have.property('id', 5);
           expect(res.body.feed).to.have.property('name');
           expect(res.body.feed).to.have.property('category');
           
@@ -321,14 +326,14 @@ describe('Feeds API', () => {
 
     it('should verify articles belong to the correct feed', (done) => {
       chai.request(app)
-        .get('/api/feeds/feed-1/articles')
+        .get('/api/feeds/5/articles')
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
           
           // All articles should have feedId matching the requested feed
           res.body.data.forEach(article => {
-            expect(article).to.have.property('feedId', 'feed-1');
+            expect(article).to.have.property('feedId', 5);
           });
           
           done();

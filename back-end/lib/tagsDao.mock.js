@@ -14,10 +14,38 @@ const getArticlesDao = () => require('./articlesDao.mock');
 // In-memory storage - clone the mock data to avoid mutations
 let tags = [...mockTags.map(tag => ({ ...tag }))];
 
+// Normalize tag names to lowercase and ensure articleCount presence
+tags = tags.map(t => ({
+  ...t,
+  name: String(t.name).toLowerCase(),
+  articleCount: typeof t.articleCount === 'number' ? t.articleCount : 0
+}));
+
+// Next numeric ID helper
+// Validate uniqueness of existing IDs (development safeguard)
+const seenIds = new Set();
+for (const t of tags) {
+  if (seenIds.has(t.id)) {
+    // eslint-disable-next-line no-console
+    console.warn(`[tagsDao] Duplicate seed tag id detected: ${t.id}`);
+  }
+  seenIds.add(t.id);
+}
+
+let nextId = (tags.length ? Math.max(...tags.map(t => Number(t.id))) : 0) + 1;
+
 /**
  * Generate a new ID for created tags
  */
-const generateId = () => `tag-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const generateId = () => {
+  // Ensure we never collide with existing IDs
+  while (seenIds.has(String(nextId))) {
+    nextId++;
+  }
+  const id = nextId++;
+  seenIds.add(String(id));
+  return id;
+};
 
 /**
  * Calculate the actual article count for a tag using current article state
@@ -72,8 +100,8 @@ const tagsDao = {
    * @returns {Promise<Object|null>} Tag object or null if not found
    */
   async getById(id) {
-    const tag = tags.find(t => t.id === id);
-    return tag ? { ...tag } : null;
+    const tag = tags.find(t => t.id == id);
+    return tag ? { ...tag, articleCount: calculateArticleCount(tag.id) } : null;
   },
 
   /**
@@ -82,8 +110,8 @@ const tagsDao = {
    * @returns {Promise<Object|null>} Tag object or null if not found
    */
   async getByName(name) {
-    const tag = tags.find(t => t.name === name);
-    return tag ? { ...tag } : null;
+    const tag = tags.find(t => t.name === String(name).toLowerCase());
+    return tag ? { ...tag, articleCount: calculateArticleCount(tag.id) } : null;
   },
 
   /**
@@ -99,13 +127,14 @@ const tagsDao = {
     }
 
     const newTag = {
-      id: generateId(),
-      name: tagData.name,
+      id: generateId(), // numeric ID
+      name: String(tagData.name).toLowerCase(),
       description: tagData.description || '',
       category: tagData.category || 'General',
       color: tagData.color || '#6366f1',
-      articleCount: tagData.articleCount || 0,
+      articleCount: 0,
       createdDate: new Date(),
+      lastUsed: new Date(),
       ...tagData
     };
 
@@ -120,7 +149,7 @@ const tagsDao = {
    * @returns {Promise<Object|null>} Updated tag or null if not found
    */
   async update(id, updateData) {
-    const index = tags.findIndex(t => t.id === id);
+  const index = tags.findIndex(t => t.id == id);
     if (index === -1) {
       return null;
     }
@@ -133,11 +162,16 @@ const tagsDao = {
       }
     }
 
-    tags[index] = {
+    const next = {
       ...tags[index],
       ...updateData,
+      name: updateData.name ? String(updateData.name).toLowerCase() : tags[index].name,
       id // Ensure ID doesn't change
     };
+    // Recompute articleCount dynamically (will be overridden by getAll anyway)
+    next.articleCount = calculateArticleCount(next.id);
+    next.updatedAt = new Date();
+    tags[index] = next;
 
     return { ...tags[index] };
   },
@@ -148,12 +182,15 @@ const tagsDao = {
    * @returns {Promise<boolean>} True if deleted, false if not found
    */
   async delete(id) {
-    const index = tags.findIndex(t => t.id === id);
+  const index = tags.findIndex(t => t.id == id);
     if (index === -1) {
       return false;
     }
 
-    tags.splice(index, 1);
+    const removed = tags.splice(index, 1)[0];
+    if (removed) {
+      seenIds.delete(String(removed.id));
+    }
     return true;
   },
 
@@ -245,6 +282,9 @@ const tagsDao = {
    */
   reset() {
     tags = [...mockTags.map(tag => ({ ...tag }))];
+    seenIds.clear();
+    for (const t of tags) seenIds.add(String(t.id));
+    nextId = (tags.length ? Math.max(...tags.map(t => Number(t.id))) : 0) + 1;
   },
 
   /**

@@ -1,55 +1,50 @@
-/**
- * Mock user data for development and testing
- * This will be replaced with MongoDB User model in Sprint 3
- */
-
+/** Base users now mirror data format (numeric ids, ISO string dates). */
 const mockUsers = [
   {
-    id: 'user-1',
-    username: 'johndoe',
-    email: 'john@example.com',
-    // Password: 'password123' (would be hashed with bcrypt in real app)
-    password: '$2a$10$X5wFKc4VhfVj1c1J3N6WcO7yK4MvN4OQ7BqwQQm9X4WvB5GJxJ9qG',
-    displayName: 'John Doe',
-    bio: 'Avid reader and tech enthusiast',
-    avatar: null,
-    preferences: {
-      theme: 'dark',
-      readingGoal: 30, // minutes per day
-      emailNotifications: true,
-      defaultView: 'inbox'
+    "id": 1,
+    "username": "johndoe",
+    "email": "john@example.com",
+    "password": "$2a$10$X5wFKc4VhfVj1c1J3N6WcO7yK4MvN4OQ7BqwQQm9X4WvB5GJxJ9qG",
+    "displayName": "John Doe",
+    "bio": "Avid reader and tech enthusiast",
+    "avatar": null,
+    "preferences": {
+      "theme": "dark",
+      "readingGoal": 30,
+      "emailNotifications": true,
+      "defaultView": "inbox"
     },
-    stats: {
-      articlesRead: 45,
-      totalReadingTime: 2340, // minutes
-      currentStreak: 7,
-      longestStreak: 21
+    "stats": {
+      "articlesRead": 45,
+      "totalReadingTime": 2340,
+      "currentStreak": 7,
+      "longestStreak": 21
     },
-    createdAt: new Date('2024-01-01'),
-    lastLogin: new Date('2024-01-15')
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "lastLogin": "2024-01-15T00:00:00.000Z"
   },
   {
-    id: 'user-2',
-    username: 'janesmith',
-    email: 'jane@example.com',
-    password: '$2a$10$Y6xGLd5WigWk2d2K4O7XdP8zL5NwO5PR8CsxRRn0Y5XwC6HKyK0rH',
-    displayName: 'Jane Smith',
-    bio: 'Frontend developer and design lover',
-    avatar: null,
-    preferences: {
-      theme: 'light',
-      readingGoal: 20,
-      emailNotifications: false,
-      defaultView: 'daily'
+    "id": 2,
+    "username": "janesmith",
+    "email": "jane@example.com",
+    "password": "$2a$10$Y6xGLd5WigWk2d2K4O7XdP8zL5NwO5PR8CsxRRn0Y5XwC6HKyK0rH",
+    "displayName": "Jane Smith",
+    "bio": "Frontend developer and design lover",
+    "avatar": null,
+    "preferences": {
+      "theme": "light",
+      "readingGoal": 20,
+      "emailNotifications": false,
+      "defaultView": "daily"
     },
-    stats: {
-      articlesRead: 28,
-      totalReadingTime: 1520,
-      currentStreak: 3,
-      longestStreak: 14
+    "stats": {
+      "articlesRead": 28,
+      "totalReadingTime": 1520,
+      "currentStreak": 3,
+      "longestStreak": 14
     },
-    createdAt: new Date('2024-01-05'),
-    lastLogin: new Date('2024-01-14')
+    "createdAt": "2024-01-05T00:00:00.000Z",
+    "lastLogin": "2024-01-14T00:00:00.000Z"
   }
 ];
 
