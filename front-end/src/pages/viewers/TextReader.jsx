@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } from 'react';
-import { STATUS } from '../../constants/statuses.js';
+// STATUS constants no longer needed for persistence; using raw strings
 import { ThemeContext } from '../../contexts/ThemeContext.jsx';
 import CompletionModal from '../../components/CompletionModal.jsx';
 import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
@@ -21,7 +21,7 @@ const STATUS_ICON_MAP = {
   archived: Archive,
 };
 
-const STORAGE_OVERRIDES = 'article_overrides_v1';
+// Removed STORAGE_OVERRIDES: no in-browser persistence
 
 /**
  * TextReader
@@ -42,15 +42,12 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   
   const [editingTitle, setEditingTitle] = useState('');
   const [isCompletionOpen, setIsCompletionOpen] = useState(false);
-  const [completionShownFor, setCompletionShownFor] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('completion_shown') || '{}'); } catch { return {}; }
-  });
+  // Track completion shown for current article only (ephemeral, not persisted)
+  const [completionShown, setCompletionShown] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [overrides, setOverrides] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_OVERRIDES) || '{}'); } catch { return {}; }
-  });
 
-  // Reader settings (font, theme, images) persisted separately
+  // Reader settings persisted locally (frontend only)
+  const { setTheme: setAppTheme, effectiveTheme } = useContext(ThemeContext);
   const SETTINGS_KEY = 'reader_settings_v1';
   const [fontSize, setFontSize] = useState(() => {
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.fontSize || 'medium'; } catch { return 'medium'; }
@@ -61,7 +58,6 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [showImages, setShowImages] = useState(() => {
     try { const v = JSON.parse(localStorage.getItem(SETTINGS_KEY))?.showImages; return typeof v === 'boolean' ? v : true; } catch { return true; }
   });
-  const { setTheme: setAppTheme, effectiveTheme } = useContext(ThemeContext);
   const [readerTheme, setReaderTheme] = useState(() => {
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.readerTheme || effectiveTheme || 'light'; } catch { return effectiveTheme || 'light'; }
   });
@@ -69,15 +65,13 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const persistReaderSettings = (next) => {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch (e) { console.error('persist reader settings failed', e); }
   };
-
   const onFontSizeChange = (size) => { setFontSize(size); persistReaderSettings({ fontSize: size, fontFamily, showImages, readerTheme }); };
   const onFontFamilyChange = (fam) => { setFontFamily(fam); persistReaderSettings({ fontSize, fontFamily: fam, showImages, readerTheme }); };
   const onShowImagesChange = (val) => { setShowImages(val); persistReaderSettings({ fontSize, fontFamily, showImages: val, readerTheme }); };
   const onReaderThemeChange = (theme) => {
     setReaderTheme(theme);
     persistReaderSettings({ fontSize, fontFamily, showImages, readerTheme: theme });
-    // update app-wide theme so Reader setting toggles the whole app like SettingsPage
-  try { if (setAppTheme) setAppTheme(theme); } catch { /* ignore */ }
+    try { if (setAppTheme) setAppTheme(theme); } catch { /* ignore */ }
   };
 
   const contentRef = useRef(null);
@@ -242,23 +236,21 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     return () => document.removeEventListener('mouseup', onMouseUp);
   }, [paragraphStartOffsets, fullText]);
 
-  // completion detection on scroll
+  // completion detection on scroll (ephemeral; no localStorage)
   useEffect(() => {
     const onScroll = () => {
       const el = contentRef.current;
       if (!el || !current) return;
       const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
-      if (remaining <= 100 && !completionShownFor[current.id]) {
-          setIsCompletionOpen(true);
-          const next = { ...completionShownFor, [current.id]: true };
-          setCompletionShownFor(next);
-          try { localStorage.setItem('completion_shown', JSON.stringify(next)); } catch (e) { console.error('saving completion_shown failed', e); }
+      if (remaining <= 100 && !completionShown) {
+        setIsCompletionOpen(true);
+        setCompletionShown(true);
       }
     };
     const el = contentRef.current;
     if (el) el.addEventListener('scroll', onScroll);
     return () => { if (el) el && el.removeEventListener('scroll', onScroll); };
-  }, [current, completionShownFor]);
+  }, [current, completionShown]);
 
   // autofocus was removed by request — do not auto-focus the textarea
 
@@ -267,8 +259,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const applyHighlight = async (colorHex) => {
     if (!selection || !current) return;
     try {
-      // TODO: replace with authenticated user id when available
-      const userId = 1;
+      const userId = 1; // TODO: replace with authenticated user id when available
       const payload = {
         articleId: current.id,
         userId,
@@ -280,17 +271,20 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       const res = await highlightsAPI.create(payload);
       await refreshHighlights();
       if (res?.data?.id) {
+        // Open sidebar focused on new highlight in edit mode
         setEditingNoteId(res.data.id);
         setEditingNoteValue('');
         setEditingTitle('');
         setShowHighlightsPanel(true);
         setFocusedHighlightId(res.data.id);
+      } else {
+        setShowHighlightsPanel(true);
       }
     } catch (e) {
       console.error('Failed to create highlight', e);
     } finally {
       setSelection(null);
-  try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
+      try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
     }
   };
 
@@ -304,11 +298,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     try {
       await highlightsAPI.update(editingNoteId, { annotations: { title: editingTitle, note: editingNoteValue } });
     } catch (e) { console.error('save note failed', e); }
+    const savedId = editingNoteId;
     setEditingNoteId(null);
     setEditingNoteValue('');
     setEditingTitle('');
-    setFocusedHighlightId(editingNoteId);
+    // Instead of staying on details view, automatically return to all highlights list
+    setFocusedHighlightId(null);
     await refreshHighlights();
+  // Auto-list view now; optional scroll without closing panel
+  setTimeout(() => scrollToHighlight(savedId, { keepPanelOpen: true }), 150);
   };
 
   const cancelEditingNote = () => {
@@ -316,7 +314,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     setEditingNoteValue('');
   };
 
-  const scrollToHighlight = (id) => {
+  const scrollToHighlight = (id, { keepPanelOpen = false } = {}) => {
     const el = document.querySelector(`[data-highlight-id="${id}"]`);
     if (!el) return;
     
@@ -339,17 +337,13 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       behavior: 'smooth'
     });
     
-    // Optionally close the highlights panel to give better view
-    setShowHighlightsPanel(false);
+    // Close panel only if user-triggered jump and not preserving list view
+    if (!keepPanelOpen) setShowHighlightsPanel(false);
   };
 
-  const appliedFavorite = current && overrides[current.id] && typeof overrides[current.id].isFavorite !== 'undefined'
-    ? overrides[current.id].isFavorite
-    : current?.isFavorite;
+  const appliedFavorite = current?.isFavorite;
 
   // status overrides are stored in `overrides` and used by other flows; not displayed in reader header
-
-  const persistOverrides = (next) => { setOverrides(next); try { localStorage.setItem(STORAGE_OVERRIDES, JSON.stringify(next)); } catch (e) { console.error('persistOverrides failed', e); } };
 
   const toggleFavorite = async () => {
     if (!current) return;
@@ -361,10 +355,6 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     } catch (e) {
       console.error('Favorite toggle failed', e);
     }
-    // keep override store (optional cohesion with other flows)
-    const next = { ...overrides };
-    next[current.id] = { ...(next[current.id] || {}), isFavorite: !appliedFavorite };
-    persistOverrides(next);
   };
 
   const changeStatus = async (newStatus) => {
@@ -376,9 +366,6 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     } catch (e) {
       console.error('Status update failed', e);
     }
-    const next = { ...overrides };
-    next[current.id] = { ...(next[current.id] || {}), status: newStatus };
-    persistOverrides(next);
   };
 
   // Accept TagManager's new tag names list, compute diff, sync with backend (create tags if needed), then reload article
@@ -424,16 +411,9 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     }
   }, [current, allTags, resolveTagName]);
 
-  const handleCompletion = (reflection) => {
+  const handleCompletion = () => {
     if (!current) return;
-  changeStatus(STATUS.REDISCOVERY);
-    try {
-      const notesKey = 'article_reflections_v1';
-      const raw = localStorage.getItem(notesKey);
-      const map = raw ? JSON.parse(raw) : {};
-      map[current.id] = { reflection, at: new Date().toISOString() };
-      localStorage.setItem(notesKey, JSON.stringify(map));
-    } catch (e) { console.error('saving reflection failed', e); }
+    changeStatus('rediscovery');
     setIsCompletionOpen(false);
   };
 
@@ -563,7 +543,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         {/* Highlights sidebar for desktop and mobile */}
         {/* Overlay for mobile when highlights panel is open */}
         {showHighlightsPanel && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowHighlightsPanel(false)} />
+          <div
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowHighlightsPanel(false)}
+            aria-label="Close highlights panel"
+          />
         )}
         <div className="fixed top-0 right-0 h-full z-50 flex flex-col">
           {/* Minimized bar (desktop only) */}
