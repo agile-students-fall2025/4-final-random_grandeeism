@@ -21,15 +21,20 @@ export default function TagManagerModal({
   const [filteredTags, setFilteredTags] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [currentArticleTags, setCurrentArticleTags] = useState(article?.tags || []);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  // Update local article tags when the article prop changes
+  useEffect(() => {
+    setCurrentArticleTags(article?.tags || []);
+  }, [article]);
 
   // Get current tag IDs and resolve them to tag objects
   // Handle both cases: tags as IDs or tags as names (after resolution)
   const currentTags = availableTags.filter(tag => {
-    const articleTags = article?.tags || [];
-    // Check if article tags contain either the tag ID or tag name
-    return articleTags.includes(tag.id) || articleTags.includes(tag.name);
+    // Check if current article tags contain either the tag ID or tag name
+    return currentArticleTags.includes(tag.id) || currentArticleTags.includes(tag.name);
   });
 
   // Filter available tags based on search term and exclude already added tags
@@ -40,10 +45,9 @@ export default function TagManagerModal({
       return;
     }
 
-    const currentTagIds = article?.tags || [];
     const filtered = availableTags.filter(tag => {
       // Check if tag is already added (by ID or name)
-      const isAlreadyAdded = currentTagIds.includes(tag.id) || currentTagIds.includes(tag.name);
+      const isAlreadyAdded = currentArticleTags.includes(tag.id) || currentArticleTags.includes(tag.name);
       // Check if tag name matches search term
       const matchesSearch = tag.name.toLowerCase().includes(searchTerm.toLowerCase());
       return !isAlreadyAdded && matchesSearch;
@@ -71,7 +75,7 @@ export default function TagManagerModal({
     setFilteredTags(optionsToShow);
     setShowDropdown(optionsToShow.length > 0);
     setSelectedIndex(-1);
-  }, [searchTerm, availableTags, article?.tags]);
+  }, [searchTerm, availableTags, currentArticleTags]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e) => {
@@ -104,25 +108,46 @@ export default function TagManagerModal({
   const handleAddTag = async (tag) => {
     try {
       if (tag.isCreateNew) {
-        // Create new tag first
-        const newTagData = {
-          name: tag.name,
-          color: tag.color || '#6b7280',
-          description: `Tag for ${tag.name}`
-        };
-        
-        const createResponse = await tagsAPI.create(newTagData);
-        if (createResponse.success && createResponse.data) {
-          const newTag = createResponse.data;
-          // Add the new tag to the article
-          if (onAddTag) {
-            await onAddTag(article.id, newTag.id);
-          } else {
-            await articlesAPI.addTag(article.id, newTag.id);
+        // Use the parent component's tag creation flow
+        if (onCreateTag) {
+          const newTagData = {
+            name: tag.name,
+            color: tag.color || '#6b7280',
+            description: `Tag for ${tag.name}`
+          };
+          
+          // Let the parent handle tag creation and state management
+          const createdTag = await onCreateTag(newTagData);
+          
+          // Add the newly created tag to the article using the returned tag data
+          if (createdTag && createdTag.id) {
+            if (onAddTag) {
+              await onAddTag(article.id, createdTag.id);
+            } else {
+              await articlesAPI.addTag(article.id, createdTag.id);
+            }
+            // Update local state to immediately show the new tag
+            setCurrentArticleTags(prev => [...prev, createdTag.id]);
           }
-          // Notify parent component about the new tag
-          if (onCreateTag) {
-            onCreateTag(newTag);
+        } else {
+          // Fallback: direct creation if no parent handler
+          const newTagData = {
+            name: tag.name,
+            color: tag.color || '#6b7280',
+            description: `Tag for ${tag.name}`
+          };
+          
+          const createResponse = await tagsAPI.create(newTagData);
+          if (createResponse.success && createResponse.data) {
+            const newTag = createResponse.data;
+            // Add the new tag to the article
+            if (onAddTag) {
+              await onAddTag(article.id, newTag.id);
+            } else {
+              await articlesAPI.addTag(article.id, newTag.id);
+            }
+            // Update local state to immediately show the new tag
+            setCurrentArticleTags(prev => [...prev, newTag.id]);
           }
         }
       } else {
@@ -132,6 +157,8 @@ export default function TagManagerModal({
         } else {
           await articlesAPI.addTag(article.id, tag.id);
         }
+        // Update local state to immediately show the new tag
+        setCurrentArticleTags(prev => [...prev, tag.id]);
       }
       
       setSearchTerm('');
@@ -149,6 +176,10 @@ export default function TagManagerModal({
       } else {
         await articlesAPI.removeTag(article.id, tag.id);
       }
+      // Update local state to immediately hide the removed tag
+      setCurrentArticleTags(prev => prev.filter(tagId => 
+        tagId !== tag.id && tagId !== tag.name
+      ));
     } catch (error) {
       console.error('Failed to remove tag:', error);
     }
