@@ -127,15 +127,15 @@ const tagsDao = {
     }
 
     const newTag = {
-      id: generateId(), // numeric ID
-      name: String(tagData.name).toLowerCase(),
+      ...tagData, // Spread first to get all fields
+      id: generateId(), // numeric ID (override if present in tagData)
+      name: String(tagData.name).toLowerCase(), // Normalize name (override after spread)
       description: tagData.description || '',
       category: tagData.category || 'General',
       color: tagData.color || '#6366f1',
       articleCount: 0,
       createdDate: new Date(),
-      lastUsed: new Date(),
-      ...tagData
+      lastUsed: new Date()
     };
 
     tags.push(newTag);

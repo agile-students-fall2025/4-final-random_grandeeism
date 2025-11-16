@@ -121,10 +121,172 @@ describe('Tags API', () => {
         .end((err, res) => {
           expect(res).to.have.status(409);
           expect(res.body).to.have.property('success', false);
-          expect(res.body).to.have.property('error', 'Tag already exists');
-          expect(res.body).to.have.property('data');
+          expect(res.body).to.have.property('error');
+          expect(res.body.error).to.include('already exists');
           done();
         });
+    });
+
+    // Tests for tag name normalization and duplicate detection bug fix
+    describe('Tag Name Normalization (Bug Fix Tests)', () => {
+      it('should normalize tag names to lowercase on creation', (done) => {
+        chai.request(app)
+          .post('/api/tags')
+          .send({ 
+            name: 'Python Programming',
+            description: 'Python language and frameworks'
+          })
+          .end((err, res) => {
+            expect(res).to.have.status(201);
+            expect(res.body).to.have.property('success', true);
+            expect(res.body.data).to.have.property('name', 'python programming');
+            done();
+          });
+      });
+
+      it('should prevent duplicate tags with different casing', (done) => {
+        // First, create a tag
+        chai.request(app)
+          .post('/api/tags')
+          .send({ name: 'Ruby on Rails' })
+          .end((err, res1) => {
+            expect(res1).to.have.status(201);
+            expect(res1.body.data.name).to.equal('ruby on rails');
+
+            // Try to create the same tag with different casing
+            chai.request(app)
+              .post('/api/tags')
+              .send({ name: 'RUBY ON RAILS' })
+              .end((err, res2) => {
+                expect(res2).to.have.status(409);
+                expect(res2.body).to.have.property('success', false);
+                expect(res2.body.error).to.include('already exists');
+                done();
+              });
+          });
+      });
+
+      it('should prevent duplicate tags with mixed casing variations', (done) => {
+        // Create original tag
+        chai.request(app)
+          .post('/api/tags')
+          .send({ name: 'Artificial Intelligence' })
+          .end((err, res1) => {
+            expect(res1).to.have.status(201);
+
+            // Try lowercase version
+            chai.request(app)
+              .post('/api/tags')
+              .send({ name: 'artificial intelligence' })
+              .end((err, res2) => {
+                expect(res2).to.have.status(409);
+                expect(res2.body.error).to.include('already exists');
+
+                // Try uppercase version
+                chai.request(app)
+                  .post('/api/tags')
+                  .send({ name: 'ARTIFICIAL INTELLIGENCE' })
+                  .end((err, res3) => {
+                    expect(res3).to.have.status(409);
+                    expect(res3.body.error).to.include('already exists');
+
+                    // Try mixed case
+                    chai.request(app)
+                      .post('/api/tags')
+                      .send({ name: 'ArTiFiCiAl InTeLLiGeNcE' })
+                      .end((err, res4) => {
+                        expect(res4).to.have.status(409);
+                        expect(res4.body.error).to.include('already exists');
+                        done();
+                      });
+                  });
+              });
+          });
+      });
+
+      it('should allow creation of genuinely different tags', (done) => {
+        // Create first tag
+        chai.request(app)
+          .post('/api/tags')
+          .send({ name: 'Go Language' })
+          .end((err, res1) => {
+            expect(res1).to.have.status(201);
+            expect(res1.body.data.name).to.equal('go language');
+            const firstId = res1.body.data.id;
+
+            // Create a different tag - should succeed
+            chai.request(app)
+              .post('/api/tags')
+              .send({ name: 'Golang Advanced' })
+              .end((err, res2) => {
+                expect(res2).to.have.status(201);
+                expect(res2.body.data.name).to.equal('golang advanced');
+                expect(res2.body.data.id).to.not.equal(firstId);
+
+                // Verify both tags exist independently
+                chai.request(app)
+                  .get('/api/tags')
+                  .end((err, res3) => {
+                    const tagNames = res3.body.data.map(t => t.name);
+                    expect(tagNames).to.include('go language');
+                    expect(tagNames).to.include('golang advanced');
+                    done();
+                  });
+              });
+          });
+      });
+
+      it('should handle tags with special characters consistently', (done) => {
+        chai.request(app)
+          .post('/api/tags')
+          .send({ name: 'C++ Programming' })
+          .end((err, res1) => {
+            expect(res1).to.have.status(201);
+            expect(res1.body.data.name).to.equal('c++ programming');
+
+            // Try to recreate with different casing
+            chai.request(app)
+              .post('/api/tags')
+              .send({ name: 'C++ PROGRAMMING' })
+              .end((err, res2) => {
+                expect(res2).to.have.status(409);
+                expect(res2.body.error).to.include('already exists');
+                done();
+              });
+          });
+      });
+
+      it('should verify existing mock tags are normalized', (done) => {
+        // Check that existing tags from mock data are lowercase
+        chai.request(app)
+          .get('/api/tags/1') // javascript tag
+          .end((err, res) => {
+            expect(res).to.have.status(200);
+            expect(res.body.data.name).to.equal('javascript');
+            expect(res.body.data.name).to.equal(res.body.data.name.toLowerCase());
+            done();
+          });
+      });
+
+      it('should reject duplicate of existing mock tag regardless of casing', (done) => {
+        // 'react' exists in mock data (id: 2)
+        chai.request(app)
+          .post('/api/tags')
+          .send({ name: 'React' })
+          .end((err, res1) => {
+            expect(res1).to.have.status(409);
+            expect(res1.body.error).to.include('already exists');
+
+            chai.request(app)
+              .post('/api/tags')
+              .send({ name: 'REACT' })
+              .end((err, res2) => {
+                expect(res2).to.have.status(409);
+                expect(res2.body.error).to.include('already exists');
+                done();
+              });
+          });
+      });
     });
   });
 

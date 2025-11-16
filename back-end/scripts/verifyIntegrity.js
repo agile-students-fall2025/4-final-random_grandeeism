@@ -85,6 +85,15 @@ function main() {
   console.log(`Tags with mismatched articleCount: ${mismatches.length}`);
   if (mismatches.length) console.table(mismatches.slice(0, 15));
 
+  // === Highlight Integrity Validation ===
+  console.log('\n=== Highlight Text & Position Integrity ===');
+  const { validateHighlightIntegrity } = require('./validateHighlightsIntegrity');
+  try {
+    validateHighlightIntegrity();
+  } catch (e) {
+    console.error('Highlight integrity validation failed:', e);
+    process.exit(1);
+  }
   console.log('\nIntegrity check complete.');
 }
 
