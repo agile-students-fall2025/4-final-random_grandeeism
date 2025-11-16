@@ -8,7 +8,7 @@ const mockTags = [
     "description": "JavaScript programming language",
     "createdAt": new Date("2024-01-01T00:00:00.000Z"),
     "lastUsed": new Date("2024-01-15T00:00:00.000Z"),
-    "articleCount": 2
+    "articleCount": 3
   },
   {
     "id": 2,

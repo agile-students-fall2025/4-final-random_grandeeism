@@ -22,13 +22,13 @@ export default function TagManagerModal({
   const [filteredTags, setFilteredTags] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [currentArticleTags, setCurrentArticleTags] = useState(article?.tags || []);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
   
   // Internal state for article and tags - this is the source of truth
   const [article, setArticle] = useState(initialArticle);
   const [availableTags, setAvailableTags] = useState(initialAvailableTags);
+  const [currentArticleTags, setCurrentArticleTags] = useState(article?.tags || []);
 
   // Sync with props when modal opens or article changes
   useEffect(() => {
@@ -147,40 +147,48 @@ export default function TagManagerModal({
           const createResponse = await tagsAPI.create(newTagData);
           if (createResponse.success && createResponse.data) {
             const newTag = createResponse.data;
-            
-            // Add to available tags list immediately
+
+            // Add to available tags list immediately (local state)
             setAvailableTags(prev => {
               const exists = prev.some(t => t.id === newTag.id || t.name.toLowerCase() === newTag.name.toLowerCase());
               return exists ? prev : [...prev, newTag];
             });
-            
+
+            // Inform parent about the newly created tag BEFORE attaching to article
+            if (onCreateTag) {
+              try {
+                await Promise.resolve(onCreateTag(newTag));
+              } catch (e) {
+                console.error('onCreateTag handler failed:', e);
+              }
+            }
+
             // Add the new tag to the article
             if (!isTagAlreadyOnArticle(article, newTag.id) && !isTagAlreadyOnArticle(article, newTag.name)) {
               if (onAddTag) {
-                try { 
+                try {
                   await onAddTag(article.id, newTag.id);
                 } catch (e) {
                   const em = String(e?.message || '').toLowerCase();
                   if (!em.includes('already')) throw e;
                 }
               } else {
-                try { 
+                try {
                   await articlesAPI.addTag(article.id, newTag.id);
                 } catch (e) {
                   const em = String(e?.message || '').toLowerCase();
                   if (!em.includes('already')) throw e;
                 }
               }
-              
+
               // Update internal article state immediately
               setArticle(prev => ({
                 ...prev,
                 tags: [...(prev.tags || []), newTag.id]
               }));
+              // Also optimistically update currentArticleTags to avoid UI lag
+              setCurrentArticleTags(prev => [...prev, newTag.id]);
             }
-            
-            // Notify parent
-            onCreateTag && onCreateTag(newTag);
           }
         } catch (err) {
           // If tag already exists in system, fetch it and attach
@@ -198,6 +206,15 @@ export default function TagManagerModal({
                 return exists ? prev : [...prev, existing];
               });
               
+              // Inform parent about the existing (found) tag BEFORE attaching to article
+              if (onCreateTag) {
+                try {
+                  await Promise.resolve(onCreateTag(existing));
+                } catch (e) {
+                  console.error('onCreateTag handler failed:', e);
+                }
+              }
+
               if (!isTagAlreadyOnArticle(article, existing.id) && !isTagAlreadyOnArticle(article, existing.name)) {
                 if (onAddTag) {
                   try { 
@@ -220,9 +237,10 @@ export default function TagManagerModal({
                   ...prev,
                   tags: [...(prev.tags || []), existing.id]
                 }));
+                // Also optimistically update currentArticleTags
+                setCurrentArticleTags(prev => [...prev, existing.id]);
               }
               
-              onCreateTag && onCreateTag(existing);
             } else {
               throw err;
             }

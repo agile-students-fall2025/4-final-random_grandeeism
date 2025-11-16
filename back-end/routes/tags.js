@@ -85,12 +85,10 @@ router.post('/', async (req, res) => {
     const existingTag = await tagsDao.getByName(normalizedName);
     
     if (existingTag) {
-      // Return existing tag instead of error (idempotent behavior)
-      return res.status(200).json({ 
-        success: true, 
-        data: existingTag, 
-        message: 'Tag already exists',
-        alreadyExists: true
+      // Return 409 Conflict for duplicate tags
+      return res.status(409).json({ 
+        success: false, 
+        error: 'Tag with this name already exists'
       });
     }
 
@@ -108,23 +106,8 @@ router.post('/', async (req, res) => {
       message: 'Tag created successfully' 
     });
   } catch (error) {
-    // Handle duplicate tag error from DAO (shouldn't happen now with pre-check)
+    // Handle duplicate tag error from DAO
     if (error.message && error.message.includes('already exists')) {
-      // Try to fetch and return the existing tag
-      try {
-        const existingTag = await tagsDao.getByName(req.body.name.toLowerCase());
-        if (existingTag) {
-          return res.status(200).json({ 
-            success: true, 
-            data: existingTag, 
-            message: 'Tag already exists',
-            alreadyExists: true
-          });
-        }
-      } catch (fetchError) {
-        // If we can't fetch it, return the original error
-      }
-      
       return res.status(409).json({ 
         success: false, 
         error: error.message
