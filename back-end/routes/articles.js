@@ -132,7 +132,7 @@ router.post('/', async (req, res) => {
     const newArticle = await articlesDao.create({
       ...req.body,
       status: req.body.status || 'inbox',
-      isFavorite: false,
+      isFavorite: req.body.isFavorite || false,
       hasAnnotations: false,
       readProgress: 0,
       tags: req.body.tags || [] // Default to empty array if no tags provided

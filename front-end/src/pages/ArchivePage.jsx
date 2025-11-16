@@ -5,7 +5,7 @@
  * Purpose: Shows articles marked as archived with full search and filtering capabilities
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
@@ -25,7 +25,7 @@ const normalizeArticles = (data) => {
   return [];
 };
 
-const ArchivePage = ({ onNavigate }) => {
+const ArchivePage = ({ onNavigate, setPageRefresh }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [showTagManagerModal, setShowTagManagerModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
@@ -43,44 +43,62 @@ const ArchivePage = ({ onNavigate }) => {
   const { resolveArticleTags, refreshTags } = useTagResolution();
   const baseLockedFilters = useMemo(() => ({ status: STATUS.ARCHIVED }), []);
 
+  // Define fetchData function with useCallback to prevent infinite re-renders
+  const fetchData = useCallback(async () => {
+    try {
+      console.log('ArchivePage: fetchData called, loading data...');
+      setLoading(true);
+      setError(null);
+      
+      // Fetch articles, feeds, and tags in parallel
+      const [articlesResponse, feedsResponse, tagsResponse] = await Promise.all([
+        articlesAPI.getAll({ status: STATUS.ARCHIVED }),
+        feedsAPI.getAll(),
+        tagsAPI.getAll()
+      ]);
+      
+      // Handle articles response
+      const normalized = normalizeArticles(articlesResponse);
+      setRawArticles(normalized);
+      
+      // Handle feeds response
+      if (feedsResponse.success && feedsResponse.data) {
+        setFeeds(feedsResponse.data);
+      }
+      
+      // Handle tags response
+      if (tagsResponse.success && tagsResponse.data) {
+        setAvailableTags(tagsResponse.data);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      setError("Failed to load archived articles");
+      setRawArticles([]);
+      setDisplayedArticles([]);
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Fetch articles, feeds, and tags in parallel
-        const [articlesResponse, feedsResponse, tagsResponse] = await Promise.all([
-          articlesAPI.getAll({ status: STATUS.ARCHIVED }),
-          feedsAPI.getAll(),
-          tagsAPI.getAll()
-        ]);
-        
-        // Handle articles response
-        const normalized = normalizeArticles(articlesResponse);
-        setRawArticles(normalized);
-        
-        // Handle feeds response
-        if (feedsResponse.success && feedsResponse.data) {
-          setFeeds(feedsResponse.data);
-        }
-        
-        // Handle tags response
-        if (tagsResponse.success && tagsResponse.data) {
-          setAvailableTags(tagsResponse.data);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        setError("Failed to load archived articles");
-        setRawArticles([]);
-        setDisplayedArticles([]);
-        setLoading(false);
+    fetchData();
+  }, [fetchData]);
+
+  // Register refresh function with parent component
+  useEffect(() => {
+    if (setPageRefresh) {
+      console.log('ArchivePage: Registering refresh function');
+      setPageRefresh(fetchData);
+    }
+    
+    // Cleanup: remove refresh function when component unmounts
+    return () => {
+      if (setPageRefresh) {
+        console.log('ArchivePage: Cleaning up refresh function');
+        setPageRefresh(null);
       }
     };
-
-    fetchData();
-  }, []);
+  }, [setPageRefresh, fetchData]);
 
   // Tag resolution effect
   useEffect(() => {

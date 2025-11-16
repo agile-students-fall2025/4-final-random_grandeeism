@@ -5,7 +5,7 @@
  * Purpose: Shows articles in the inbox queue waiting to be organized or read
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
@@ -16,7 +16,7 @@ import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
 import { useTagResolution } from "../hooks/useTagResolution.js";
 
-const InboxPage = ({ onNavigate }) => {
+const InboxPage = ({ onNavigate, setPageRefresh }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [showTagManagerModal, setShowTagManagerModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
@@ -36,50 +36,68 @@ const InboxPage = ({ onNavigate }) => {
 
   const baseLockedFilters = useMemo(() => ({ status: STATUS.INBOX }), []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Fetch articles, feeds, and tags in parallel
-        const [articlesResponse, feedsResponse, tagsResponse] = await Promise.all([
-          articlesAPI.getAll(baseLockedFilters),
-          feedsAPI.getAll(),
-          tagsAPI.getAll()
-        ]);
-        
-        // Handle articles response
-        let articlesData = articlesResponse;
-        if (Array.isArray(articlesResponse)) {
-          articlesData = articlesResponse;
-        } else if (articlesResponse.data) {
-          articlesData = articlesResponse.data;
-        } else if (articlesResponse.articles) {
-          articlesData = articlesResponse.articles;
-        }
-        
-        setRawArticles(articlesData); // Store raw articles
-        
-        // Handle feeds response
-        if (feedsResponse.success && feedsResponse.data) {
-          setFeeds(feedsResponse.data);
-        }
-        
-        // Handle tags response
-        if (tagsResponse.success && tagsResponse.data) {
-          setAvailableTags(tagsResponse.data);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        setError(err.message || "Failed to load data");
-        setLoading(false);
+  // Define fetchData function with useCallback to prevent infinite re-renders
+  const fetchData = useCallback(async () => {
+    try {
+      console.log('InboxPage: fetchData called, loading data...');
+      setLoading(true);
+      setError(null);
+      
+      // Fetch articles, feeds, and tags in parallel
+      const [articlesResponse, feedsResponse, tagsResponse] = await Promise.all([
+        articlesAPI.getAll(baseLockedFilters),
+        feedsAPI.getAll(),
+        tagsAPI.getAll()
+      ]);
+      
+      // Handle articles response
+      let articlesData = articlesResponse;
+      if (Array.isArray(articlesResponse)) {
+        articlesData = articlesResponse;
+      } else if (articlesResponse.data) {
+        articlesData = articlesResponse.data;
+      } else if (articlesResponse.articles) {
+        articlesData = articlesResponse.articles;
       }
-    };
+      
+      setRawArticles(articlesData); // Store raw articles
+      
+      // Handle feeds response
+      if (feedsResponse.success && feedsResponse.data) {
+        setFeeds(feedsResponse.data);
+      }
+      
+      // Handle tags response
+      if (tagsResponse.success && tagsResponse.data) {
+        setAvailableTags(tagsResponse.data);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      setError(err.message || "Failed to load data");
+      setLoading(false);
+    }
+  }, [baseLockedFilters]);
 
+  useEffect(() => {
     fetchData();
   }, [baseLockedFilters]);
+
+  // Register refresh function with parent component
+  useEffect(() => {
+    if (setPageRefresh) {
+      console.log('InboxPage: Registering refresh function');
+      setPageRefresh(fetchData);
+    }
+    
+    // Cleanup: remove refresh function when component unmounts
+    return () => {
+      if (setPageRefresh) {
+        console.log('InboxPage: Cleaning up refresh function');
+        setPageRefresh(null);
+      }
+    };
+  }, [setPageRefresh, fetchData]);
 
   // Resolve tags when raw articles or tag resolution function changes
   useEffect(() => {

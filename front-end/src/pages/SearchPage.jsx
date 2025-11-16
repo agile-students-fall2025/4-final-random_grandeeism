@@ -5,7 +5,7 @@
  * Purpose: Allows users to search and filter articles by tags, time, media type, status, and more
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
@@ -15,7 +15,7 @@ import { articlesAPI, feedsAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { useTagResolution } from "../hooks/useTagResolution.js";
 
-const SearchPage = ({ onNavigate, initialTag }) => {
+const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [showTagManagerModal, setShowTagManagerModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
@@ -33,52 +33,70 @@ const SearchPage = ({ onNavigate, initialTag }) => {
   // Use tag resolution hook
   const { resolveArticleTags, refreshTags } = useTagResolution();
 
+  // Define fetchData function with useCallback to prevent infinite re-renders
+  const fetchData = useCallback(async () => {
+    try {
+      console.log('SearchPage: fetchData called, loading data...');
+      setLoading(true);
+      setError(null);
+      
+      const filters = initialTag ? { tag: initialTag } : {};
+      
+      // Fetch articles, feeds, and tags in parallel
+      const [articlesResponse, feedsResponse, tagsResponse] = await Promise.all([
+        articlesAPI.getAll(filters),
+        feedsAPI.getAll(),
+        tagsAPI.getAll()
+      ]);
+      
+      // Handle articles response
+      let data = articlesResponse;
+      if (Array.isArray(articlesResponse)) {
+        data = articlesResponse;
+      } else if (articlesResponse.data) {
+        data = articlesResponse.data;
+      } else if (articlesResponse.articles) {
+        data = articlesResponse.articles;
+      }
+      
+      setRawArticles(data); // Store raw articles
+      
+      // Handle feeds response
+      if (feedsResponse.success && feedsResponse.data) {
+        setFeeds(feedsResponse.data);
+      }
+      
+      // Handle tags response
+      if (tagsResponse.success && tagsResponse.data) {
+        setAvailableTags(tagsResponse.data);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      setError(err.message || "Failed to load data");
+      setLoading(false);
+    }
+  }, [initialTag]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const filters = initialTag ? { tag: initialTag } : {};
-        
-        // Fetch articles, feeds, and tags in parallel
-        const [articlesResponse, feedsResponse, tagsResponse] = await Promise.all([
-          articlesAPI.getAll(filters),
-          feedsAPI.getAll(),
-          tagsAPI.getAll()
-        ]);
-        
-        // Handle articles response
-        let data = articlesResponse;
-        if (Array.isArray(articlesResponse)) {
-          data = articlesResponse;
-        } else if (articlesResponse.data) {
-          data = articlesResponse.data;
-        } else if (articlesResponse.articles) {
-          data = articlesResponse.articles;
-        }
-        
-        setRawArticles(data); // Store raw articles
-        
-        // Handle feeds response
-        if (feedsResponse.success && feedsResponse.data) {
-          setFeeds(feedsResponse.data);
-        }
-        
-        // Handle tags response
-        if (tagsResponse.success && tagsResponse.data) {
-          setAvailableTags(tagsResponse.data);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        setError(err.message || "Failed to load data");
-        setLoading(false);
+    fetchData();
+  }, [fetchData]);
+
+  // Register refresh function with parent component
+  useEffect(() => {
+    if (setPageRefresh) {
+      console.log('SearchPage: Registering refresh function');
+      setPageRefresh(fetchData);
+    }
+    
+    // Cleanup: remove refresh function when component unmounts
+    return () => {
+      if (setPageRefresh) {
+        console.log('SearchPage: Cleaning up refresh function');
+        setPageRefresh(null);
       }
     };
-
-    fetchData();
-  }, [initialTag]);
+  }, [setPageRefresh, fetchData]);
 
   // Resolve tags when raw articles or tag resolution function changes
   useEffect(() => {

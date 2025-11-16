@@ -5,7 +5,7 @@
  * Purpose: Helps users rediscover valuable content they saved but haven't read yet
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
@@ -16,7 +16,7 @@ import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
 import useTagResolution from "../hooks/useTagResolution.js";
 
-const RediscoveryPage = ({ onNavigate }) => {
+const RediscoveryPage = ({ onNavigate, setPageRefresh }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
@@ -34,34 +34,57 @@ const RediscoveryPage = ({ onNavigate }) => {
   const { resolveArticleTags, refreshTags } = useTagResolution();
   const baseLockedFilters = useMemo(() => ({ status: STATUS.REDISCOVERY }), []);
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    Promise.all([
-      articlesAPI.getAll(baseLockedFilters),
-      tagsAPI.getAll()
-    ])
-      .then(([articlesRes, tagsRes]) => {
-        let data = articlesRes;
-        if (Array.isArray(articlesRes)) data = articlesRes;
-        else if (articlesRes.data) data = articlesRes.data;
-        else if (articlesRes.articles) data = articlesRes.articles;
-        setRawArticles(data);
-        
-        // Handle tags response properly
-        let tagsData = tagsRes;
-        if (Array.isArray(tagsRes)) tagsData = tagsRes;
-        else if (tagsRes.data) tagsData = tagsRes.data;
-        else if (tagsRes.tags) tagsData = tagsRes.tags;
-        setAvailableTags(tagsData);
-        
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message || "Failed to load articles");
-        setLoading(false);
-      });
+  // Define fetchData function with useCallback to prevent infinite re-renders
+  const fetchData = useCallback(async () => {
+    try {
+      console.log('RediscoveryPage: fetchData called, loading data...');
+      setLoading(true);
+      setError(null);
+      
+      const [articlesRes, tagsRes] = await Promise.all([
+        articlesAPI.getAll(baseLockedFilters),
+        tagsAPI.getAll()
+      ]);
+      
+      let data = articlesRes;
+      if (Array.isArray(articlesRes)) data = articlesRes;
+      else if (articlesRes.data) data = articlesRes.data;
+      else if (articlesRes.articles) data = articlesRes.articles;
+      setRawArticles(data);
+      
+      // Handle tags response properly
+      let tagsData = tagsRes;
+      if (Array.isArray(tagsRes)) tagsData = tagsRes;
+      else if (tagsRes.data) tagsData = tagsRes.data;
+      else if (tagsRes.tags) tagsData = tagsRes.tags;
+      setAvailableTags(tagsData);
+      
+      setLoading(false);
+    } catch (err) {
+      setError(err.message || "Failed to load articles");
+      setLoading(false);
+    }
   }, [baseLockedFilters]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Register refresh function with parent component
+  useEffect(() => {
+    if (setPageRefresh) {
+      console.log('RediscoveryPage: Registering refresh function');
+      setPageRefresh(fetchData);
+    }
+    
+    // Cleanup: remove refresh function when component unmounts
+    return () => {
+      if (setPageRefresh) {
+        console.log('RediscoveryPage: Cleaning up refresh function');
+        setPageRefresh(null);
+      }
+    };
+  }, [setPageRefresh, fetchData]);
 
   // Tag resolution effect
   useEffect(() => {
