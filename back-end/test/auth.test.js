@@ -2,6 +2,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const express = require('express');
 const authRouter = require('../routes/auth');
+const daoFactory = require('../lib/daoFactory');
 const jwt = require('jsonwebtoken');
 const expect = chai.expect;
 
@@ -16,6 +17,11 @@ chai.use(chaiHttp);
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
 describe('Auth API', () => {
+  // Reset mock data before each test to ensure isolation
+  beforeEach(() => {
+    daoFactory.resetMockData();
+  });
+
   // Test POST /api/auth/register
   describe('POST /api/auth/register', () => {
     it('should register a new user successfully', (done) => {
@@ -192,46 +198,61 @@ describe('Auth API', () => {
 
   // Test POST /api/auth/login
   describe('POST /api/auth/login', () => {
-    it('should login with username successfully', (done) => {
-      // Note: The actual password for mock users is 'password123' based on the comment
-      // However, the hash might not match. We'll test the structure and error handling.
+    // Create a test user once for all login tests
+    const testUser = {
+      username: 'logintest',
+      email: 'logintest@example.com',
+      password: 'testpass123',
+      displayName: 'Login Test User'
+    };
+
+    it('should login with username successfully after registration', (done) => {
+      // First register
       chai.request(app)
-        .post('/api/auth/login')
-        .send({
-          username: 'johndoe',
-          password: 'password123'
-        })
-        .end((err, res) => {
-          // This will either succeed (200) if password matches or fail (401) if it doesn't
-          // Both are valid test outcomes depending on the actual hash
-          expect(res).to.satisfy((response) => {
-            return response.status === 200 || response.status === 401;
-          });
+        .post('/api/auth/register')
+        .send(testUser)
+        .end((err, regRes) => {
+          expect(regRes).to.have.status(201);
           
-          if (res.status === 200) {
-            expect(res.body).to.have.property('success').eql(true);
-            expect(res.body.data).to.have.property('user');
-            expect(res.body.data).to.have.property('token');
-            expect(res.body.data.user).to.not.have.property('password');
-            expect(res.body).to.have.property('message').eql('Login successful');
-          }
-          done();
+          // Then login
+          chai.request(app)
+            .post('/api/auth/login')
+            .send({
+              username: testUser.username,
+              password: testUser.password
+            })
+            .end((err, res) => {
+              expect(res).to.have.status(200);
+              expect(res.body).to.have.property('success').eql(true);
+              expect(res.body.data).to.have.property('user');
+              expect(res.body.data).to.have.property('token');
+              expect(res.body.data.user).to.not.have.property('password');
+              expect(res.body).to.have.property('message').eql('Login successful');
+              done();
+            });
         });
     });
 
     it('should login with email successfully', (done) => {
+      // First register
       chai.request(app)
-        .post('/api/auth/login')
-        .send({
-          username: 'john@example.com', // Using email as username
-          password: 'password123'
-        })
-        .end((err, res) => {
-          // Similar to above - will either succeed or fail based on password hash
-          expect(res).to.satisfy((response) => {
-            return response.status === 200 || response.status === 401;
-          });
-          done();
+        .post('/api/auth/register')
+        .send({ ...testUser, username: 'emailtest', email: 'emailtest@example.com' })
+        .end(() => {
+          // Then login with email
+          chai.request(app)
+            .post('/api/auth/login')
+            .send({
+              username: 'emailtest@example.com', // Using email as username
+              password: testUser.password
+            })
+            .end((err, res) => {
+              expect(res).to.have.status(200);
+              expect(res.body).to.have.property('success').eql(true);
+              expect(res.body.data).to.have.property('user');
+              expect(res.body.data).to.have.property('token');
+              done();
+            });
         });
     });
 
@@ -279,17 +300,23 @@ describe('Auth API', () => {
     });
 
     it('should return 401 for incorrect password', (done) => {
+      // Register then try wrong password
       chai.request(app)
-        .post('/api/auth/login')
-        .send({
-          username: 'johndoe',
-          password: 'wrongpassword'
-        })
-        .end((err, res) => {
-          expect(res).to.have.status(401);
-          expect(res.body).to.have.property('success').eql(false);
-          expect(res.body).to.have.property('error').eql('Invalid credentials');
-          done();
+        .post('/api/auth/register')
+        .send({ ...testUser, username: 'wrongpwtest', email: 'wrongpw@example.com' })
+        .end(() => {
+          chai.request(app)
+            .post('/api/auth/login')
+            .send({
+              username: 'wrongpwtest',
+              password: 'wrongpassword'
+            })
+            .end((err, res) => {
+              expect(res).to.have.status(401);
+              expect(res.body).to.have.property('success').eql(false);
+              expect(res.body).to.have.property('error').eql('Invalid credentials');
+              done();
+            });
         });
     });
 
@@ -338,7 +365,7 @@ describe('Auth API', () => {
     before((done) => {
       // Create a valid token for testing
       validToken = jwt.sign(
-        { id: 'user-1', username: 'johndoe' },
+        { id: 1, username: 'johndoe' },
         JWT_SECRET,
         { expiresIn: '7d' }
       );
@@ -385,7 +412,7 @@ describe('Auth API', () => {
     it('should return 401 when token is expired', (done) => {
       // Create an expired token
       const expiredToken = jwt.sign(
-        { id: 'user-1', username: 'johndoe' },
+        { id: 1, username: 'johndoe' },
         JWT_SECRET,
         { expiresIn: '-1h' } // Expired 1 hour ago
       );
@@ -440,13 +467,13 @@ describe('Auth API', () => {
     before((done) => {
       // Create valid and expired tokens for testing
       validToken = jwt.sign(
-        { id: 'user-1', username: 'johndoe' },
+        { id: 1, username: 'johndoe' },
         JWT_SECRET,
         { expiresIn: '7d' }
       );
       
       expiredToken = jwt.sign(
-        { id: 'user-1', username: 'johndoe' },
+        { id: 1, username: 'johndoe' },
         JWT_SECRET,
         { expiresIn: '-1h' }
       );
@@ -538,7 +565,7 @@ describe('Auth API', () => {
           const decoded = jwt.verify(newToken, JWT_SECRET);
           expect(decoded).to.have.property('id');
           expect(decoded).to.have.property('username');
-          expect(decoded.id).to.eql('user-1');
+          expect(decoded.id).to.eql(1);
           done();
         });
     });

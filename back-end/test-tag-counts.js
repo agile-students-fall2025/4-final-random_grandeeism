@@ -12,27 +12,26 @@ const calculateArticleCount = (tagId) => {
 console.log('Testing tag article counts:');
 console.log('');
 
-// Check some key tags
-const testTags = ['tag-1', 'tag-2', 'tag-3', 'tag-5'];
+// Check some key tags (numeric IDs now)
+const testTags = [1, 2, 3, 5];
 
-testTags.forEach(tagId => {
+for (const tagId of testTags) {
   const tag = mockTags.find(t => t.id === tagId);
-  const actualCount = calculateArticleCount(tagId);
-  
+  const actual = calculateArticleCount(tagId);
   if (tag) {
-    console.log(`${tag.name} (${tagId}):`);
-    console.log(`  Mock data says: ${tag.articleCount} articles`);
-    console.log(`  Actual count: ${actualCount} articles`);
-    console.log(`  ${tag.articleCount === actualCount ? '✅ CORRECT' : '❌ INCORRECT'}`);
+    console.log(`${tag.name} (id:${tagId}):`);
+    console.log(`  mockTags articleCount: ${tag.articleCount}`);
+    console.log(`  recomputed: ${actual}`);
+    console.log(`  ${tag.articleCount === actual ? '✅ CORRECT' : '❌ MISMATCH'}`);
     console.log('');
+  } else {
+    console.log(`missing tag id:${tagId}`);
   }
-});
+}
 
 // Show which articles have tag-1 (javascript)
-console.log('Articles with tag-1 (javascript):');
-const tag1Articles = mockArticles.filter(article => 
-  article.tags && Array.isArray(article.tags) && article.tags.includes('tag-1')
-);
+console.log('Articles with tag id=1 (javascript):');
+const tag1Articles = mockArticles.filter(a => Array.isArray(a.tags) && a.tags.includes(1));
 
 tag1Articles.forEach((article, index) => {
   console.log(`  ${index + 1}. ${article.title} (ID: ${article.id})`);

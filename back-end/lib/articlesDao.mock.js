@@ -11,10 +11,13 @@ const { mockArticles } = require('../data/mockArticles');
 // In-memory storage - clone the mock data to avoid mutations
 let articles = [...mockArticles.map(article => ({ ...article }))];
 
+// Next numeric ID helper
+let nextId = (articles.length ? Math.max(...articles.map(a => Number(a.id))) : 0) + 1;
+
 /**
  * Generate a new ID for created articles
  */
-const generateId = () => `article-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const generateId = () => nextId++;
 
 const articlesDao = {
   /**
@@ -62,7 +65,7 @@ const articlesDao = {
    * @returns {Promise<Object|null>} Article object or null if not found
    */
   async getById(id) {
-    const article = articles.find(a => a.id === id);
+  const article = articles.find(a => a.id == id);
     return article ? { ...article } : null;
   },
 
@@ -102,7 +105,7 @@ const articlesDao = {
    * @returns {Promise<Object|null>} Updated article or null if not found
    */
   async update(id, updateData) {
-    const index = articles.findIndex(a => a.id === id);
+  const index = articles.findIndex(a => a.id == id);
     if (index === -1) {
       return null;
     }
@@ -122,7 +125,7 @@ const articlesDao = {
    * @returns {Promise<boolean>} True if deleted, false if not found
    */
   async delete(id) {
-    const index = articles.findIndex(a => a.id === id);
+  const index = articles.findIndex(a => a.id == id);
     if (index === -1) {
       return false;
     }
@@ -155,7 +158,7 @@ const articlesDao = {
    * @returns {Promise<Array>} Articles from the specified feed
    */
   async getByFeedId(feedId) {
-    return articles.filter(article => article.feedId === feedId);
+  return articles.filter(article => article.feedId == feedId);
   },
 
   /**

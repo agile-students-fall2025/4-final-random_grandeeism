@@ -12,12 +12,14 @@ const highlightSchema = new Schema({
   articleId: {
     type: Schema.Types.ObjectId,
     ref: 'Article',
-    required: true
+    required: true,
+    index: true
   },
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
   },
   text: {
     type: String,
