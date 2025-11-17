@@ -134,6 +134,15 @@ router.post('/', async (req, res) => {
     const { title, url, content } = req.body;
 
     // Validation: Check if required fields are present
+    // If both title and url are missing, return the combined error expected by tests
+    if (!title && !url) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title and URL are required fields.'
+      });
+    }
+
+    // Title is required
     if (!title) {
       return res.status(400).json({
         success: false,
