@@ -231,6 +231,9 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
       if (!exists) {
         setAvailableTags(prevTags => [...prevTags, newTag]);
       }
+      
+      // Refresh tags to update the tag resolution mapping
+      await refreshTags();
     } catch (error) {
       console.error('Failed to add tag to local state:', error);
     }

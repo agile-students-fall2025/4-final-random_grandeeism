@@ -251,7 +251,10 @@ const ContinueReadingPage = ({ onNavigate, setPageRefresh }) => {
         throw new Error(addResponse.error || 'Failed to add tag to article');
       }
 
-      // 4. Refetch articles from API to get latest data
+      // 4. Refresh tags to update the tag resolution mapping
+      await refreshTags();
+      
+      // 5. Refetch articles from API to get latest data
       const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
       let articlesData = articlesResponse;
       if (Array.isArray(articlesResponse)) {
