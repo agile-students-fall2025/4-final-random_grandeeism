@@ -69,9 +69,3 @@ export function addSingleTag(tagObj) {
 export function getTagMapSnapshot() {
   return { ...TAG_MAP }; // shallow copy for React state usage
 }
-
-export function invalidateTagCache() {
-  TAG_CACHE = null;
-  TAG_MAP = {};
-  LOADING_PROMISE = null;
-}
