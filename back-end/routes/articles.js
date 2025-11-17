@@ -82,6 +82,18 @@ router.get('/:id', async (req, res) => {
  * POST /api/articles
  * Create a new article (mock - doesn't persist)
  * 
+ * Required fields:
+ * - title: String (required)
+ * - url: String (optional, but either url or content must be provided)
+ * - content: String (optional, but either url or content must be provided)
+ * 
+ * Optional fields:
+ * - author: String
+ * - source: String
+ * - status: String ('inbox', 'daily', 'continue', 'rediscovery', 'archived')
+ * - isFavorite: Boolean
+ * - tags: Array of tag IDs or names
+ * 
  * TODO (Future Enhancement - Sprint 3+):
  * ============================================
  * Add content extraction if only URL is provided:
@@ -119,13 +131,21 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { title, url } = req.body;
+    const { title, url, content } = req.body;
 
     // Validation: Check if required fields are present
-    if (!title || !url) {
+    if (!title) {
       return res.status(400).json({
         success: false,
-        error: 'Title and URL are required fields.'
+        error: 'Title is required.'
+      });
+    }
+
+    // Either URL or content is required (or both)
+    if (!url && !content) {
+      return res.status(400).json({
+        success: false,
+        error: 'Either URL or content is required.'
       });
     }
 
