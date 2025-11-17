@@ -35,6 +35,7 @@ import { tagsAPI } from '../services/api.js';
 
 export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink }) {
   const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkTags, setNewLinkTags] = useState([]);
   const [newLinkStatus, setNewLinkStatus] = useState(STATUS.INBOX);
   const [newLinkFavorite, setNewLinkFavorite] = useState(false);
@@ -225,7 +226,7 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
 
       const newArticle = {
         id: Date.now().toString(),
-        title: 'New Article',
+        title: newLinkTitle && newLinkTitle.trim() ? newLinkTitle.trim() : 'New Article',
         url: newLinkUrl,
         description: 'Article description will appear here once the link is processed...',
         readingTime: '2 min',
@@ -254,6 +255,7 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
 
   const resetForm = () => {
     setNewLinkUrl('');
+    setNewLinkTitle('');
     setNewLinkTags([]);
     setNewLinkStatus(STATUS.INBOX);
     setNewLinkFavorite(false);
@@ -282,6 +284,12 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
         <div className="mb-4">
           <label className="block text-[14px] text-foreground mb-2" htmlFor="url-input">URL</label>
           <Input id="url-input" onChange={(e) => setNewLinkUrl(e.target.value)} placeholder="https://example.com/article"></Input>
+        </div>
+
+        {/* Title Input (user-editable) */}
+        <div className="mb-4">
+          <label className="block text-[14px] text-foreground mb-2" htmlFor="title-input">Title (optional)</label>
+          <Input id="title-input" value={newLinkTitle} onChange={(e) => setNewLinkTitle(e.target.value)} placeholder="Provide a custom title for this article (optional)"></Input>
         </div>
 
         {/* Tags Section */}
