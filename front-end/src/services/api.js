@@ -541,3 +541,15 @@ export const checkAPIHealth = async () => {
     throw error;
   }
 };
+
+/**
+ * Extract API
+ */
+export const extractAPI = {
+  extract: async (url) => {
+    return apiRequest('/extract', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    });
+  }
+};

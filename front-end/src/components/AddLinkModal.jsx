@@ -31,7 +31,7 @@ import { Button } from './ui/button.jsx';
 import { Input } from './ui/input.jsx';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem, SelectLabel } from './ui/select.jsx';
 import { STATUS } from "../constants/statuses.js";
-import { tagsAPI } from '../services/api.js';
+import { tagsAPI, extractAPI, articlesAPI } from '../services/api.js';
 
 export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink }) {
   const [newLinkUrl, setNewLinkUrl] = useState('');
@@ -218,37 +218,81 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
 
   const handleAddLinkSubmit = () => {
     if (newLinkUrl.trim()) {
-      // Convert tag objects to tag IDs for the API
-      const tagIds = newLinkTags.map(tag => 
-        typeof tag === 'object' ? tag.id : tag
-      );
+      (async () => {
+        try {
+          const extraction = await extractAPI.extract(newLinkUrl.trim());
+          if (extraction && extraction.success && extraction.data) {
+            const ext = extraction.data;
 
-      const newArticle = {
-        id: Date.now().toString(),
-        title: 'New Article',
-        url: newLinkUrl,
-        description: 'Article description will appear here once the link is processed...',
-        readingTime: '2 min',
-        isFavorite: newLinkFavorite,
-        status: newLinkStatus,
-        tags: tagIds,
-        dateAdded: new Date(),
-        isRead: false,
-        hasAnnotations: false
-      };
+            // Convert tag objects to tag IDs for the API
+            const tagIds = newLinkTags.map(tag => typeof tag === 'object' ? tag.id : tag);
 
-      if (onAddLink) {
-        onAddLink(newArticle);
-      }
+            const newArticle = {
+              title: ext.title || 'New Article',
+              url: newLinkUrl,
+              description: ext.excerpt || 'Article description will appear here once the link is processed...',
+              content: ext.content || '',
+              textContent: ext.textContent || '',
+              readingTime: ext.readingTime ? `${ext.readingTime} min` : '1 min',
+              isFavorite: newLinkFavorite,
+              status: newLinkStatus,
+              tags: tagIds,
+              dateAdded: new Date(),
+              source: ext.source || null,
+              isRead: false,
+              hasAnnotations: false
+            };
 
-      // Show success message
-      setShowSuccessMessage(true);
+            // Try to persist via API, fallback to bubbling up local object
+            try {
+              const created = await articlesAPI.create(newArticle);
+              if (created && created.success && created.data) {
+                if (onAddLink) onAddLink(created.data);
+              } else {
+                if (onAddLink) onAddLink(newArticle);
+              }
+            } catch (err) {
+              console.error('Failed to create article via API:', err);
+              if (onAddLink) onAddLink(newArticle);
+            }
 
-      // Hide success message and close modal after 2 seconds
-      setTimeout(() => {
-        setShowSuccessMessage(false);
-        resetForm();
-      }, 2000);
+            setShowSuccessMessage(true);
+            setTimeout(() => {
+              setShowSuccessMessage(false);
+              resetForm();
+            }, 2000);
+            return;
+          }
+        } catch (error) {
+          console.warn('Extraction failed, falling back to manual entry:', error);
+        }
+
+        // Fallback behavior — use minimal article object
+        const fallbackTagIds = newLinkTags.map(tag => typeof tag === 'object' ? tag.id : tag);
+        const fallbackArticle = {
+          id: Date.now().toString(),
+          title: 'New Article',
+          url: newLinkUrl,
+          description: 'Article description will appear here once the link is processed...',
+          readingTime: '2 min',
+          isFavorite: newLinkFavorite,
+          status: newLinkStatus,
+          tags: fallbackTagIds,
+          dateAdded: new Date(),
+          isRead: false,
+          hasAnnotations: false
+        };
+
+        if (onAddLink) {
+          onAddLink(fallbackArticle);
+        }
+
+        setShowSuccessMessage(true);
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+          resetForm();
+        }, 2000);
+      })();
     }
   };
 
