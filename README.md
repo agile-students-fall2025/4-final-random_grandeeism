@@ -8,7 +8,6 @@ In the current internet age there is a incomprehensible and immense amount of in
 
 - [Zeba Shafi](https://github.com/Zeba-Shafi)
 - [Sheik Anas Ally Ozeer](https://github.com/anas-ozeer)
-- [Alexander Escobar](https://github.com/EscoAl516)
 - [Saad Sifar](https://github.com/one-loop)
 - [Shaurya Srivastava](https://github.com/shauryasr04)
 - [Jeffrey Chen](https://github.com/shauryasr04)
@@ -21,6 +20,11 @@ Therefore for our
 [Agile Software Development and DevOps](https://knowledge.kitchen/content/courses/agile-development-and-devops/syllabus/) course taught at NYU by [Professor Amos Bloomberg](https://knowledge.kitchen/me/cv/), we decided to work on **fieldnotes.** We hope that our project proves as useful to you in actively, and thoughfully reading in the face of the immense information landscape of the digital age.
 
 ## Setup Instructions
+
+### Start at the Root Directory - run this to install all dependencies
+```bash
+npm install
+```
 
 ### Back-End Setup
 
