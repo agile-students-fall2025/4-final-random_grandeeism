@@ -392,6 +392,9 @@ const HomePage = ({ onNavigate, setPageRefresh }) => {
         setAvailableTags(prev => [...prev, existingTag]);
       }
 
+      // Refresh tags to update the tag resolution mapping
+      await refreshTags();
+
       // 3. Add tag to article via API
       const addResponse = await articlesAPI.addTag(selectedArticleForTags.id, tagId);
       if (!addResponse.success) {

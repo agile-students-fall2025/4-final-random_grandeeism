@@ -41,6 +41,12 @@ import { Toaster } from './components/ui/sonner.jsx';
 // Import API services
 import { articlesAPI, handleAPIError } from './services/api.js';
 
+// Import hooks
+import { useTagResolution } from './hooks/useTagResolution.js';
+
+// Import utils
+import { invalidateTagCache } from './utils/tagsCache.js';
+
 // Import data
 // import { mockArticles } from './data/mockArticles'; // Adjust path if needed
 
@@ -55,6 +61,9 @@ function App() {
   const [currentTag, setCurrentTag] = useState(null);
   const [currentFeed, setCurrentFeed] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  
+  // Tag resolution hook for refreshing tags when new ones are created
+  const { refreshTags } = useTagResolution();
   
   // Reference to the current page's refresh function
   const currentPageRefreshRef = useRef(null);
@@ -458,7 +467,15 @@ function App() {
               console.log('Article created successfully:', response.data);
               setIsAddLinkModalOpen(false);
               
-              // Refresh the current page's data
+              // Invalidate the ArticleCard tag cache to force it to refetch
+              console.log('Invalidating ArticleCard tag cache...');
+              invalidateTagCache();
+              
+              // Refresh the global tag resolution mapping to pick up any new tags
+              console.log('Refreshing tag resolution mapping...');
+              await refreshTags();
+              
+              // Refresh the current page's data (this will fetch both articles and tags)
               if (currentPageRefreshRef.current) {
                 console.log('Refreshing current page data...');
                 await currentPageRefreshRef.current();
