@@ -251,6 +251,30 @@ export const feedsAPI = {
   getArticles: async (id) => {
     return apiRequest(`/feeds/${id}/articles`);
   },
+
+  /**
+   * Pause a feed (stops auto-refresh)
+   * @param {string} id - Feed ID
+   * @returns {Promise} API response
+   */
+  pause: async (id) => {
+    return apiRequest(`/feeds/${id}/pause`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Resume a feed (starts auto-refresh)
+   * @param {string} id - Feed ID
+   * @param {number} intervalMinutes - Refresh interval in minutes
+   * @returns {Promise} API response
+   */
+  resume: async (id, intervalMinutes = 60) => {
+    return apiRequest(`/feeds/${id}/resume`, {
+      method: 'POST',
+      body: JSON.stringify({ intervalMinutes }),
+    });
+  },
 };
 
 /**
