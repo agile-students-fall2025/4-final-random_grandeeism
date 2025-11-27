@@ -55,7 +55,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.fontSize || 'medium'; } catch { return 'medium'; }
   });
   const [fontFamily, setFontFamily] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.fontFamily || 'serif'; } catch { return 'serif'; }
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.fontFamily || 'sans-serif'; } catch { return 'sans-serif'; }
   });
   const [showImages, setShowImages] = useState(() => {
     try { const v = JSON.parse(localStorage.getItem(SETTINGS_KEY))?.showImages; return typeof v === 'boolean' ? v : true; } catch { return true; }

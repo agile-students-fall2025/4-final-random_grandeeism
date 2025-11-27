@@ -15,6 +15,7 @@ import { mockArticles } from "../data/mockArticles.js";
 import { articlesAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import useTagResolution from "../hooks/useTagResolution.js";
+import { useStacks } from "../contexts/useStacks.js";
 
 const VideosPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
@@ -48,9 +49,16 @@ const VideosPage = ({ onNavigate }) => {
 
   const handleSaveSearch = () => setShowSaveStackModal(true);
 
-  const handleSaveStack = (stackData) => {
-    console.log('Saving stack:', stackData);
-    alert(`Stack "${stackData.name}" saved successfully!`);
+  const { addStack } = useStacks();
+
+  const handleSaveStack = async (stackData) => {
+    try {
+      await addStack(stackData);
+      alert(`Stack "${stackData.name}" saved successfully!`);
+    } catch (error) {
+      console.error('Error saving stack:', error);
+      alert('Failed to save stack');
+    }
   };
 
   // TagManager handlers

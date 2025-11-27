@@ -9,6 +9,7 @@ const tagsRouter = require('./tags');
 const usersRouter = require('./users');
 const highlightsRouter = require('./highlights');
 const authRouter = require('./auth');
+const stacksRouter = require('./stacks');
 
 // Mount routes
 router.use('/articles', articlesRouter);
@@ -18,6 +19,7 @@ router.use('/tags', tagsRouter);
 router.use('/users', usersRouter);
 router.use('/highlights', highlightsRouter);
 router.use('/auth', authRouter);
+router.use('/stacks', stacksRouter);
 
 // API root route
 router.get('/', (req, res) => {
@@ -31,7 +33,8 @@ router.get('/', (req, res) => {
       users: '/api/users',
       highlights: '/api/highlights',
       auth: '/api/auth',
-      extract: '/api/extract'
+      extract: '/api/extract',
+      stacks: '/api/stacks'
     }
   });
 });

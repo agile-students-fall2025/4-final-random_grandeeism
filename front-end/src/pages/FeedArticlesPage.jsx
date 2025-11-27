@@ -11,6 +11,7 @@ import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
 import useTagResolution from "../hooks/useTagResolution.js";
+import { useStacks } from "../contexts/useStacks.js";
 
 export default function FeedArticlesPage({ onNavigate, feed }) {
   const [rawArticles, setRawArticles] = useState([]);
@@ -94,13 +95,20 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
     setDisplayedArticles(applyFiltersAndSort(articles, merged));
   };
 
+  const { addStack } = useStacks();
+
   const handleSaveSearch = () => {
     setShowSaveStackModal(true);
   };
 
-  const handleSaveStack = (stackData) => {
-    console.log('Saving stack:', stackData);
-    alert(`Stack "${stackData.name}" saved successfully!`);
+  const handleSaveStack = async (stackData) => {
+    try {
+      await addStack(stackData);
+      alert(`Stack "${stackData.name}" saved successfully!`);
+    } catch (error) {
+      console.error('Error saving stack:', error);
+      alert('Failed to save stack');
+    }
   };
 
   // TagManager handlers

@@ -17,6 +17,7 @@
  */
 
 import { useState } from "react";
+import { useStacks } from "../contexts/useStacks.js";
 import { STATUS } from "../constants/statuses.js";
 import { mockArticles } from "../data/mockArticles.js";
 import TopBar from "./TopBar.jsx";
@@ -78,6 +79,15 @@ export default function MainLayout({
   // Mobile menu state
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
+  // Use stacks context for sidebar
+  const { stacks, removeStack, loadStack } = useStacks();
+
+  // Handle loading a saved stack
+  const handleLoadStack = (stackId) => {
+    loadStack(stackId);
+    onNavigate('search');
+  };
+
   // Auto-calculate counts for sidebar from full article list (not filtered view)
   const inboxCount = articles.filter(a => a.status === STATUS.INBOX && !a.isHidden).length;
   const dailyReadingCount = articles.filter(a => a.status === STATUS.DAILY && !a.isHidden).length;
@@ -96,9 +106,9 @@ export default function MainLayout({
           dailyReadingCount={dailyReadingCount}
           inProgressCount={inProgressCount}
           rediscoveryCount={rediscoveryCount}
-          savedSearches={savedSearches}
-          onLoadSavedSearch={onLoadSavedSearch}
-          onDeleteSavedSearch={onDeleteSavedSearch}
+          savedSearches={stacks}
+          onLoadSavedSearch={handleLoadStack}
+          onDeleteSavedSearch={removeStack}
         />
       </aside>
 
@@ -125,12 +135,9 @@ export default function MainLayout({
               dailyReadingCount={dailyReadingCount}
               inProgressCount={inProgressCount}
               rediscoveryCount={rediscoveryCount}
-              savedSearches={savedSearches}
-              onLoadSavedSearch={(searchId) => {
-                onLoadSavedSearch?.(searchId);
-                setShowMobileMenu(false);
-              }}
-              onDeleteSavedSearch={onDeleteSavedSearch}
+              savedSearches={stacks}
+              onLoadSavedSearch={handleLoadStack}
+              onDeleteSavedSearch={removeStack}
             />
           </aside>
         </div>

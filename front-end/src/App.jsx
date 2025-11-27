@@ -6,6 +6,7 @@
  */
 
 import { useState, useRef } from 'react';
+import { StacksProvider } from './contexts/StacksContext.jsx';
 
 // Import all pages
 import HomePage from './pages/HomePage.jsx';
@@ -244,258 +245,255 @@ function App() {
   };
 
   return (
-    <div 
-      className="app"
-      /* onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp} */
-    >
-      {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation */}
-      {/* TODO: Uncomment when development resumes */}
-      {/* Simple navigation menu for testing */}
-      {/* <div 
-        className="fixed z-100 bg-card border border-border rounded-lg shadow-lg"
-        style={{
-          left: `${navPosition.x}px`,
-          top: `${navPosition.y}px`,
-          cursor: isDragging ? 'grabbing' : 'grab'
-        }}
-      >
-        <div 
-          className="flex items-center justify-between p-3 border-b border-border select-none"
-          onMouseDown={handleMouseDown}
+    <StacksProvider>
+      <div className="relative min-h-screen bg-background">
+        {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation */}
+        {/* TODO: Uncomment when development resumes */}
+        {/* Simple navigation menu for testing */}
+        {/* <div 
+          className="fixed z-100 bg-card border border-border rounded-lg shadow-lg"
+          style={{
+            left: `${navPosition.x}px`,
+            top: `${navPosition.y}px`,
+            cursor: isDragging ? 'grabbing' : 'grab'
+          }}
         >
-          <h3 className="text-sm font-bold">Test Navigation</h3>
-          <button
-            onClick={() => setIsNavExpanded(!isNavExpanded)}
-            className="text-xs px-2 py-1 rounded bg-accent hover:bg-accent/80"
-            aria-label={isNavExpanded ? "Collapse menu" : "Expand menu"}
+          <div 
+            className="flex items-center justify-between p-3 border-b border-border select-none"
+            onMouseDown={handleMouseDown}
           >
-            {isNavExpanded ? '−' : '+'}
-          </button>
-        </div>
-        {isNavExpanded && (
-          <div className="flex flex-col gap-1 p-3">
+            <h3 className="text-sm font-bold">Test Navigation</h3>
             <button
-              onClick={() => setCurrentPage('landing')}
-              className={`text-xs px-2 py-1 rounded ${
-                currentPage === 'landing' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-              }`}
+              onClick={() => setIsNavExpanded(!isNavExpanded)}
+              className="text-xs px-2 py-1 rounded bg-accent hover:bg-accent/80"
+              aria-label={isNavExpanded ? "Collapse menu" : "Expand menu"}
             >
-              Landing
+              {isNavExpanded ? '−' : '+'}
             </button>
-            <button
-              onClick={() => setCurrentPage('auth')}
-              className={`text-xs px-2 py-1 rounded ${
-                currentPage === 'auth' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-              }`}
-            >
-              Auth
-            </button>
-            <button
-              onClick={() => setCurrentPage('home')}
-              className={`text-xs px-2 py-1 rounded ${
-                currentPage === 'home' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-              }`}
-            >
-              Home
-            </button>
-          <button
-            onClick={() => setCurrentPage('search')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'search' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Search
-          </button>
-          <button
-            onClick={() => setCurrentPage('inbox')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'inbox' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Inbox
-          </button>
-          <button
-            onClick={() => setCurrentPage('daily-reading')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'daily-reading' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Daily Reading
-          </button>
-          <button
-            onClick={() => setCurrentPage('continue-reading')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'continue-reading' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Continue Reading
-          </button>
-          <button
-            onClick={() => setCurrentPage('rediscovery')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'rediscovery' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Rediscovery
-          </button>
-          <button
-            onClick={() => setCurrentPage('text')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'text' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Text
-          </button>
-          <button
-            onClick={() => setCurrentPage('videos')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'videos' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Videos
-          </button>
-          <button
-            onClick={() => setCurrentPage('audio')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'audio' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Audio
-          </button>
-          <button
-            onClick={() => setCurrentPage('archive')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'archive' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Archive
-          </button>
-          <button
-            onClick={() => setCurrentPage('statistics')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'statistics' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Statistics
-          </button>
-          <button
-            onClick={() => setCurrentPage('feeds')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'feeds' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Feeds
-          </button>
-          <button
-            onClick={() => setCurrentPage('tags')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'tags' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Tags
-          </button>
-          <button
-            onClick={() => setCurrentPage('favorites')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'favorites' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Favorites
-          </button>
-          <button
-            onClick={() => setCurrentPage('settings')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'settings' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Settings
-          </button>
-          <button
-            onClick={() => handleNavigate('text-reader', { returnTo: currentPage })}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'text-reader' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Text Reader
-          </button>
-          <button
-            onClick={() => setCurrentPage('audio-player')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'audio-player' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Audio Player
-          </button>
-          <button
-            onClick={() => setCurrentPage('video-player')}
-            className={`text-xs px-2 py-1 rounded ${
-              currentPage === 'video-player' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
-            }`}
-          >
-            Video Player
-          </button>
           </div>
+          {isNavExpanded && (
+            <div className="flex flex-col gap-1 p-3">
+              <button
+                onClick={() => setCurrentPage('landing')}
+                className={`text-xs px-2 py-1 rounded ${
+                  currentPage === 'landing' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+                }`}
+              >
+                Landing
+              </button>
+              <button
+                onClick={() => setCurrentPage('auth')}
+                className={`text-xs px-2 py-1 rounded ${
+                  currentPage === 'auth' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+                }`}
+              >
+                Auth
+              </button>
+              <button
+                onClick={() => setCurrentPage('home')}
+                className={`text-xs px-2 py-1 rounded ${
+                  currentPage === 'home' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+                }`}
+              >
+                Home
+              </button>
+            <button
+              onClick={() => setCurrentPage('search')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'search' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Search
+            </button>
+            <button
+              onClick={() => setCurrentPage('inbox')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'inbox' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Inbox
+            </button>
+            <button
+              onClick={() => setCurrentPage('daily-reading')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'daily-reading' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Daily Reading
+            </button>
+            <button
+              onClick={() => setCurrentPage('continue-reading')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'continue-reading' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Continue Reading
+            </button>
+            <button
+              onClick={() => setCurrentPage('rediscovery')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'rediscovery' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Rediscovery
+            </button>
+            <button
+              onClick={() => setCurrentPage('text')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'text' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Text
+            </button>
+            <button
+              onClick={() => setCurrentPage('videos')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'videos' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Videos
+            </button>
+            <button
+              onClick={() => setCurrentPage('audio')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'audio' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Audio
+            </button>
+            <button
+              onClick={() => setCurrentPage('archive')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'archive' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Archive
+            </button>
+            <button
+              onClick={() => setCurrentPage('statistics')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'statistics' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Statistics
+            </button>
+            <button
+              onClick={() => setCurrentPage('feeds')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'feeds' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Feeds
+            </button>
+            <button
+              onClick={() => setCurrentPage('tags')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'tags' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Tags
+            </button>
+            <button
+              onClick={() => setCurrentPage('favorites')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'favorites' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Favorites
+            </button>
+            <button
+              onClick={() => setCurrentPage('settings')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'settings' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Settings
+            </button>
+            <button
+              onClick={() => handleNavigate('text-reader', { returnTo: currentPage })}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'text-reader' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Text Reader
+            </button>
+            <button
+              onClick={() => setCurrentPage('audio-player')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'audio-player' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Audio Player
+            </button>
+            <button
+              onClick={() => setCurrentPage('video-player')}
+              className={`text-xs px-2 py-1 rounded ${
+                currentPage === 'video-player' ? 'bg-primary text-primary-foreground' : 'bg-accent hover:bg-accent/80'
+              }`}
+            >
+              Video Player
+            </button>
+            </div>
+          )}
+        </div> */}
+
+        {/* Render current page */}
+        {renderPage()}
+
+        {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation (draggable dev menu) */}
+        {/* TODO: Uncomment when development resumes */}
+        {/* Floating Add Button - Show on all pages except landing, auth, and viewer pages */}
+        {currentPage !== 'landing' && 
+         currentPage !== 'auth' && 
+         currentPage !== 'text-reader' && 
+         currentPage !== 'audio-player' && 
+         currentPage !== 'video-player' && (
+          <FloatingAddButton onClick={() => setIsAddLinkModalOpen(true)} />
         )}
-      </div> */}
 
-      {/* Render current page */}
-      {renderPage()}
-
-      {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation (draggable dev menu) */}
-      {/* TODO: Uncomment when development resumes */}
-      {/* Floating Add Button - Show on all pages except landing, auth, and viewer pages */}
-      {currentPage !== 'landing' && 
-       currentPage !== 'auth' && 
-       currentPage !== 'text-reader' && 
-       currentPage !== 'audio-player' && 
-       currentPage !== 'video-player' && (
-        <FloatingAddButton onClick={() => setIsAddLinkModalOpen(true)} />
-      )}
-
-      {/* Add Link Modal */}
-      <AddLinkModal 
-        isOpen={isAddLinkModalOpen} 
-        onClose={() => setIsAddLinkModalOpen(false)}
-        articles={[]}
-        onAddLink={async (newArticle) => {
-          try {
-            console.log('Adding new article:', newArticle);
-            const response = await articlesAPI.create(newArticle);
-            
-            if (response.success) {
-              console.log('Article created successfully:', response.data);
-              setIsAddLinkModalOpen(false);
-              
-              // Invalidate the ArticleCard tag cache to force it to refetch
-              console.log('Invalidating ArticleCard tag cache...');
-              invalidateTagCache();
-              
-              // Refresh the global tag resolution mapping to pick up any new tags
-              console.log('Refreshing tag resolution mapping...');
-              await refreshTags();
-              
-              // Refresh the current page's data (this will fetch both articles and tags)
-              if (currentPageRefreshRef.current) {
-                console.log('Refreshing current page data...');
-                await currentPageRefreshRef.current();
+        {/* Add Link Modal */}
+        <AddLinkModal 
+          isOpen={isAddLinkModalOpen} 
+          onClose={() => setIsAddLinkModalOpen(false)}
+          articles={[]}
+          onAddLink={async (newArticle, onSuccess, onError) => {
+            try {
+              console.log('Adding new article:', newArticle);
+              const response = await articlesAPI.create(newArticle);
+              if (response.success) {
+                console.log('Article created successfully:', response.data);
+                setIsAddLinkModalOpen(false);
+                if (typeof onSuccess === 'function') onSuccess();
+                // Invalidate the ArticleCard tag cache to force it to refetch
+                console.log('Invalidating ArticleCard tag cache...');
+                invalidateTagCache();
+                // Refresh the global tag resolution mapping to pick up any new tags
+                console.log('Refreshing tag resolution mapping...');
+                await refreshTags();
+                // Refresh the current page's data (this will fetch both articles and tags)
+                if (currentPageRefreshRef.current) {
+                  console.log('Refreshing current page data...');
+                  await currentPageRefreshRef.current();
+                } else {
+                  console.log('No refresh function available');
+                }
               } else {
-                console.log('No refresh function available');
+                if (typeof onError === 'function') onError();
+                throw new Error('Failed to create article');
               }
-            } else {
-              throw new Error('Failed to create article');
+            } catch (err) {
+              if (typeof onError === 'function') onError();
+              const errorResult = handleAPIError(err, 'creating article');
+              console.error('Failed to create article:', errorResult.error);
+              // Optionally show error toast to user
             }
-          } catch (err) {
-            const errorResult = handleAPIError(err, 'creating article');
-            console.error('Failed to create article:', errorResult.error);
-            // Optionally show error toast to user
-          }
-        }}
-      />
+          }}
+        />
 
-      {/* Toast Notifications */}
-      <Toaster />
-    </div>
+        {/* Toast Notifications */}
+        <Toaster />
+      </div>
+    </StacksProvider>
   );
 }
 

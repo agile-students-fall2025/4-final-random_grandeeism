@@ -13,7 +13,8 @@ import ConfirmDeleteModal from "../components/ConfirmDeleteModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { articlesAPI, feedsAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
-import useTagResolution from "../hooks/useTagResolution.js";
+import { useTagResolution } from "../hooks/useTagResolution.js";
+import { useStacks } from "../contexts/useStacks.js";
 
 const FavoritesPage = ({ onNavigate, setPageRefresh }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);

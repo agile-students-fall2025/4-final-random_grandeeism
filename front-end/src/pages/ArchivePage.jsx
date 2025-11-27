@@ -16,6 +16,7 @@ import { STATUS } from "../constants/statuses.js";
 import { articlesAPI, feedsAPI, tagsAPI } from "../services/api.js";
 import { Card, CardContent, CardTitle, CardDescription } from "../components/ui/card.jsx";
 import useTagResolution from "../hooks/useTagResolution.js";
+import { useStacks } from "../contexts/useStacks.js";
 
 // Utility to normalize backend response to an array
 const normalizeArticles = (data) => {
@@ -126,13 +127,20 @@ const ArchivePage = ({ onNavigate, setPageRefresh }) => {
     setDisplayedArticles(applyFiltersAndSort(articles, merged));
   };
 
+  const { addStack } = useStacks();
+
   const handleSaveSearch = () => {
     setShowSaveStackModal(true);
   };
 
-  const handleSaveStack = (stackData) => {
-    console.log('Saving stack:', stackData);
-    alert(`Stack "${stackData.name}" saved successfully!`);
+  const handleSaveStack = async (stackData) => {
+    try {
+      await addStack(stackData);
+      alert(`Stack "${stackData.name}" saved successfully!`);
+    } catch (error) {
+      console.error('Error saving stack:', error);
+      alert('Failed to save stack');
+    }
   };
 
   const handleManageTags = (article) => {

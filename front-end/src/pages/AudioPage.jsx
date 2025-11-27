@@ -13,6 +13,7 @@ import ArticleCard from "../components/ArticleCard.jsx";
 import { mockArticles } from "../data/mockArticles.js";
 import { articlesAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
+import { useStacks } from "../contexts/useStacks.js";
 
 const AudioPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
@@ -36,9 +37,16 @@ const AudioPage = ({ onNavigate }) => {
 
   const handleSaveSearch = () => setShowSaveStackModal(true);
 
-  const handleSaveStack = (stackData) => {
-    console.log('Saving stack:', stackData);
-    alert(`Stack "${stackData.name}" saved successfully!`);
+  const { addStack } = useStacks();
+
+  const handleSaveStack = async (stackData) => {
+    try {
+      await addStack(stackData);
+      alert(`Stack "${stackData.name}" saved successfully!`);
+    } catch (error) {
+      console.error('Error saving stack:', error);
+      alert('Failed to save stack');
+    }
   };
 
   const handleStatusChange = (articleId, newStatus) => {
