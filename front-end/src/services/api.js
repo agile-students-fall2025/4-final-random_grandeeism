@@ -577,3 +577,39 @@ export const extractAPI = {
     });
   }
 };
+
+/**
+ * Stacks API
+ */
+export const stacksAPI = {
+  /**
+   * Get all stacks
+   * @returns {Promise} API response with stacks
+   */
+  getAll: async () => {
+    return apiRequest('/stacks');
+  },
+
+  /**
+   * Create new stack
+   * @param {Object} stack - Stack data
+   * @returns {Promise} API response with created stack
+   */
+  create: async (stack) => {
+    return apiRequest('/stacks', {
+      method: 'POST',
+      body: JSON.stringify(stack),
+    });
+  },
+
+  /**
+   * Delete stack
+   * @param {string} id - Stack ID
+   * @returns {Promise} API response
+   */
+  delete: async (id) => {
+    return apiRequest(`/stacks/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};

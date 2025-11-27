@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getStacks, createStack, deleteStack } from '../api/stacks';
+import { stacksAPI } from '../services/api';
 
 export default function StacksManager() {
   const [stacks, setStacks] = useState([]);
@@ -16,7 +16,7 @@ export default function StacksManager() {
     setLoading(true);
     setError(null);
     try {
-      const res = await getStacks();
+      const res = await stacksAPI.getAll();
       setStacks(res.data || res);
     } catch (e) {
       setError(e.message);
@@ -30,7 +30,7 @@ export default function StacksManager() {
     setCreating(true);
     setError(null);
     try {
-      await createStack(newStack);
+      await stacksAPI.create(newStack);
       setNewStack({ name: '', query: '', filters: {} });
       loadStacks();
     } catch (e) {
@@ -43,7 +43,7 @@ export default function StacksManager() {
   async function handleDelete(id) {
     setError(null);
     try {
-      await deleteStack(id);
+      await stacksAPI.delete(id);
       loadStacks();
     } catch (e) {
       setError(e.message);

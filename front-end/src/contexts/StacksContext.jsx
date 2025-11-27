@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { getStacks, createStack, deleteStack } from "../api/stacks";
+import { stacksAPI } from "../services/api";
 import { StacksContext } from "./StacksContextValue";
 
 export function StacksProvider({ children }) {
@@ -13,7 +13,7 @@ export function StacksProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await getStacks();
+      const res = await stacksAPI.getAll();
       setStacks(res.data || res);
     } catch (e) {
       console.error('Failed to load stacks:', e);
@@ -30,13 +30,13 @@ export function StacksProvider({ children }) {
 
   // Add a new stack
   const addStack = async (stack) => {
-    await createStack(stack);
+    await stacksAPI.create(stack);
     await loadStacks();
   };
 
   // Delete a stack
   const removeStack = async (id) => {
-    await deleteStack(id);
+    await stacksAPI.delete(id);
     await loadStacks();
   };
 
