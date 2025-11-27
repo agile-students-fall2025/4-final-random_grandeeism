@@ -33,7 +33,7 @@ import {
   ChevronDown, 
   ChevronRight, 
   X, 
-  Pin
+  SquareLibrary
 } from "lucide-react";
 
 export default function NavigationSidebar({

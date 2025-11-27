@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Pin, X } from "lucide-react";
+import { SquareLibrary, X } from "lucide-react";
 import { Button } from "./ui/button.jsx";
 import {
   Dialog,
@@ -24,7 +24,8 @@ export default function SaveStackModal({
   isOpen, 
   onClose, 
   onSave,
-  currentFilters 
+  currentFilters,
+  currentQuery = ''
 }) {
   const [stackName, setStackName] = useState("");
   const [error, setError] = useState("");
@@ -57,7 +58,8 @@ export default function SaveStackModal({
     // Call save handler
     onSave({
       name: stackName.trim(),
-      filters: currentFilters
+      filters: currentFilters,
+      query: currentQuery
     });
 
     // Close modal
@@ -75,7 +77,7 @@ export default function SaveStackModal({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Pin size={20} className="text-primary" />
+            <SquareLibrary size={20} className="text-primary" />
             Save as Stack
           </DialogTitle>
           <DialogDescription>
@@ -166,7 +168,7 @@ export default function SaveStackModal({
             onClick={handleSave}
             disabled={!stackName.trim()}
           >
-            <Pin size={16} className="mr-2" />
+            <SquareLibrary size={16} className="mr-2" />
             Save Stack
           </Button>
         </DialogFooter>

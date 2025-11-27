@@ -31,7 +31,7 @@ import {
   ArrowUpDown,
   Inbox,
   Star,
-  Pin,
+  SquareLibrary,
   Rss,
   MessageSquare,
   FileText,
@@ -158,7 +158,7 @@ export default function SearchFilter({
   */
 
   // Filter State
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [searchQuery, setSearchQuery] = useState(preAppliedFilters?.query || initialQuery);
   const [selectedTags, setSelectedTags] = useState(preAppliedFilters?.tags || []);
   const [timeFilter, setTimeFilter] = useState(preAppliedFilters?.timeFilter || "all");
   /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type state (unimplemented) */

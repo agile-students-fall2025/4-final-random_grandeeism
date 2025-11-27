@@ -10,7 +10,6 @@ import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { mockArticles } from "../data/mockArticles.js";
 import { articlesAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { useStacks } from "../contexts/useStacks.js";
@@ -19,7 +18,7 @@ const AudioPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [articleToDelete, setArticleToDelete] = useState(null);
 

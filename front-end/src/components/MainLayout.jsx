@@ -19,7 +19,6 @@
 import { useState } from "react";
 import { useStacks } from "../contexts/useStacks.js";
 import { STATUS } from "../constants/statuses.js";
-import { mockArticles } from "../data/mockArticles.js";
 import TopBar from "./TopBar.jsx";
 import NavigationSidebar from "./NavigationSidebar.jsx";
 
@@ -30,8 +29,8 @@ export default function MainLayout({
   currentView,
   onNavigate,
   
-  // === DATA (Optional - counts use articles prop if provided, otherwise mockArticles) ===
-  articles = mockArticles, // Use passed articles or fall back to mockArticles for compatibility
+  // === DATA (Optional - counts use articles prop if provided) ===
+  articles = [], // Use passed articles or empty array
   
   // === ACTIONS (Optional) ===
   onAddLink,

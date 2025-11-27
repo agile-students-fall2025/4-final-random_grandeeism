@@ -127,9 +127,10 @@ const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
   // Apply currentStack filters when a stack is loaded
   useEffect(() => {
     if (currentStack) {
+      // Use filters from stack, ensuring query is included
       const stackFilters = {
         ...currentStack.filters,
-        query: currentStack.query || ''
+        query: currentStack.query || currentStack.filters?.query || ''
       };
       
       // Store filters in ref to apply when articles load
@@ -157,7 +158,12 @@ const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
 
   const handleSaveStack = async (stackData) => {
     try {
-      await addStack(stackData);
+      // Include query if it exists in currentFilters
+      const stackWithQuery = {
+        ...stackData,
+        query: currentFilters.query || ''
+      };
+      await addStack(stackWithQuery);
       alert(`Stack "${stackData.name}" saved successfully!`);
       setShowSaveStackModal(false);
     } catch (error) {
@@ -501,6 +507,7 @@ const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
         onClose={() => setShowSaveStackModal(false)}
         onSave={handleSaveStack}
         currentFilters={currentFilters}
+        currentQuery={currentFilters.query || ''}
       />
       
       {/* Tag Manager Modal */}

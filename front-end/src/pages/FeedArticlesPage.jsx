@@ -5,7 +5,6 @@ import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
 import { articlesAPI, tagsAPI } from "../services/api.js";
-import { mockFeeds } from "../data/mockFeeds";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";

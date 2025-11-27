@@ -18,7 +18,6 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { toast } from "sonner";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
 import { Checkbox } from "../components/ui/checkbox.jsx";
-import { getUserProfile } from "../data/mockUserProfile.js";
 
 const SettingsPage = ({ onNavigate }) => {
   const mockArticles = [];
@@ -28,15 +27,14 @@ const SettingsPage = ({ onNavigate }) => {
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.fontFamily || 'serif'; } catch { return 'serif'; }
   });
   
-  // Profile state - loaded from mock data (will be replaced with backend API call)
-  const mockProfile = getUserProfile();
+  // Profile state - TODO: load from backend API call
   const [profileData, setProfileData] = useState({
-    email: mockProfile.email,
-    name: mockProfile.name,
-    username: mockProfile.username,
-    avatar: mockProfile.avatar
+    email: 'user@example.com',
+    name: 'User',
+    username: 'user',
+    avatar: ''
   });
-  const initialProfileData = { ...mockProfile }; // Store original values for reset
+  const initialProfileData = { ...profileData }; // Store original values for reset
   // Track the value when user starts editing each field
   const fieldValuesOnFocus = useRef({});
 

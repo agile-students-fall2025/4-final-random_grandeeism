@@ -11,7 +11,6 @@ import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
-import { mockArticles } from "../data/mockArticles.js";
 import { articlesAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import useTagResolution from "../hooks/useTagResolution.js";
@@ -21,7 +20,7 @@ const VideosPage = ({ onNavigate }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [currentFilters, setCurrentFilters] = useState(null);
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState([]);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   // TagManager states
   const [showTagManagerModal, setShowTagManagerModal] = useState(false);
