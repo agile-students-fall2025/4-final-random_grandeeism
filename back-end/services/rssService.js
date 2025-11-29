@@ -1,5 +1,7 @@
 const Parser = require('rss-parser');
 const { feedsDao, articlesDao } = require('../lib/daoFactory');
+const { cleanHTMLContent, formatPlainText, extractPlainTextFromDOM } = require('../utils/contentExtractor');
+const { JSDOM } = require('jsdom');
 
 class RSSService {
   constructor() {
@@ -64,7 +66,26 @@ class RSSService {
         }
 
         // Extract content (try multiple fields)
-        const content = item['content:encoded'] || item.content || item.description || item.summary || '';
+        const rawContent = item['content:encoded'] || item.content || item.description || item.summary || '';
+        
+        // Clean HTML content - remove videos/iframes, preserve images
+        const cleanedContent = cleanHTMLContent(rawContent, { preserveImages: true });
+        const cleanedContentNoImages = cleanHTMLContent(rawContent, { preserveImages: false });
+        
+        // Extract plain text for search and word count
+        let plainText = '';
+        try {
+          const dom = new JSDOM(rawContent);
+          plainText = extractPlainTextFromDOM(dom.window.document);
+          plainText = formatPlainText(plainText);
+        } catch (e) {
+          // Fallback: strip HTML tags manually
+          plainText = rawContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+        
+        // Calculate word count and reading time
+        const wordCount = plainText ? plainText.split(/\s+/).length : 0;
+        const readingTime = wordCount > 0 ? `${Math.ceil(wordCount / 200)} min` : '1 min';
         
         const article = {
           title: item.title || 'Untitled',
@@ -75,9 +96,13 @@ class RSSService {
           feedId: feed.id,
           feedName: feed.name,
           status: 'inbox',
-          mediaType: this.detectMediaType(item, content),
-          summary: this.extractSummary(content),
-          content: content,
+          mediaType: this.detectMediaType(item, rawContent),
+          summary: this.extractSummary(rawContent),
+          content: cleanedContent,
+          contentNoImages: cleanedContentNoImages,
+          textContent: plainText,
+          wordCount: wordCount,
+          readingTime: readingTime,
           imageUrl: this.extractImage(item),
           tags: feed.defaultTags || [],
           userId: userId,

@@ -332,7 +332,7 @@ export default function SearchFilter({
             title="Pin as Stack"
             aria-label="Pin this search as a Stack"
           >
-            <Pin size={18} />
+            <SquareLibrary size={18} />
           </button>
         )}
 
