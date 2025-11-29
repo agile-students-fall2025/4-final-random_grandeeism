@@ -3,6 +3,11 @@
  * 
  * Purpose: Defines the MongoDB schema and model for articles with proper
  * validation, indexing, and virtual properties.
+ * 
+ * Content Fields:
+ * - content: HTML content with images preserved (for default view)
+ * - contentNoImages: HTML content without images (for reader settings toggle)
+ * - textContent: Plain text version for search and word count
  */
 
 const mongoose = require('mongoose');
@@ -84,6 +89,14 @@ const articleSchema = new Schema({
     max: 100
   },
   content: {
+    type: String,
+    default: ''
+  },
+  contentNoImages: {
+    type: String,
+    default: ''
+  },
+  textContent: {
     type: String,
     default: ''
   },

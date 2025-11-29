@@ -251,6 +251,30 @@ export const feedsAPI = {
   getArticles: async (id) => {
     return apiRequest(`/feeds/${id}/articles`);
   },
+
+  /**
+   * Pause a feed (stops auto-refresh)
+   * @param {string} id - Feed ID
+   * @returns {Promise} API response
+   */
+  pause: async (id) => {
+    return apiRequest(`/feeds/${id}/pause`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Resume a feed (starts auto-refresh)
+   * @param {string} id - Feed ID
+   * @param {number} intervalMinutes - Refresh interval in minutes
+   * @returns {Promise} API response
+   */
+  resume: async (id, intervalMinutes = 60) => {
+    return apiRequest(`/feeds/${id}/resume`, {
+      method: 'POST',
+      body: JSON.stringify({ intervalMinutes }),
+    });
+  },
 };
 
 /**
@@ -540,4 +564,52 @@ export const checkAPIHealth = async () => {
     console.error('API health check failed:', error);
     throw error;
   }
+};
+
+/**
+ * Extract API
+ */
+export const extractAPI = {
+  extract: async (url) => {
+    return apiRequest('/extract', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    });
+  }
+};
+
+/**
+ * Stacks API
+ */
+export const stacksAPI = {
+  /**
+   * Get all stacks
+   * @returns {Promise} API response with stacks
+   */
+  getAll: async () => {
+    return apiRequest('/stacks');
+  },
+
+  /**
+   * Create new stack
+   * @param {Object} stack - Stack data
+   * @returns {Promise} API response with created stack
+   */
+  create: async (stack) => {
+    return apiRequest('/stacks', {
+      method: 'POST',
+      body: JSON.stringify(stack),
+    });
+  },
+
+  /**
+   * Delete stack
+   * @param {string} id - Stack ID
+   * @returns {Promise} API response
+   */
+  delete: async (id) => {
+    return apiRequest(`/stacks/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };

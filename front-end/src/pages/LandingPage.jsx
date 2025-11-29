@@ -2,7 +2,7 @@ import React from "react";
 import { NotebookPen } from "lucide-react";
 import { Button } from "../components/ui/button.jsx";
 import { useTheme } from "../hooks/useTheme.js";
-import "../../public/fonts/new-spirit.css";
+import "../assets/fonts/new-spirit.css";
 
 export default function LandingPage({ onNavigate }) {
 	const { effectiveTheme } = useTheme();
@@ -95,7 +95,7 @@ export default function LandingPage({ onNavigate }) {
 							</a>
 							<button
 								className="px-2 md:px-3 py-1.5 md:py-2 text-sm md:text-base text-muted-foreground hover:text-foreground transition-colors hover:cursor-pointer"
-								onClick={() => onNavigate?.("home")}
+								onClick={() => onNavigate?.("auth")}
 							>
 								Log in
 							</button>

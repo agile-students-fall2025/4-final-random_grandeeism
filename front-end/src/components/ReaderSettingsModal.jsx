@@ -145,7 +145,7 @@ export default function ReaderSettingsModal({
                 <div className="text-left">
                   <div className="text-foreground mb-1">Show images in articles</div>
                   <div className="text-muted-foreground text-[12px]">
-                    {showImages ? 'Images are visible' : 'Images are hidden'}
+                    {showImages ? 'Images visible when online' : 'Text-only mode for faster reading'}
                   </div>
                 </div>
                 <div 

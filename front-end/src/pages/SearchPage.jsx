@@ -5,7 +5,7 @@
  * Purpose: Allows users to search and filter articles by tags, time, media type, status, and more
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
@@ -14,6 +14,7 @@ import ArticleCard from "../components/ArticleCard.jsx";
 import { articlesAPI, feedsAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { useTagResolution } from "../hooks/useTagResolution.js";
+import { useStacks } from "../contexts/useStacks.js";
 
 const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
@@ -32,6 +33,12 @@ const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
 
   // Use tag resolution hook
   const { resolveArticleTags, refreshTags } = useTagResolution();
+  
+  // Use stacks context
+  const { addStack, currentStack, clearCurrentStack } = useStacks();
+  
+  // Use ref to track pending stack filters
+  const pendingStackFilters = useRef(null);
 
   // Define fetchData function with useCallback to prevent infinite re-renders
   const fetchData = useCallback(async () => {
@@ -103,10 +110,43 @@ const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
     if (rawArticles.length > 0) {
       const resolvedArticles = resolveArticleTags(rawArticles);
       setArticles(resolvedArticles);
-      const filters = initialTag ? { tag: initialTag } : {};
-      setDisplayedArticles(applyFiltersAndSort(resolvedArticles, filters));
+      
+      // Check if we have pending stack filters to apply
+      if (pendingStackFilters.current) {
+        setCurrentFilters(pendingStackFilters.current);
+        setDisplayedArticles(applyFiltersAndSort(resolvedArticles, pendingStackFilters.current));
+        pendingStackFilters.current = null; // Clear after applying
+      } else {
+        // Otherwise use initialTag filter or show all
+        const filters = initialTag ? { tag: initialTag } : {};
+        setDisplayedArticles(applyFiltersAndSort(resolvedArticles, filters));
+      }
     }
   }, [rawArticles, resolveArticleTags, initialTag]);
+
+  // Apply currentStack filters when a stack is loaded
+  useEffect(() => {
+    if (currentStack) {
+      // Use filters from stack, ensuring query is included
+      const stackFilters = {
+        ...currentStack.filters,
+        query: currentStack.query || currentStack.filters?.query || ''
+      };
+      
+      // Store filters in ref to apply when articles load
+      pendingStackFilters.current = stackFilters;
+      
+      // If articles are already loaded, apply filters immediately
+      if (articles.length > 0) {
+        setCurrentFilters(stackFilters);
+        setDisplayedArticles(applyFiltersAndSort(articles, stackFilters));
+        pendingStackFilters.current = null;
+      }
+      
+      // Clear the current stack after processing
+      clearCurrentStack();
+    }
+  }, [currentStack]);
 
   const handleSearchWithFilters = (query, filters) => {
     const merged = { ...(filters || {}), query };
@@ -116,9 +156,20 @@ const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
 
   const handleSaveSearch = () => setShowSaveStackModal(true);
 
-  const handleSaveStack = (stackData) => {
-    console.log('Saving stack:', stackData);
-    alert(`Stack "${stackData.name}" saved successfully!`);
+  const handleSaveStack = async (stackData) => {
+    try {
+      // Include query if it exists in currentFilters
+      const stackWithQuery = {
+        ...stackData,
+        query: currentFilters.query || ''
+      };
+      await addStack(stackWithQuery);
+      alert(`Stack "${stackData.name}" saved successfully!`);
+      setShowSaveStackModal(false);
+    } catch (error) {
+      console.error('Error saving stack:', error);
+      alert('Failed to save stack');
+    }
   };
 
   const handleArticleClick = (article) => {
@@ -399,6 +450,7 @@ const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
       useAdvancedSearch={true}
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
+      preAppliedFilters={currentFilters}
       availableTags={["Development", "Design", "AI", "Technology"]}
       availableFeeds={feeds}
       showTimeFilter={true}
@@ -455,6 +507,7 @@ const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
         onClose={() => setShowSaveStackModal(false)}
         onSave={handleSaveStack}
         currentFilters={currentFilters}
+        currentQuery={currentFilters.query || ''}
       />
       
       {/* Tag Manager Modal */}

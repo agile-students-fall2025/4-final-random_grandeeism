@@ -15,6 +15,7 @@ import { articlesAPI, feedsAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
 import { useTagResolution } from "../hooks/useTagResolution.js";
+import { useStacks } from "../contexts/useStacks.js";
 
 const InboxPage = ({ onNavigate, setPageRefresh }) => {
   const [showSaveStackModal, setShowSaveStackModal] = useState(false);
@@ -223,13 +224,20 @@ const InboxPage = ({ onNavigate, setPageRefresh }) => {
     }
   };
 
+  const { addStack } = useStacks();
+
   const handleSaveSearch = () => {
     setShowSaveStackModal(true);
   };
 
-  const handleSaveStack = (stackData) => {
-    console.log('Saving stack:', stackData);
-    alert(`Stack "${stackData.name}" saved successfully!`);
+  const handleSaveStack = async (stackData) => {
+    try {
+      await addStack(stackData);
+      alert(`Stack "${stackData.name}" saved successfully!`);
+    } catch (error) {
+      console.error('Error saving stack:', error);
+      alert('Failed to save stack');
+    }
   };
 
   const handleManageTags = (article) => {

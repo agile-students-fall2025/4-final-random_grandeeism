@@ -82,6 +82,7 @@ export default function FeedsPage({ onNavigate }) {
       return {
         feed: feed.name,
         feedId: feed.id,
+        isPaused: feed.isPaused || false,
         articleCount: feedArticles.length,
         mediaBreakdown: breakdown,
       };
@@ -172,6 +173,34 @@ export default function FeedsPage({ onNavigate }) {
     } catch (err) {
       const errorResult = handleAPIError(err, 'deleting feed');
       console.error('Failed to delete feed:', errorResult.error);
+      // Optionally show user-friendly error message
+    }
+  };
+
+  const handleTogglePause = async (feedId, isPaused) => {
+    try {
+      let response;
+      if (isPaused) {
+        // Resume the feed
+        response = await feedsAPI.resume(feedId, 60); // Default 60 minute interval
+      } else {
+        // Pause the feed
+        response = await feedsAPI.pause(feedId);
+      }
+      
+      if (response.success) {
+        // Update local state
+        setFeeds(feeds.map(f => 
+          f.id === feedId ? { ...f, isPaused: !isPaused } : f
+        ));
+        
+        console.log(`Successfully ${isPaused ? 'resumed' : 'paused'} feed`);
+      } else {
+        throw new Error(`Failed to ${isPaused ? 'resume' : 'pause'} feed`);
+      }
+    } catch (err) {
+      const errorResult = handleAPIError(err, `${isPaused ? 'resuming' : 'pausing'} feed`);
+      console.error(`Failed to ${isPaused ? 'resume' : 'pause'} feed:`, errorResult.error);
       // Optionally show user-friendly error message
     }
   };
@@ -412,16 +441,19 @@ export default function FeedsPage({ onNavigate }) {
 
               {/* Feeds Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredAndSortedFeeds.map(({ feed, articleCount, mediaBreakdown }) => (
+                {filteredAndSortedFeeds.map(({ feed, feedId, isPaused, articleCount, mediaBreakdown }) => (
                   <FeedCard
                     key={feed}
                     feed={feed}
+                    feedId={feedId}
+                    isPaused={isPaused}
                     articleCount={articleCount}
                     maxCount={maxCount}
                     mediaBreakdown={mediaBreakdown}
                     onFeedClick={handleFeedClick}
                     onRename={handleRename}
                     onDelete={handleDelete}
+                    onTogglePause={handleTogglePause}
                   />
                 ))}
               </div>

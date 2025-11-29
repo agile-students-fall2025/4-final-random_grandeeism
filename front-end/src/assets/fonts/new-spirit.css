@@ -1,0 +1,22 @@
+/* New Spirit font - using system font fallback until font files are added */
+@font-face {
+  font-family: 'New Spirit';
+  src: local('Georgia'), local('Times New Roman');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* To add the actual New Spirit font files:
+1. Place NewSpirit-SemiBold.woff2 and NewSpirit-SemiBold.woff in /public/fonts/
+2. Uncomment the lines below and remove the local() fallback above
+
+@font-face {
+  font-family: 'New Spirit';
+  src: url('/fonts/NewSpirit-SemiBold.woff2') format('woff2'),
+       url('/fonts/NewSpirit-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+*/
