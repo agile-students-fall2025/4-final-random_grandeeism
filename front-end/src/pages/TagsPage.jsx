@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Search, Plus, Tag as TagIcon, ArrowUpDown, X } from "lucide-react";
 import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
@@ -8,11 +8,14 @@ import { Input } from "../components/ui/input.jsx";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
+import { Skeleton } from "../components/ui/skeleton.jsx";
+import { toast } from "sonner";
 
 export default function TagsPage({ onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("usage");
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const sortDropdownRef = useRef(null);
   const [isCreateTagModalOpen, setIsCreateTagModalOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   const [tags, setTags] = useState([]);
@@ -23,6 +26,23 @@ export default function TagsPage({ onNavigate }) {
   useEffect(() => {
     fetchTags();
   }, []);
+
+  // Close sort dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target)) {
+        setShowSortDropdown(false);
+      }
+    };
+
+    if (showSortDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSortDropdown]);
 
   const fetchTags = async () => {
     setLoading(true);
@@ -85,29 +105,42 @@ export default function TagsPage({ onNavigate }) {
       });
       const data = await res.json();
       if (data.success) {
+        toast.success('Tag renamed', {
+          description: `"${oldTag}" has been renamed to "${newTag}"`
+        });
         fetchTags();
       } else {
-        alert(data.error || 'Failed to rename tag');
+        toast.error('Failed to rename tag', {
+          description: data.error || 'An error occurred while renaming the tag'
+        });
       }
     } catch (e) {
-      alert('Failed to rename tag');
+      toast.error('Failed to rename tag', {
+        description: 'Please check your connection and try again'
+      });
     }
   };
 
   const handleDelete = async (tag) => {
     const tagObj = tags.find(t => t.name === tag);
     if (!tagObj) return;
-    // if (!window.confirm(`Delete tag "${tag}"?`)) return;
     try {
       const res = await fetch(`/api/tags/${tagObj.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
+        toast.success('Tag deleted', {
+          description: `"${tag}" has been deleted`
+        });
         fetchTags();
       } else {
-        alert(data.error || 'Failed to delete tag');
+        toast.error('Failed to delete tag', {
+          description: data.error || 'An error occurred while deleting the tag'
+        });
       }
     } catch (e) {
-      alert('Failed to delete tag');
+      toast.error('Failed to delete tag', {
+        description: 'Please check your connection and try again'
+      });
     }
   };
 
@@ -122,14 +155,21 @@ export default function TagsPage({ onNavigate }) {
       });
       const data = await res.json();
       if (data.success) {
+        toast.success('Tag created', {
+          description: `"${trimmedTag}" has been created`
+        });
         setNewTagName("");
         setIsCreateTagModalOpen(false);
         fetchTags();
       } else {
-        alert(data.error || 'Failed to create tag');
+        toast.error('Failed to create tag', {
+          description: data.error || 'An error occurred while creating the tag'
+        });
       }
     } catch (e) {
-      alert('Failed to create tag');
+      toast.error('Failed to create tag', {
+        description: 'Please check your connection and try again'
+      });
     }
   };
 
@@ -175,17 +215,19 @@ export default function TagsPage({ onNavigate }) {
             </div>
 
             {/* Sort Button */}
-            <div className="relative shrink-0">
+            <div className="relative shrink-0" ref={sortDropdownRef}>
               <button
                 onClick={() => setShowSortDropdown(!showSortDropdown)}
                 className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
+                aria-label="Sort tags"
+                aria-expanded={showSortDropdown}
               >
                 <ArrowUpDown size={14} />
                 {sortLabels[sortBy]}
               </button>
               
               {showSortDropdown && (
-                <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-lg shadow-lg p-2 z-50 min-w-40">
+                <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-lg p-2 z-50 min-w-40">
                   {Object.keys(sortLabels).map(option => (
                     <button
                       key={option}
@@ -270,8 +312,16 @@ export default function TagsPage({ onNavigate }) {
 
           {/* Loading and Error States */}
           {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <span className="text-muted-foreground text-lg">Loading tags...</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <Card key={i} className="p-5">
+                  <div className="space-y-3">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-8 w-12" />
+                    <Skeleton className="h-1.5 w-full" />
+                  </div>
+                </Card>
+              ))}
             </div>
           ) : error ? (
             <div className="flex justify-center items-center py-12">

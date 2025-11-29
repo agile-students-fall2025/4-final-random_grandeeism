@@ -235,23 +235,65 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
     }
   };
 
-  const handleCreateTag = async (newTag) => {
-    // This is called by TagManagerModal AFTER the tag has already been created
-    // Just update the local state, don't create the tag again
+  const handleCreateTag = async (tagName) => {
     try {
-      // Check if tag already exists in local state to avoid duplicates
-      const exists = availableTags.some(t => 
-        t.id === newTag.id || t.name.toLowerCase() === newTag.name.toLowerCase()
+      if (!selectedArticleForTags) {
+        throw new Error('No article selected');
+      }
+
+      // 1. Check if tag already exists
+      let existingTag = availableTags.find(t => 
+        t.name.toLowerCase() === tagName.toLowerCase()
       );
+
+      let tagId;
+      if (existingTag) {
+        tagId = existingTag.id;
+      } else {
+        // 2. Create new tag via API
+        const createResponse = await tagsAPI.create({ name: tagName });
+        if (!createResponse.success || !createResponse.data) {
+          throw new Error('Failed to create tag');
+        }
+        existingTag = createResponse.data;
+        tagId = existingTag.id;
+        setAvailableTags(prev => [...prev, existingTag]);
+      }
+
+      // 3. Add tag to article via API
+      const addResponse = await articlesAPI.addTag(selectedArticleForTags.id, tagId);
+      if (!addResponse.success) {
+        throw new Error(addResponse.error || 'Failed to add tag to article');
+      }
+
+      // 4. Refresh tags to update the tag resolution mapping
+      await refreshTags();
       
-      if (!exists) {
-        setAvailableTags(prevTags => [...prevTags, newTag]);
+      // 5. Refetch articles from API to get latest data
+      const articlesResponse = await articlesAPI.getAll(baseLockedFilters);
+      let articlesData = articlesResponse;
+      if (Array.isArray(articlesResponse)) {
+        articlesData = articlesResponse;
+      } else if (articlesResponse.data) {
+        articlesData = articlesResponse.data;
+      } else if (articlesResponse.articles) {
+        articlesData = articlesResponse.articles;
       }
       
-      // Refresh tags to update the tag resolution mapping
-      await refreshTags();
+      setRawArticles(articlesData);
+      
+      // Update selected article for modal with fresh data
+      const updatedArticle = articlesData.find(a => a.id === selectedArticleForTags.id);
+      if (updatedArticle) {
+        setSelectedArticleForTags(updatedArticle);
+      }
+
     } catch (error) {
-      console.error('Failed to add tag to local state:', error);
+      console.error('Failed to create/add tag:', error);
+      const errorMsg = String(error?.message || 'Unknown error');
+      if (!errorMsg.toLowerCase().includes('already')) {
+        alert(`Failed to create tag: ${errorMsg}`);
+      }
     }
   };
 

@@ -83,6 +83,18 @@ router.get('/:id', async (req, res) => {
  * POST /api/articles
  * Create a new article (mock - doesn't persist)
  * 
+ * Required fields:
+ * - title: String (required)
+ * - url: String (optional, but either url or content must be provided)
+ * - content: String (optional, but either url or content must be provided)
+ * 
+ * Optional fields:
+ * - author: String
+ * - source: String
+ * - status: String ('inbox', 'daily', 'continue', 'rediscovery', 'archived')
+ * - isFavorite: Boolean
+ * - tags: Array of tag IDs or names
+ * 
  * TODO (Future Enhancement - Sprint 3+):
  * ============================================
  * Add content extraction if only URL is provided:
