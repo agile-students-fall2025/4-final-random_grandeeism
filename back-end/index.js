@@ -11,14 +11,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB (disabled for testing)
-// mongoose.connect(process.env.DB_CONNECTION_STRING || 'mongodb://admin:secret@localhost:27017/example-mern-stack-app?authSource=admin')
-//   .then(() => {
-//     console.log('Connected to MongoDB');
-//   })
-//   .catch((error) => {
-//     console.error('MongoDB connection error:', error);
-//   });
+// Connect to MongoDB Atlas
+if (process.env.MONGODB_URI) {
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+      console.log('✅ Connected to MongoDB Atlas');
+    })
+    .catch((error) => {
+      console.error('❌ MongoDB connection error:', error);
+    });
+} else {
+  console.warn('⚠️  No MONGODB_URI found in environment variables. Running without database connection.');
+}
 
 // Import routes
 const apiRoutes = require('./routes');

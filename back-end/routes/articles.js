@@ -2,15 +2,17 @@ const express = require('express');
 const router = express.Router();
 const { articlesDao, tagsDao } = require('../lib/daoFactory');
 const { extractContent } = require('../utils/contentExtractor');
+const { authenticateToken } = require('../middleware/auth');
+const { validateArticle, handleValidationErrors } = require('../middleware/validation');
 
 /**
  * GET /api/articles
  * Retrieve all articles with optional filtering
  */
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { status, tag, favorite, untagged } = req.query;
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     
     
     const filters = { userId };
@@ -55,7 +57,7 @@ router.get('/', async (req, res) => {
  * GET /api/articles/:id
  * Retrieve a single article by ID
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const article = await articlesDao.getById(req.params.id);
     
@@ -63,6 +65,14 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Article not found'
+      });
+    }
+
+    // Verify article belongs to authenticated user
+    if (article.userId !== req.user.id && article.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only view your own articles'
       });
     }
 
@@ -118,7 +128,7 @@ router.get('/:id', async (req, res) => {
  * ============================================
  */
 
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, validateArticle, handleValidationErrors, async (req, res) => {
   try {
     let { title, url } = req.body;
 
@@ -169,8 +179,8 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Ensure userId is present for Mongo mode. In future replace with real auth middleware.
-    const userId = req.body.userId || 'user-1';
+    // Set userId from authenticated user
+    const userId = req.user.id;
 
     const toCreate = {
       ...req.body,
@@ -204,7 +214,7 @@ router.post('/', async (req, res) => {
  * PUT /api/articles/:id
  * Update an article
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateToken, validateArticle, handleValidationErrors, async (req, res) => {
   try {
     const article = await articlesDao.getById(req.params.id);
     
@@ -212,6 +222,14 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Article not found'
+      });
+    }
+
+    // Verify article belongs to authenticated user
+    if (article.userId !== req.user.id && article.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only update your own articles'
       });
     }
 
@@ -238,9 +256,27 @@ router.put('/:id', async (req, res) => {
  * DELETE /api/articles/:id
  * Delete an article
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const articleId = req.params.id;
+
+    // First get the article to verify ownership
+    const article = await articlesDao.getById(articleId);
+    
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found'
+      });
+    }
+
+    // Verify article belongs to authenticated user
+    if (article.userId !== req.user.id && article.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only delete your own articles'
+      });
+    }
 
     // Use the DAO to properly delete the article
     const deleted = await articlesDao.delete(articleId);
@@ -269,10 +305,28 @@ router.delete('/:id', async (req, res) => {
  * PATCH /api/articles/:id/status
  * Update article status
  */
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', authenticateToken, async (req, res) => {
   try {
     const { status } = req.body;
     const articleId = req.params.id;
+
+    // First get the article to verify ownership
+    const article = await articlesDao.getById(articleId);
+    
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found'
+      });
+    }
+
+    // Verify article belongs to authenticated user
+    if (article.userId !== req.user.id && article.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only update your own articles'
+      });
+    }
 
     // Use the DAO to properly persist the change
     const updatedArticle = await articlesDao.updateStatus(articleId, status);
@@ -312,10 +366,28 @@ router.patch('/:id/status', async (req, res) => {
  * PATCH /api/articles/:id/progress
  * Update reading progress
  */
-router.patch('/:id/progress', async (req, res) => {
+router.patch('/:id/progress', authenticateToken, async (req, res) => {
   try {
     const { progress } = req.body;
     const articleId = req.params.id;
+
+    // First get the article to verify ownership
+    const article = await articlesDao.getById(articleId);
+    
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found'
+      });
+    }
+
+    // Verify article belongs to authenticated user
+    if (article.userId !== req.user.id && article.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only update your own articles'
+      });
+    }
 
     // Use the DAO to properly persist the change
     const updatedArticle = await articlesDao.updateProgress(articleId, progress);
@@ -345,10 +417,28 @@ router.patch('/:id/progress', async (req, res) => {
  * PATCH /api/articles/:id/favorite
  * Toggle favorite status
  */
-router.patch('/:id/favorite', async (req, res) => {
+router.patch('/:id/favorite', authenticateToken, async (req, res) => {
   try {
     const { isFavorite } = req.body;
     const articleId = req.params.id;
+
+    // First get the article to verify ownership
+    const article = await articlesDao.getById(articleId);
+    
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found'
+      });
+    }
+
+    // Verify article belongs to authenticated user
+    if (article.userId !== req.user.id && article.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only update your own articles'
+      });
+    }
 
     // Use the DAO to properly persist the change
     const updatedArticle = await articlesDao.toggleFavorite(articleId, isFavorite);
@@ -378,7 +468,7 @@ router.patch('/:id/favorite', async (req, res) => {
  * POST /api/articles/:id/tags
  * Add a tag to an article by tag ID
  */
-router.post('/:id/tags', async (req, res) => {
+router.post('/:id/tags', authenticateToken, async (req, res) => {
   try {
     const { tagId: requestedTagId } = req.body;
     if (!requestedTagId) {
@@ -389,6 +479,14 @@ router.post('/:id/tags', async (req, res) => {
     const article = await articlesDao.getById(req.params.id);
     if (!article) {
       return res.status(404).json({ success: false, error: 'Article not found' });
+    }
+
+    // Verify article belongs to authenticated user
+    if (article.userId !== req.user.id && article.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only modify your own articles'
+      });
     }
 
     // Verify tag exists using DAO
@@ -423,12 +521,20 @@ router.post('/:id/tags', async (req, res) => {
  * DELETE /api/articles/:id/tags/:tagId
  * Remove a tag from an article by tag ID
  */
-router.delete('/:id/tags/:tagId', async (req, res) => {
+router.delete('/:id/tags/:tagId', authenticateToken, async (req, res) => {
   try {
     // Get the current article using DAO
     const article = await articlesDao.getById(req.params.id);
     if (!article) {
       return res.status(404).json({ success: false, error: 'Article not found' });
+    }
+
+    // Verify article belongs to authenticated user
+    if (article.userId !== req.user.id && article.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only modify your own articles'
+      });
     }
 
     // Verify tag exists using DAO

@@ -10,10 +10,14 @@
  *   
  * Environment Variables:
  *   USE_MOCK_DB=true  -> Uses mock data from data/ folder
- *   USE_MOCK_DB=false -> Uses MongoDB with Mongoose
+ *   USE_MOCK_DB=false -> Uses MongoDB with Mongoose (DEFAULT)
+ * 
+ * Default Behavior:
+ *   - Defaults to MongoDB (production mode)
+ *   - Set USE_MOCK_DB=true explicitly to use mock data for testing
  */
 
-const useMockDB = process.env.USE_MOCK_DB !== 'false'; // Default to mock unless explicitly set to false
+const useMockDB = process.env.USE_MOCK_DB === 'true'; // Default to MongoDB unless explicitly set to true
 
 let articlesDao, feedsDao, tagsDao, usersDao, highlightsDao;
 

@@ -1,6 +1,6 @@
 # Fieldnotes Back-End
 
-Express.js REST API for the Fieldnotes read-it-later application.
+Express.js REST API for the Fieldnotes read-it-later application with JWT authentication and MongoDB Atlas integration.
 
 ## 📚 Documentation & Guidelines
 
@@ -17,8 +17,10 @@ For detailed project documentation, see the `guidelines/` folder:
 ## Tech Stack
 
 - **Express.js** v5.1.0 - Web framework
-- **MongoDB** with Mongoose v8.19.2 - Database
-- **JWT** - Authentication
+- **MongoDB Atlas** with Mongoose v8.19.2 - Cloud database
+- **JWT (jsonwebtoken)** - Authentication & authorization
+- **bcrypt** - Password hashing
+- **express-validator** - Input validation
 - **Mocha & Chai** - Testing
 - **c8** - Code coverage
 
@@ -26,7 +28,7 @@ For detailed project documentation, see the `guidelines/` folder:
 
 - Node.js v18.x or higher
 - npm
-- MongoDB (Atlas cloud or local Docker instance)
+- MongoDB Atlas account (free tier available)
 
 ## Quick Start
 
@@ -36,48 +38,77 @@ For detailed project documentation, see the `guidelines/` folder:
 npm install
 ```
 
-### 2. Configure Environment Variables
+### 2. MongoDB Atlas Setup
 
-Copy the example environment file and update with your values:
+**Create a MongoDB Atlas cluster (5 minutes):**
+
+1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register)
+2. Sign up/login and create a new project
+3. Click "Build a Database" → Choose **M0 Free** tier
+4. Select cloud provider (AWS recommended) and region
+5. Create cluster (takes 3-5 minutes)
+
+**Configure database access:**
+
+1. Go to **Database Access** (Security section)
+2. Click **Add New Database User**
+3. Choose **Password** authentication
+4. Username: `fieldnotes-user` (or your choice)
+5. Click **Autogenerate Secure Password** and **copy it**
+6. Set privileges to **Read and write to any database**
+7. Click **Add User**
+
+**Configure network access:**
+
+1. Go to **Network Access** (Security section)
+2. Click **Add IP Address**
+3. Click **Allow Access from Anywhere** (adds 0.0.0.0/0)
+   - For production: Add specific IPs instead
+4. Click **Confirm**
+
+**Get connection string:**
+
+1. Go to **Database** → Click **Connect** on your cluster
+2. Choose **Connect your application**
+3. Driver: **Node.js**, Version: **6.7 or later**
+4. Copy the connection string:
+   ```
+   mongodb+srv://fieldnotes-user:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+   ```
+5. Replace `<password>` with your actual password from step 2
+6. Add `/fieldnotes` after `.net` to specify database name:
+   ```
+   mongodb+srv://fieldnotes-user:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/fieldnotes?retryWrites=true&w=majority
+   ```
+
+### 3. Configure Environment Variables
+
+Copy the example environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your configuration:
+Edit `.env` with your MongoDB Atlas connection string:
 
 ```env
+# MongoDB Atlas Connection
+MONGODB_URI=mongodb+srv://fieldnotes-user:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/fieldnotes?retryWrites=true&w=majority
+
+# JWT Secret (CHANGE THIS!)
+JWT_SECRET=your-super-secret-jwt-key-change-in-production-minimum-32-characters-long
+
+# Server Configuration
 PORT=7001
-NODE_ENV=development
-DB_CONNECTION_STRING=mongodb://admin:secret@localhost:27017/fieldnotes?authSource=admin
-JWT_SECRET=your-super-secret-and-long-string-for-signing-tokens
-JWT_EXPIRES_IN=7d
-FRONTEND_URL=http://localhost:7002
+USE_MOCK_DB=false
 ```
 
-**For MongoDB Atlas (cloud):**
+**⚠️ Security Notes:**
+- Never commit `.env` to git (already in `.gitignore`)
+- Use a strong, unique JWT_SECRET (at least 32 characters)
+- Generate JWT_SECRET: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
-```env
-DB_CONNECTION_STRING=mongodb+srv://<username>:<password>@cluster0.mongodb.net/fieldnotes
-```
-
-**For Local Docker MongoDB:**
-
-```bash
-# Start MongoDB in Docker
-docker run --name mongodb_fieldnotes -p 27017:27017 \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=secret \
-  -d mongo:latest
-```
-
-Then use:
-
-```env
-DB_CONNECTION_STRING=mongodb://admin:secret@localhost:27017/fieldnotes?authSource=admin
-```
-
-### 3. Run the Server
+### 4. Run the Server
 
 **Development mode (with auto-restart):**
 
@@ -93,11 +124,224 @@ npm start
 
 The server will start on `http://localhost:7001`
 
+You should see:
+```
+✅ Connected to MongoDB Atlas
+🗄️  Using MongoDB DAOs (USE_MOCK_DB=false)
+Server is running on http://localhost:7001
+```
+
+## Authentication Flow
+
+### JWT Authentication Architecture
+
+All API routes (except `/api/auth/register` and `/api/auth/login`) require a valid JWT token.
+
+```
+┌─────────────┐
+│   Client    │
+└──────┬──────┘
+       │ 1. POST /api/auth/register
+       │    { username, email, password }
+       ▼
+┌─────────────┐
+│   Express   │────► Hash password (bcrypt)
+│   Server    │────► Create user in MongoDB
+└──────┬──────┘────► Generate JWT token
+       │
+       │ 2. Returns: { user, token }
+       ▼
+┌─────────────┐
+│   Client    │────► Store token in localStorage
+└──────┬──────┘
+       │
+       │ 3. All subsequent requests:
+       │    Authorization: Bearer <token>
+       ▼
+┌─────────────┐
+│  Middleware │────► Verify JWT signature
+│    Auth     │────► Decode user ID from token
+└──────┬──────┘────► Attach user to req.user
+       │
+       │ 4. If valid:
+       ▼
+┌─────────────┐
+│   Route     │────► Access req.user.id
+│  Handler    │────► Filter data by userId
+└─────────────┘────► Return only user's data
+```
+
+### Authentication Endpoints
+
+#### Register New User
+```bash
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "username": "johndoe",
+  "email": "john@example.com",
+  "password": "securepassword123",
+  "displayName": "John Doe" // optional
+}
+
+# Response:
+{
+  "success": true,
+  "data": {
+    "user": { "id": "...", "username": "johndoe", ... },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+#### Login
+```bash
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "username": "johndoe",  // or email
+  "password": "securepassword123"
+}
+
+# Response:
+{
+  "success": true,
+  "data": {
+    "user": { "id": "...", "username": "johndoe", ... },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+#### Verify Token
+```bash
+POST /api/auth/verify
+Authorization: Bearer <token>
+
+# Response:
+{
+  "success": true,
+  "data": {
+    "user": { "id": "...", "username": "johndoe", ... },
+    "valid": true
+  }
+}
+```
+
+#### Refresh Token
+```bash
+POST /api/auth/refresh
+Authorization: Bearer <old-token>
+
+# Response:
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // new token
+  }
+}
+```
+
+### Protected Route Example
+
+```bash
+# Get user's articles (requires authentication)
+GET /api/articles
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Response: Only returns articles belonging to authenticated user
+{
+  "success": true,
+  "count": 10,
+  "data": [ ... ]
+}
+
+# Without token or invalid token:
+{
+  "success": false,
+  "message": "Access token required"  // 401
+}
+
+# Trying to access another user's data:
+{
+  "success": false,
+  "error": "Access denied: You can only view your own articles"  // 403
+}
+```
+
+## API Routes
+
+### Authentication Routes (Public)
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+
+### Authentication Routes (Protected)
+- `POST /api/auth/verify` - Verify JWT token
+- `POST /api/auth/refresh` - Refresh JWT token
+- `POST /api/auth/logout` - Logout user
+
+### Protected Routes (Require Authentication)
+All routes below require `Authorization: Bearer <token>` header:
+
+#### Articles
+- `GET /api/articles` - Get user's articles
+- `GET /api/articles/:id` - Get specific article
+- `POST /api/articles` - Create article
+- `PUT /api/articles/:id` - Update article
+- `DELETE /api/articles/:id` - Delete article
+- `PATCH /api/articles/:id/status` - Update status
+- `PATCH /api/articles/:id/progress` - Update progress
+- `PATCH /api/articles/:id/favorite` - Toggle favorite
+- `POST /api/articles/:id/tags` - Add tag
+- `DELETE /api/articles/:id/tags/:tagId` - Remove tag
+
+#### Tags
+- `GET /api/tags` - Get user's tags
+- `GET /api/tags/:id` - Get specific tag
+- `POST /api/tags` - Create tag
+- `PUT /api/tags/:id` - Update tag
+- `DELETE /api/tags/:id` - Delete tag
+- `GET /api/tags/:id/articles` - Get articles with tag
+
+#### Highlights
+- `GET /api/highlights` - Get user's highlights
+- `GET /api/highlights/article/:articleId` - Get article highlights
+- `POST /api/highlights` - Create highlight
+- `PUT /api/highlights/:id` - Update highlight
+- `DELETE /api/highlights/:id` - Delete highlight
+
+#### Feeds
+- `GET /api/feeds` - Get user's feeds
+- `GET /api/feeds/:id` - Get specific feed
+- `POST /api/feeds` - Create feed
+- `PUT /api/feeds/:id` - Update feed
+- `DELETE /api/feeds/:id` - Delete feed
+- `GET /api/feeds/:id/articles` - Get feed articles
+- `POST /api/feeds/:id/extract` - Extract from feed
+- `POST /api/feeds/extract/all` - Extract from all feeds
+
+#### Users
+- `GET /api/users/profile/:id` - Get user profile
+- `PUT /api/users/profile/:id` - Update profile
+- `PUT /api/users/password/:id` - Change password
+- `GET /api/users/stats/:id` - Get user stats
+- `DELETE /api/users/:id` - Delete account
+
+## Data Validation
+
+All routes use `express-validator` for input validation:
+
+- **Registration**: Email format, username length (3-30), password length (8+)
+- **Articles**: Title required, URL format validation
+- **Tags**: Name length (max 50), color hex format
+- **Highlights**: Text required, article ownership verified
+- **Feeds**: URL format validation
+
+Invalid data returns `400 Bad Request` with detailed error messages.
+
 ## Running the Server
-
-### Development Mode
-
-Start the server with automatic restart on file changes:
 
 ```bash
 npm run dev

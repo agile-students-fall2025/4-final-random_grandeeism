@@ -2,15 +2,17 @@ const express = require('express');
 const router = express.Router();
 const { feedsDao, articlesDao } = require('../lib/daoFactory');
 const rssService = require('../services/rssService');
+const { authenticateToken } = require('../middleware/auth');
+const { validateFeed, handleValidationErrors } = require('../middleware/validation');
 
 /**
  * GET /api/feeds
  * Retrieve all feeds with optional filtering
  */
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { category, status } = req.query;
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     
     
     const filters = { userId };
@@ -45,9 +47,9 @@ router.get('/', async (req, res) => {
  * GET /api/feeds/:id
  * Retrieve a single feed by ID
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     
     
     const feed = await feedsDao.getById(req.params.id, userId);
@@ -76,9 +78,9 @@ router.get('/:id', async (req, res) => {
  * POST /api/feeds
  * Create a new feed
  */
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, validateFeed, handleValidationErrors, async (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     
     
     const feedData = {
@@ -111,9 +113,9 @@ router.post('/', async (req, res) => {
  * PUT /api/feeds/:id
  * Update a feed
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateToken, validateFeed, handleValidationErrors, async (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     
     
     const updatedFeed = await feedsDao.update(req.params.id, {
@@ -146,9 +148,9 @@ router.put('/:id', async (req, res) => {
  * DELETE /api/feeds/:id
  * Delete a feed (mock - doesn't persist)
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     
     
     const deleted = await feedsDao.delete(req.params.id, userId);
@@ -177,9 +179,9 @@ router.delete('/:id', async (req, res) => {
  * GET /api/feeds/:id/articles
  * Get all articles from a specific feed
  */
-router.get('/:id/articles', async (req, res) => {
+router.get('/:id/articles', authenticateToken, async (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     
     
     
@@ -218,9 +220,9 @@ router.get('/:id/articles', async (req, res) => {
  * POST /api/feeds/:id/extract
  * Extract articles from an RSS feed
  */
-router.post('/:id/extract', async (req, res) => {
+router.post('/:id/extract', authenticateToken, async (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     const result = await rssService.extractFromFeed(req.params.id, userId);
     
     if (!result.success) {
@@ -242,9 +244,9 @@ router.post('/:id/extract', async (req, res) => {
  * POST /api/feeds/extract/all
  * Extract articles from all active feeds
  */
-router.post('/extract/all', async (req, res) => {
+router.post('/extract/all', authenticateToken, async (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     const result = await rssService.extractFromAllFeeds(userId);
     
     res.json(result);
@@ -261,9 +263,9 @@ router.post('/extract/all', async (req, res) => {
  * POST /api/feeds/:id/pause
  * Pause a feed (stops auto-refresh)
  */
-router.post('/:id/pause', async (req, res) => {
+router.post('/:id/pause', authenticateToken, async (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     const result = await rssService.pauseFeed(req.params.id, userId);
     
     res.json(result);
@@ -280,9 +282,9 @@ router.post('/:id/pause', async (req, res) => {
  * POST /api/feeds/:id/resume
  * Resume a paused feed (starts auto-refresh)
  */
-router.post('/:id/resume', async (req, res) => {
+router.post('/:id/resume', authenticateToken, async (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     const { intervalMinutes = 60 } = req.body;
     
     const result = await rssService.resumeFeed(req.params.id, userId, intervalMinutes);
@@ -301,9 +303,9 @@ router.post('/:id/resume', async (req, res) => {
  * POST /api/feeds/:id/auto-refresh/start
  * Start automatic refresh for a feed
  */
-router.post('/:id/auto-refresh/start', async (req, res) => {
+router.post('/:id/auto-refresh/start', authenticateToken, async (req, res) => {
   try {
-    const userId = 'user-1'; // TODO: Get from authenticated user
+    const userId = req.user.id; // Get from authenticated user
     const { intervalMinutes = 60 } = req.body;
     
     rssService.startAutoRefresh(req.params.id, userId, intervalMinutes);
@@ -326,7 +328,7 @@ router.post('/:id/auto-refresh/start', async (req, res) => {
  * POST /api/feeds/:id/auto-refresh/stop
  * Stop automatic refresh for a feed
  */
-router.post('/:id/auto-refresh/stop', async (req, res) => {
+router.post('/:id/auto-refresh/stop', authenticateToken, async (req, res) => {
   try {
     rssService.stopAutoRefresh(req.params.id);
     
@@ -347,7 +349,7 @@ router.post('/:id/auto-refresh/stop', async (req, res) => {
  * GET /api/feeds/auto-refresh/status
  * Get status of all auto-refresh jobs
  */
-router.get('/auto-refresh/status', async (req, res) => {
+router.get('/auto-refresh/status', authenticateToken, async (req, res) => {
   try {
     const status = rssService.getAutoRefreshStatus();
     
