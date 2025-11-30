@@ -3,6 +3,8 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { usersDao } = require('../lib/daoFactory');
+const { authenticateToken } = require('../middleware/auth');
+const { validateRegistration, validateLogin, handleValidationErrors } = require('../middleware/validation');
 
 // Get JWT secret from environment or use default for development
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
@@ -12,7 +14,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
  * POST /api/auth/register
  * Register a new user (mock - doesn't persist)
  */
-router.post('/register', async (req, res) => {
+router.post('/register', validateRegistration, handleValidationErrors, async (req, res) => {
   try {
     const { username, email, password, displayName } = req.body;
 
@@ -92,7 +94,7 @@ router.post('/register', async (req, res) => {
  * POST /api/auth/login
  * Authenticate user and return JWT token
  */
-router.post('/login', async (req, res) => {
+router.post('/login', validateLogin, handleValidationErrors, async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -161,22 +163,11 @@ router.post('/login', async (req, res) => {
  * POST /api/auth/verify
  * Verify JWT token and return user data
  */
-router.post('/verify', async (req, res) => {
+router.post('/verify', authenticateToken, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1]; // Bearer TOKEN
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: 'No token provided'
-      });
-    }
-
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Find user
-    const user = await usersDao.getById(decoded.id);
+    // User is already verified by authenticateToken middleware
+    // Find user from decoded token (available in req.user)
+    const user = await usersDao.getById(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -196,18 +187,6 @@ router.post('/verify', async (req, res) => {
       }
     });
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid token'
-      });
-    }
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        error: 'Token expired'
-      });
-    }
     res.status(500).json({
       success: false,
       error: 'Server Error',
@@ -220,22 +199,11 @@ router.post('/verify', async (req, res) => {
  * POST /api/auth/refresh
  * Refresh JWT token
  */
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', authenticateToken, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1]; // Bearer TOKEN
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: 'No token provided'
-      });
-    }
-
-    // Verify old token (ignore expiration)
-    const decoded = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
-
-    // Find user
-    const user = await usersDao.getById(decoded.id);
+    // User is already verified by authenticateToken middleware
+    // Find user from decoded token
+    const user = await usersDao.getById(req.user.id);
 
     if (!user) {
       return res.status(404).json({

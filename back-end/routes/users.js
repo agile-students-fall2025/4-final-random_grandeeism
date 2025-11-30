@@ -3,13 +3,24 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const daoFactory = require('../lib/daoFactory');
 const { usersDao } = require('../lib/daoFactory');
+const { authenticateToken } = require('../middleware/auth');
+const { body } = require('express-validator');
+const { handleValidationErrors } = require('../middleware/validation');
 
 /**
  * GET /api/users/profile/:id
  * Get user profile by ID
  */
-router.get('/profile/:id', async (req, res) => {
+router.get('/profile/:id', authenticateToken, async (req, res) => {
   try {
+    // Verify user can only access their own profile
+    if (req.user.id !== req.params.id && req.user.id !== parseInt(req.params.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only view your own profile'
+      });
+    }
+
     const user = await usersDao.getById(req.params.id);
     
     if (!user) {
@@ -39,8 +50,25 @@ router.get('/profile/:id', async (req, res) => {
  * PUT /api/users/profile/:id
  * Update user profile (mock - doesn't persist)
  */
-router.put('/profile/:id', async (req, res) => {
+router.put('/profile/:id', 
+  authenticateToken,
+  [
+    body('displayName').optional().isLength({ max: 100 }).trim(),
+    body('bio').optional().isLength({ max: 500 }).trim(),
+    body('avatar').optional().isURL(),
+    body('preferences').optional().isObject()
+  ],
+  handleValidationErrors,
+  async (req, res) => {
   try {
+    // Verify user can only update their own profile
+    if (req.user.id !== req.params.id && req.user.id !== parseInt(req.params.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only update your own profile'
+      });
+    }
+
     const user = await usersDao.getById(req.params.id);
     
     if (!user) {
@@ -82,8 +110,23 @@ router.put('/profile/:id', async (req, res) => {
  * PUT /api/users/password/:id
  * Change user password (mock - doesn't persist)
  */
-router.put('/password/:id', async (req, res) => {
+router.put('/password/:id',
+  authenticateToken,
+  [
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
   try {
+    // Verify user can only change their own password
+    if (req.user.id !== req.params.id && req.user.id !== parseInt(req.params.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only change your own password'
+      });
+    }
+
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -131,8 +174,16 @@ router.put('/password/:id', async (req, res) => {
  * GET /api/users/stats/:id
  * Get user reading statistics
  */
-router.get('/stats/:id', async (req, res) => {
+router.get('/stats/:id', authenticateToken, async (req, res) => {
   try {
+    // Verify user can only access their own stats
+    if (req.user.id !== req.params.id && req.user.id !== parseInt(req.params.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only view your own statistics'
+      });
+    }
+
     const user = await usersDao.getById(req.params.id);
     
     if (!user) {
@@ -159,8 +210,16 @@ router.get('/stats/:id', async (req, res) => {
  * DELETE /api/users/:id
  * Delete user account (mock - doesn't persist)
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
+    // Verify user can only delete their own account
+    if (req.user.id !== req.params.id && req.user.id !== parseInt(req.params.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only delete your own account'
+      });
+    }
+
     const user = await usersDao.getById(req.params.id);
     
     if (!user) {

@@ -1,18 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const { tagsDao, articlesDao } = require('../lib/daoFactory');
+const { authenticateToken } = require('../middleware/auth');
+const { validateTag, handleValidationErrors } = require('../middleware/validation');
 
 /**
  * GET /api/tags
  * Retrieve all tags with optional filtering and sorting
  * Article counts are dynamically calculated by the DAO
  */
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { sort, search, category } = req.query;
     
-    // Get all tags with filters (DAO calculates articleCount automatically)
-    let tags = await tagsDao.getAll({ search, category });
+    // Get all tags with filters for authenticated user
+    let tags = await tagsDao.getAll({ search, category, userId: req.user.id });
 
     // Sort by article count, name, or most recent
     if (sort === 'popular') {
@@ -41,7 +43,7 @@ router.get('/', async (req, res) => {
  * GET /api/tags/:id
  * Retrieve a single tag by ID
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const tag = await tagsDao.getById(req.params.id);
     
@@ -49,6 +51,14 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Tag not found'
+      });
+    }
+
+    // Verify tag belongs to authenticated user
+    if (tag.userId && tag.userId !== req.user.id && tag.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only view your own tags'
       });
     }
 
@@ -69,7 +79,7 @@ router.get('/:id', async (req, res) => {
  * POST /api/tags
  * Create a new tag (idempotent - returns existing tag if already exists)
  */
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, validateTag, handleValidationErrors, async (req, res) => {
   try {
     const { name, description } = req.body;
     
@@ -80,9 +90,9 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Check if tag already exists
+    // Check if tag already exists for this user
     const normalizedName = name.toLowerCase();
-    const existingTag = await tagsDao.getByName(normalizedName);
+    const existingTag = await tagsDao.getByName(normalizedName, req.user.id);
     
     if (existingTag) {
       // Return 409 Conflict for duplicate tags
@@ -92,12 +102,13 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Create the tag
+    // Create the tag with userId
     const newTag = await tagsDao.create({
       name: normalizedName,
       description: description || '',
       category: req.body.category,
-      color: req.body.color
+      color: req.body.color,
+      userId: req.user.id
     });
 
     res.status(201).json({ 
@@ -127,7 +138,7 @@ router.post('/', async (req, res) => {
  * PUT /api/tags/:id
  * Update a tag
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateToken, validateTag, handleValidationErrors, async (req, res) => {
   try {
     const existing = await tagsDao.getById(req.params.id);
     
@@ -135,6 +146,14 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ 
         success: false, 
         error: 'Tag not found' 
+      });
+    }
+
+    // Verify tag belongs to authenticated user
+    if (existing.userId && existing.userId !== req.user.id && existing.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only update your own tags'
       });
     }
 
@@ -161,8 +180,26 @@ router.put('/:id', async (req, res) => {
  * DELETE /api/tags/:id
  * Delete a tag
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
+    // First get the tag to verify ownership
+    const tag = await tagsDao.getById(req.params.id);
+    
+    if (!tag) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Tag not found' 
+      });
+    }
+
+    // Verify tag belongs to authenticated user
+    if (tag.userId && tag.userId !== req.user.id && tag.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only delete your own tags'
+      });
+    }
+
     const deleted = await tagsDao.delete(req.params.id);
     
     if (!deleted) {
@@ -190,7 +227,7 @@ router.delete('/:id', async (req, res) => {
  * GET /api/tags/:id/articles
  * Get all articles with a specific tag
  */
-router.get('/:id/articles', async (req, res) => {
+router.get('/:id/articles', authenticateToken, async (req, res) => {
   try {
     const tag = await tagsDao.getById(req.params.id);
     
@@ -201,8 +238,16 @@ router.get('/:id/articles', async (req, res) => {
       });
     }
 
-    // Get articles that have this tag
-    const taggedArticles = await articlesDao.getAll({ tag: tag.id });
+    // Verify tag belongs to authenticated user
+    if (tag.userId && tag.userId !== req.user.id && tag.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only view your own tags'
+      });
+    }
+
+    // Get articles that have this tag (filtered by userId)
+    const taggedArticles = await articlesDao.getAll({ tag: tag.id, userId: req.user.id });
 
     res.json({
       success: true,

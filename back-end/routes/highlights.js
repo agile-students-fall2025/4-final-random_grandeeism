@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { articlesDao, highlightsDao } = require('../lib/daoFactory');
+const { authenticateToken } = require('../middleware/auth');
+const { validateHighlight, handleValidationErrors } = require('../middleware/validation');
 
 // --- Helpers (exposed on router for easier testing) ----------------------
 
@@ -106,12 +108,10 @@ router._helpers = { generateTitle, validateAnnotationsPayload, buildNewHighlight
  * GET /api/highlights
  * Retrieve all highlights (optionally filtered by userId)
  */
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.query;
-    
-    // Get highlights from DAO with optional filtering
-    const highlights = await highlightsDao.getAll({ userId });
+    // Filter by authenticated user
+    const highlights = await highlightsDao.getAll({ userId: req.user.id });
 
     // Sort by creation date (newest first)
     highlights.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -134,8 +134,24 @@ router.get('/', async (req, res) => {
  * GET /api/highlights/article/:articleId
  * Get all highlights for a specific article
  */
-router.get('/article/:articleId', async (req, res) => {
+router.get('/article/:articleId', authenticateToken, async (req, res) => {
   try {
+    // First verify article belongs to user
+    const article = await articlesDao.getById(req.params.articleId);
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found'
+      });
+    }
+
+    if (article.userId !== req.user.id && article.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only view highlights for your own articles'
+      });
+    }
+
     const highlights = await highlightsDao.getByArticleId(req.params.articleId);
 
     // Sort by position in article
@@ -160,15 +176,32 @@ router.get('/article/:articleId', async (req, res) => {
  * POST /api/highlights
  * Create a new highlight/annotation (mock - doesn't persist)
  */
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, validateHighlight, handleValidationErrors, async (req, res) => {
   try {
-    const { articleId, userId, text, color, position, annotations } = req.body;
+    const { articleId, text, color, position, annotations } = req.body;
+    const userId = req.user.id; // Get from authenticated user
 
     // Validate required fields
-    if (!articleId || !userId || !text || !position) {
+    if (!articleId || !text || !position) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: articleId, userId, text, position'
+        error: 'Missing required fields: articleId, text, position'
+      });
+    }
+
+    // Verify article belongs to user
+    const article = await articlesDao.getById(articleId);
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found'
+      });
+    }
+
+    if (article.userId !== userId && article.userId !== String(userId)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only create highlights for your own articles'
       });
     }
 
@@ -213,7 +246,7 @@ router.post('/', async (req, res) => {
  * PUT /api/highlights/:id
  * Update a highlight/annotation (mock - doesn't persist)
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateToken, validateHighlight, handleValidationErrors, async (req, res) => {
   try {
     const highlight = await highlightsDao.getById(req.params.id);
     
@@ -221,6 +254,14 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Highlight not found'
+      });
+    }
+
+    // Verify highlight belongs to authenticated user
+    if (highlight.userId !== req.user.id && highlight.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only update your own highlights'
       });
     }
     // Build updated object carefully to support nested `annotations` while
@@ -262,7 +303,7 @@ router.put('/:id', async (req, res) => {
  * DELETE /api/highlights/:id
  * Delete a highlight (mock - doesn't persist)
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const highlight = await highlightsDao.getById(req.params.id);
     
@@ -270,6 +311,14 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Highlight not found'
+      });
+    }
+
+    // Verify highlight belongs to authenticated user
+    if (highlight.userId !== req.user.id && highlight.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only delete your own highlights'
       });
     }
 
