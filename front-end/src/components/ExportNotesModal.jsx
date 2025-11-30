@@ -156,6 +156,40 @@ export default function ExportNotesModal({
                     </Label>
                   </div>
                 </div>
+
+                {/* CSV Option */}
+                <div 
+                  className="border border-border p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                  onClick={() => handleFormatChange("csv")}
+                >
+                  <div className="flex items-center space-x-3">
+                    <RadioGroupItem value="csv" id="format-csv" />
+                    <Label htmlFor="format-csv" className="flex-1 cursor-pointer text-[14px]">
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-muted-foreground" />
+                        <span>CSV (.csv)</span>
+                      </div>
+                      <p className="text-[12px] text-muted-foreground mt-0.5">Spreadsheet format for data analysis</p>
+                    </Label>
+                  </div>
+                </div>
+
+                {/* HTML Option */}
+                <div 
+                  className="border border-border p-3 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                  onClick={() => handleFormatChange("html")}
+                >
+                  <div className="flex items-center space-x-3">
+                    <RadioGroupItem value="html" id="format-html" />
+                    <Label htmlFor="format-html" className="flex-1 cursor-pointer text-[14px]">
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-muted-foreground" />
+                        <span>HTML (.html)</span>
+                      </div>
+                      <p className="text-[12px] text-muted-foreground mt-0.5">Web format with styling</p>
+                    </Label>
+                  </div>
+                </div>
               </div>
             </RadioGroup>
           </div>

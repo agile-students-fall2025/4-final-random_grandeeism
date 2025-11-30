@@ -6,7 +6,7 @@
  */
 
 import { LogOut, Sun, Moon, Monitor, Download, FileDown, ExternalLink, Pencil, Trash } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import { Button } from "../components/ui/button.jsx";
 import { Switch } from "../components/ui/switch.jsx";
@@ -18,25 +18,34 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { toast } from "sonner";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
 import { Checkbox } from "../components/ui/checkbox.jsx";
-import { getUserProfile } from "../data/mockUserProfile.js";
+import { usersAPI } from "../services/api.js";
+import BulkExportModal from "../components/BulkExportModal.jsx";
+import { exportAllNotesAsZip, exportAllUserData } from "../utils/exportUtils.js";
 
 const SettingsPage = ({ onNavigate }) => {
   const mockArticles = [];
   const { theme, setTheme } = useTheme();
   const SETTINGS_KEY = 'reader_settings_v1';
+  const USER_PREFS_KEY = 'user_preferences_v1';
   const [fontFamily, setFontFamily] = useState(() => {
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.fontFamily || 'serif'; } catch { return 'serif'; }
   });
-  
-  // Profile state - loaded from mock data (will be replaced with backend API call)
-  const mockProfile = getUserProfile();
-  const [profileData, setProfileData] = useState({
-    email: mockProfile.email,
-    name: mockProfile.name,
-    username: mockProfile.username,
-    avatar: mockProfile.avatar
+  const [showImages, setShowImages] = useState(() => {
+    try { const v = JSON.parse(localStorage.getItem(SETTINGS_KEY))?.showImages; return typeof v === 'boolean' ? v : true; } catch { return true; }
   });
-  const initialProfileData = { ...mockProfile }; // Store original values for reset
+  const [autoArchive, setAutoArchive] = useState(() => {
+    try { const v = JSON.parse(localStorage.getItem(USER_PREFS_KEY))?.autoArchive; return typeof v === 'boolean' ? v : false; } catch { return false; }
+  });
+  const [showBulkExportModal, setShowBulkExportModal] = useState(false);
+  
+  // Profile state - TODO: load from backend API call
+  const [profileData, setProfileData] = useState({
+    email: 'user@example.com',
+    name: 'User',
+    username: 'user',
+    avatar: ''
+  });
+  const initialProfileData = { ...profileData }; // Store original values for reset
   // Track the value when user starts editing each field
   const fieldValuesOnFocus = useRef({});
 
@@ -56,6 +65,81 @@ const SettingsPage = ({ onNavigate }) => {
       persistReaderSettings({ fontFamily: fam });
     }
   };
+  const onShowImagesChange = (checked) => {
+    setShowImages(checked);
+    try {
+      const prev = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
+      persistReaderSettings({ ...prev, showImages: checked });
+    } catch {
+      persistReaderSettings({ showImages: checked });
+    }
+  };
+  const onAutoArchiveChange = async (checked) => {
+    setAutoArchive(checked);
+    try {
+      // Save to localStorage
+      const prev = JSON.parse(localStorage.getItem(USER_PREFS_KEY)) || {};
+      const updated = { ...prev, autoArchive: checked };
+      localStorage.setItem(USER_PREFS_KEY, JSON.stringify(updated));
+      
+      // Save to backend
+      const userId = 1; // TODO: replace with authenticated user id
+      await usersAPI.updateProfile(userId, { preferences: { autoArchive: checked } });
+      toast.success(`Auto-archive ${checked ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('Failed to update auto-archive preference:', error);
+      toast.error('Failed to update preference');
+    }
+  };
+
+  // Handle bulk export of all notes
+  const handleBulkExport = async (format) => {
+    try {
+      await exportAllNotesAsZip(format);
+    } catch (error) {
+      console.error('Bulk export failed:', error);
+      throw error; // Re-throw to let modal handle the error toast
+    }
+  };
+
+  // Handle export of all user data
+  const handleExportAllData = async () => {
+    try {
+      await exportAllUserData();
+      toast.success('Data exported successfully!', {
+        description: 'All your data has been exported as JSON'
+      });
+    } catch (error) {
+      console.error('User data export failed:', error);
+      toast.error('Export failed', {
+        description: 'There was an error exporting your data. Please try again.'
+      });
+    }
+  };
+
+  // Load user preferences from backend on mount
+  useEffect(() => {
+    let cancelled = false;
+    const loadPreferences = async () => {
+      try {
+        const userId = 1; // TODO: replace with authenticated user id
+        const res = await usersAPI.getProfile(userId);
+        if (!cancelled && res?.data?.preferences) {
+          const prefs = res.data.preferences;
+          // Update autoArchive state if available
+          if (typeof prefs.autoArchive === 'boolean') {
+            setAutoArchive(prefs.autoArchive);
+          }
+          // Store in localStorage
+          localStorage.setItem(USER_PREFS_KEY, JSON.stringify(prefs));
+        }
+      } catch (error) {
+        console.error('Failed to load user preferences:', error);
+      }
+    };
+    loadPreferences();
+    return () => { cancelled = true; };
+  }, []);
 
   // Profile change handlers - update state on change
   const handleProfileInputChange = (field, value) => {
@@ -173,49 +257,12 @@ const SettingsPage = ({ onNavigate }) => {
                     );
                   })}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 mb-4">
+                <p className="text-xs text-muted-foreground mt-2">
                   {theme === "auto" 
                     ? "Theme automatically matches your system preferences" 
                     : `Using ${theme} theme`
                   }
                 </p>
-                <label className="text-sm font-medium mb-3 block">
-                  Reader Font Options
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {fontOptions.map((option) => {
-                    const isSelected = fontFamily === option.value;
-
-                    return (
-                      <button
-                        key={option.value}
-                        onClick={() => onFontFamilyChange(option.value)}
-                        className={`
-                          flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all
-                          ${isSelected 
-                            ? 'border-primary bg-primary/10 text-primary' 
-                            : 'border-border bg-card hover:border-primary/50 hover:bg-accent'
-                          }
-                        `}
-                      >
-                        <span
-                          style={{
-                            fontFamily: fontPreviewMap[option.value] || 'inherit',
-                            fontSize: '22px',
-                            lineHeight: 1,
-                          }}
-                        >
-                          Aa
-                        </span>
-                        <span className="text-sm font-medium">{option.label}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Using {fontFamily} font in the text reader
-                </p>
-                
               </div>
 
               {/* Future Settings Placeholder */}
@@ -256,7 +303,7 @@ const SettingsPage = ({ onNavigate }) => {
                   <p className="text-sm text-muted-foreground mt-1">Display images in the reader.</p>
                 </div>
                 <div>
-                  <Switch defaultChecked id="images-mode" />
+                  <Switch checked={showImages} onCheckedChange={onShowImagesChange} id="images-mode" />
                 </div>
               </div>
               <div className="py-4 border-b border-border flex items-center justify-between">
@@ -274,13 +321,13 @@ const SettingsPage = ({ onNavigate }) => {
                   <p className="text-sm text-muted-foreground mt-1">Automatically archive articles after reading.</p>
                 </div>
                 <div>
-                  <Switch defaultChecked id="auto-archive" />
+                  <Switch checked={autoArchive} onCheckedChange={onAutoArchiveChange} id="auto-archive" />
                 </div>
               </div>
             </div>
 
             {/* Notifications */}
-            <h2 className="text-lg font-semibold mb-4 mt-12">Notifications</h2>
+            {/* <h2 className="text-lg font-semibold mb-4 mt-12">Notifications</h2>
             <div className="bg-card border border-border rounded-lg px-6">
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
@@ -328,7 +375,7 @@ const SettingsPage = ({ onNavigate }) => {
                   <Switch id="marketing-notifications" />
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Export & Integrations */}
             <h2 className="text-lg font-semibold mb-4 mt-12">Export & Integrations</h2>
@@ -386,7 +433,7 @@ const SettingsPage = ({ onNavigate }) => {
                   <Button 
                     variant="outline" 
                     className="w-full sm:w-auto"
-                    onClick={() => console.log('Export notes')}
+                    onClick={() => setShowBulkExportModal(true)}
                   >
                     <FileDown size={16} className="mr-2" />
                     Export Notes & Highlights
@@ -395,7 +442,7 @@ const SettingsPage = ({ onNavigate }) => {
                   <Button 
                     variant="outline" 
                     className="w-full sm:w-auto ml-0 sm:ml-2"
-                    onClick={() => console.log('Export all data')}
+                    onClick={handleExportAllData}
                   >
                     <Download size={16} className="mr-2" />
                     Export All My Data
@@ -567,6 +614,13 @@ const SettingsPage = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {/* Bulk Export Modal */}
+      <BulkExportModal
+        isOpen={showBulkExportModal}
+        onClose={() => setShowBulkExportModal(false)}
+        onExport={handleBulkExport}
+      />
     </MainLayout>
   );
 };

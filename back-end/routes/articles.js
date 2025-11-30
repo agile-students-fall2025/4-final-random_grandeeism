@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { articlesDao, tagsDao } = require('../lib/daoFactory');
+const { extractContent } = require('../utils/contentExtractor');
 
 /**
  * GET /api/articles
@@ -131,41 +132,71 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { title, url, content } = req.body;
+    let { title, url } = req.body;
 
-    // Validation: Check if required fields are present
-    // If both title and url are missing, return the combined error expected by tests
-    if (!title && !url) {
+
+    // Require both title and url for this error case (for test compatibility)
+    if (!url && !title) {
       return res.status(400).json({
         success: false,
         error: 'Title and URL are required fields.'
       });
     }
+    // If only url is missing
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL is required to create an article.'
+      });
+    }
 
-    // Title is required
+    // If title is missing, attempt server-side extraction to populate metadata
+    if (!title) {
+      try {
+        const extraction = await extractContent(url);
+        if (extraction && extraction.success && extraction.data) {
+          const ext = extraction.data;
+          title = ext.title || title;
+
+          // Merge useful extracted fields into request body if not provided
+          req.body.content = req.body.content || ext.content || '';
+          req.body.textContent = req.body.textContent || ext.textContent || '';
+          req.body.author = req.body.author || ext.author || null;
+          req.body.source = req.body.source || ext.source || null;
+          req.body.wordCount = req.body.wordCount || ext.wordCount || 0;
+          req.body.readingTime = req.body.readingTime || ext.readingTime || null;
+          req.body.publishedDate = req.body.publishedDate || ext.publishedDate || null;
+          req.body.description = req.body.description || ext.excerpt || '';
+        }
+      } catch (err) {
+        console.warn('Extraction error while creating article:', err.message || err);
+      }
+    }
+
+    // After extraction attempt, ensure we have a title
     if (!title) {
       return res.status(400).json({
         success: false,
-        error: 'Title is required.'
+        error: 'Title could not be determined. Provide a title or use the extract endpoint first.'
       });
     }
 
-    // Either URL or content is required (or both)
-    if (!url && !content) {
-      return res.status(400).json({
-        success: false,
-        error: 'Either URL or content is required.'
-      });
-    }
+    // Ensure userId is present for Mongo mode. In future replace with real auth middleware.
+    const userId = req.body.userId || 'user-1';
 
-    const newArticle = await articlesDao.create({
+    const toCreate = {
       ...req.body,
+      title,
+      url,
+      userId,
       status: req.body.status || 'inbox',
       isFavorite: req.body.isFavorite || false,
       hasAnnotations: false,
       readProgress: 0,
       tags: req.body.tags || [] // Default to empty array if no tags provided
-    });
+    };
+
+    const newArticle = await articlesDao.create(toCreate);
 
     res.status(201).json({
       success: true,

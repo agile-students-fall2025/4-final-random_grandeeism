@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Rss, Edit2, Trash2, FileText, Video, Headphones } from "lucide-react";
+import { Rss, Edit2, Trash2, FileText, Video, Headphones, Pause, Play } from "lucide-react";
 import { Button } from "./ui/button.jsx";
 import { Card } from "./ui/card.jsx";
 import { Input } from "./ui/input.jsx";
@@ -21,6 +21,8 @@ import { Badge } from "./ui/badge.jsx";
  * FeedCard component for displaying individual feeds in the Feeds view
  * @param {Object} props
  * @param {string} props.feed - The feed name/title
+ * @param {string} props.feedId - The feed ID
+ * @param {boolean} props.isPaused - Whether the feed is paused
  * @param {number} props.articleCount - Total number of items from this feed
  * @param {number} props.maxCount - Maximum count across all feeds (for usage bar calculation)
  * @param {Object} [props.mediaBreakdown] - Optional breakdown by media type
@@ -30,19 +32,24 @@ import { Badge } from "./ui/badge.jsx";
  * @param {Function} props.onFeedClick - Handler when card is clicked (filters content by this feed)
  * @param {Function} [props.onRename] - Optional handler to rename the feed
  * @param {Function} [props.onDelete] - Optional handler to delete the feed
+ * @param {Function} [props.onTogglePause] - Optional handler to pause/resume the feed
  */
 export default function FeedCard({
   feed,
+  feedId,
+  isPaused = false,
   articleCount,
   maxCount,
   mediaBreakdown,
   onFeedClick,
   onRename,
   onDelete,
+  onTogglePause,
 }) {
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newFeedName, setNewFeedName] = useState(feed);
+  const [isPauseLoading, setIsPauseLoading] = useState(false);
 
   const handleRename = (e) => {
     e.stopPropagation();
@@ -71,6 +78,16 @@ export default function FeedCard({
     if (e.key === 'Enter' && newFeedName.trim() !== feed) {
       e.preventDefault();
       handleRenameConfirm();
+    }
+  };
+
+  const handleTogglePause = async (e) => {
+    e.stopPropagation();
+    setIsPauseLoading(true);
+    try {
+      await onTogglePause?.(feedId, isPaused);
+    } finally {
+      setIsPauseLoading(false);
     }
   };
 
@@ -137,6 +154,24 @@ export default function FeedCard({
             
             {/* Action Buttons (hover-revealed) */}
             <div className="flex items-start gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              {/* Pause/Resume */}
+              {onTogglePause && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8"
+                  onClick={handleTogglePause}
+                  disabled={isPauseLoading}
+                  title={isPaused ? "Resume feed refresh" : "Pause feed refresh"}
+                >
+                  {isPaused ? (
+                    <Play className="size-4 text-green-600" />
+                  ) : (
+                    <Pause className="size-4 text-orange-600" />
+                  )}
+                </Button>
+              )}
+              
               {/* Rename */}
               {onRename && (
                 <>

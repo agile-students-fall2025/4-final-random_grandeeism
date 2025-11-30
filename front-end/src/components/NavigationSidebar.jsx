@@ -32,7 +32,8 @@ import {
   Layers, 
   ChevronDown, 
   ChevronRight, 
-  X 
+  X, 
+  SquareLibrary
 } from "lucide-react";
 
 export default function NavigationSidebar({
@@ -47,7 +48,7 @@ export default function NavigationSidebar({
   onLoadSavedSearch,
   onDeleteSavedSearch
 }) {
-  const [isStacksExpanded, setIsStacksExpanded] = useState(true);
+  const [_isStacksExpanded, _setIsStacksExpanded] = useState(true);
 
   // Active state logic
   const getIsActive = (item) => {
@@ -73,7 +74,7 @@ export default function NavigationSidebar({
       <button
         key={item.name}
         onClick={item.action}
-        className={`flex items-center justify-between gap-3 w-full px-3 py-2.5 rounded-lg transition-colors h-[44px] ${
+        className={`flex items-center justify-between gap-3 w-full px-3 py-2.5 rounded-lg transition-colors h-11 ${
           isActive
             ? 'bg-accent text-foreground'
             : 'hover:bg-white/50 dark:hover:bg-white/10 text-foreground'
@@ -235,59 +236,36 @@ export default function NavigationSidebar({
           Shelves
         </p>
         <div className="space-y-1">
-          {/* 4a. Stacks (if any saved searches exist) */}
+          {/* 4a. Shelves: Saved Stacks as Pinned Items */}
           {savedSearches.length > 0 && (
             <div className="space-y-1">
-              {/* Stacks Header Button */}
-              <button
-                onClick={() => setIsStacksExpanded(!isStacksExpanded)}
-                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/50 dark:hover:bg-white/10 rounded-lg transition-colors h-[44px]"
-              >
-                <div className="flex items-center gap-3">
-                  <Layers size={20} className="shrink-0" />
-                  <span className="font-['Inter:Regular',sans-serif] text-[15px] text-foreground">
-                    Stacks
-                  </span>
+              {savedSearches.map((savedSearch) => (
+                <div
+                  key={savedSearch.id}
+                  className="group flex items-center justify-between gap-2 w-full px-3 py-2.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-colors h-11"
+                >
+                  <button
+                    onClick={() => onLoadSavedSearch?.(savedSearch.id)}
+                    className="flex items-center gap-2 text-left min-w-0"
+                    title={`Load stack: ${savedSearch.name}`}
+                  >
+                    <Pin size={18} className="text-primary shrink-0" />
+                    <span className="font-['Inter:Regular',sans-serif] text-[14px] text-foreground line-clamp-1">
+                      {savedSearch.name}
+                    </span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteSavedSearch?.(savedSearch.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded shrink-0"
+                    title="Delete stack"
+                  >
+                    <X size={14} className="text-muted-foreground hover:text-destructive" />
+                  </button>
                 </div>
-                {isStacksExpanded ? (
-                  <ChevronDown size={16} className="text-muted-foreground shrink-0" />
-                ) : (
-                  <ChevronRight size={16} className="text-muted-foreground shrink-0" />
-                )}
-              </button>
-              
-              {/* Stacks List (when expanded) */}
-              {isStacksExpanded && (
-                <div className="space-y-1 pl-6">
-                  {savedSearches.map((savedSearch) => (
-                    <div
-                      key={savedSearch.id}
-                      className="group flex items-center justify-between gap-2 w-full px-3 py-2.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-colors h-[44px]"
-                    >
-                      {/* Click to Load Stack */}
-                      <button
-                        onClick={() => onLoadSavedSearch?.(savedSearch.id)}
-                        className="flex-1 text-left min-w-0"
-                      >
-                        <span className="font-['Inter:Regular',sans-serif] text-[14px] text-foreground line-clamp-1">
-                          {savedSearch.name}
-                        </span>
-                      </button>
-                      
-                      {/* Delete Stack Button (shows on hover) */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteSavedSearch?.(savedSearch.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded shrink-0"
-                      >
-                        <X size={14} className="text-muted-foreground hover:text-destructive" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
           )}
           
@@ -305,7 +283,7 @@ export default function NavigationSidebar({
       <div className="pt-4 mt-4 border-t border-border">
         <button
           onClick={() => onNavigate('settings')}
-          className={`flex items-center gap-3 hover:bg-white/50 dark:hover:bg-white/10 transition-colors w-full px-3 py-2.5 rounded-lg h-[44px] ${
+          className={`flex items-center gap-3 hover:bg-white/50 dark:hover:bg-white/10 transition-colors w-full px-3 py-2.5 rounded-lg h-11 ${
             currentPage === 'settings' ? 'bg-accent' : ''
           }`}
         >

@@ -22,6 +22,7 @@ import { STATUS } from "../constants/statuses.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { useTagResolution } from "../hooks/useTagResolution.js";
 import { ensureTagsLoaded } from "../utils/tagsCache.js";
+import { useStacks } from "../contexts/useStacks.js";
 
 // Tab configuration with icons and status mapping
 const tabs = [
@@ -48,6 +49,9 @@ const HomePage = ({ onNavigate, setPageRefresh }) => {
 
   // Use tag resolution hook
   const { resolveArticleTags, refreshTags } = useTagResolution();
+  
+  // Use stacks hook
+  const { addStack } = useStacks();
 
   // Get current tab's status value
   const currentStatus = tabs.find(t => t.name === activeTab)?.status || STATUS.INBOX;
@@ -242,10 +246,15 @@ const HomePage = ({ onNavigate, setPageRefresh }) => {
     setShowSaveStackModal(true);
   };
 
-  const handleSaveStack = (stackData) => {
-    console.log('Saving stack:', stackData);
-    alert(`Stack "${stackData.name}" saved successfully!`);
-    setShowSaveStackModal(false);
+  const handleSaveStack = async (stackData) => {
+    try {
+      await addStack(stackData);
+      alert(`Stack "${stackData.name}" saved successfully!`);
+      setShowSaveStackModal(false);
+    } catch (error) {
+      console.error('Error saving stack:', error);
+      alert('Failed to save stack');
+    }
   };
 
   // Handler for when the locked filter chip is removed - navigate to search page

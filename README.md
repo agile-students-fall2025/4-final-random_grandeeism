@@ -1,5 +1,7 @@
 # Fieldnotes: The Read Later App
 
+[![log github events](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/event-logger.yml/badge.svg)](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/event-logger.yml)
+
 ## Product Vision Statement
 
 In the current internet age there is a incomprehensible and immense amount of interesting content to peruse yet theres little time to read or consume in the moment upon encountering something new to read, and its liable to be forgotten. **Fieldnotes** is a mobile web app that can be used to save articles, podcasts, youtube videos to be resurfaced for later (optional offline) reading and annotating.
@@ -17,7 +19,7 @@ In the current internet age there is a incomprehensible and immense amount of in
 
 After the shutdown of the FOSS project Omnivore, we found ourselves searching for a tool that could truly respect both our reading habits and our data. That search quickly turned into a desire to build our own **FOSS “read it later” app**—not just as a replacement, but as a way to preserve the philosophy behind these tools: empowering readers to **capture, curate, and revisit** meaningful content on their own terms. Read-it-later apps have always existed at the intersection of **attention, agency, and knowledge management**, helping people reclaim the web from the endless scroll. For more reading on the power of the read-it-later app, check out [this article](https://medium.com/praxis-blog/the-secret-power-of-read-it-later-apps-6c75cc37ef42) by Tiago Forte, one of the most prominent experts on productivity in our highly distractable and overwhelming digital age.
 Therefore for our  
-[Agile Software Development and DevOps](https://knowledge.kitchen/content/courses/agile-development-and-devops/syllabus/) course taught at NYU by [Professor Amos Bloomberg](https://knowledge.kitchen/me/cv/), we decided to work on **fieldnotes.** We hope that our project proves as useful to you in actively, and thoughfully reading in the face of the immense information landscape of the digital age.
+[Agile Software Development and DevOps](https://knowledge.kitchen/content/courses/agile-development-and-devops/syllabus/) course taught at NYU by [Professor Amos Bloomberg](https://knowledge.kitchen/me/cv/), we decided to work on **Fieldnotes**. We hope that our project proves as useful to you in actively, and thoughfully reading in the face of the immense information landscape of the digital age.
 
 ## Setup Instructions
 

@@ -4,13 +4,13 @@ import ArticleCard from "../components/ArticleCard";
 import MainLayout from "../components/MainLayout";
 import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
-import { articlesAPI, tagsAPI } from "../services/api.js";
-import { mockFeeds } from "../data/mockFeeds";
+import { articlesAPI, tagsAPI, feedsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
 import useTagResolution from "../hooks/useTagResolution.js";
+import { useStacks } from "../contexts/useStacks.js";
 
 export default function FeedArticlesPage({ onNavigate, feed }) {
   const [rawArticles, setRawArticles] = useState([]);
@@ -21,6 +21,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
   const [currentFilters, setCurrentFilters] = useState(null);
   const [displayedArticles, setDisplayedArticles] = useState([]);
   const [availableTags, setAvailableTags] = useState([]);
+  const [availableFeeds, setAvailableFeeds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -34,10 +35,11 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
         setLoading(true);
         setError(null);
         
-        // Fetch articles and tags in parallel
-        const [articlesResponse, tagsResponse] = await Promise.all([
+        // Fetch articles, tags, and feeds in parallel
+        const [articlesResponse, tagsResponse, feedsResponse] = await Promise.all([
           articlesAPI.getAll(baseLockedFilters),
-          tagsAPI.getAll()
+          tagsAPI.getAll(),
+          feedsAPI.getAll().catch(() => ({ data: [] })) // Fallback to empty array if feeds API fails
         ]);
         
         // Handle articles response
@@ -55,6 +57,13 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
         // Handle tags response
         if (tagsResponse.success && tagsResponse.data) {
           setAvailableTags(tagsResponse.data);
+        }
+        
+        // Handle feeds response
+        if (feedsResponse && feedsResponse.data) {
+          setAvailableFeeds(feedsResponse.data);
+        } else if (Array.isArray(feedsResponse)) {
+          setAvailableFeeds(feedsResponse);
         }
         
         setLoading(false);
@@ -94,13 +103,20 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
     setDisplayedArticles(applyFiltersAndSort(articles, merged));
   };
 
+  const { addStack } = useStacks();
+
   const handleSaveSearch = () => {
     setShowSaveStackModal(true);
   };
 
-  const handleSaveStack = (stackData) => {
-    console.log('Saving stack:', stackData);
-    alert(`Stack "${stackData.name}" saved successfully!`);
+  const handleSaveStack = async (stackData) => {
+    try {
+      await addStack(stackData);
+      alert(`Stack "${stackData.name}" saved successfully!`);
+    } catch (error) {
+      console.error('Error saving stack:', error);
+      alert('Failed to save stack');
+    }
   };
 
   // TagManager handlers
@@ -352,7 +368,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
       onSearchWithFilters={handleSearchWithFilters}
       onSaveSearch={handleSaveSearch}
       availableTags={allAvailableTags}
-      availableFeeds={mockFeeds}
+      availableFeeds={availableFeeds}
       lockedFilters={baseLockedFilters}
       preAppliedFilters={baseLockedFilters}
       onFilterChipRemoved={() => onNavigate('search')}

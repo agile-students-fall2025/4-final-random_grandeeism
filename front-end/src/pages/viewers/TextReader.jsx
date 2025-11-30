@@ -6,8 +6,9 @@ import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
 import TagManagerModal from '../../components/TagManagerModal.jsx';
 import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon } from 'lucide-react';
 import { ensureTagsLoaded, getTagName, getTagMapSnapshot, addSingleTag } from '../../utils/tagsCache.js';
-import { articlesAPI, tagsAPI, highlightsAPI } from '../../services/api.js';
+import { articlesAPI, tagsAPI, highlightsAPI, usersAPI } from '../../services/api.js';
 import '../../styles/textReader.css';
+import { toast } from 'sonner';
 
 // default color for new highlights (can be changed with color picker)
 const DEFAULT_HIGHLIGHT_COLOR = '#fef08a';
@@ -55,11 +56,12 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.fontSize || 'medium'; } catch { return 'medium'; }
   });
   const [fontFamily, setFontFamily] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.fontFamily || 'serif'; } catch { return 'serif'; }
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.fontFamily || 'sans-serif'; } catch { return 'sans-serif'; }
   });
   const [showImages, setShowImages] = useState(() => {
     try { const v = JSON.parse(localStorage.getItem(SETTINGS_KEY))?.showImages; return typeof v === 'boolean' ? v : true; } catch { return true; }
   });
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [readerTheme, setReaderTheme] = useState(() => {
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.readerTheme || effectiveTheme || 'light'; } catch { return effectiveTheme || 'light'; }
   });
@@ -76,6 +78,20 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     try { if (setAppTheme) setAppTheme(theme); } catch { /* ignore */ }
   };
 
+  // Listen for online/offline events for hybrid offline reading
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const contentRef = useRef(null);
   const [allTags, setAllTags] = useState([]);
   // maintain a local snapshot of tagMap for possible future reactive displays; unused directly for resolution
@@ -90,6 +106,27 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   };
   const fontFamilyCss = fontFamilyMap[fontFamily] || fontFamilyMap.serif;
   const isDark = readerTheme === 'dark';
+
+  // Load user preferences from backend on mount
+  useEffect(() => {
+    const USER_PREFS_KEY = 'user_preferences_v1';
+    let cancelled = false;
+    const loadPreferences = async () => {
+      try {
+        const userId = 1; // TODO: replace with authenticated user id
+        const res = await usersAPI.getProfile(userId);
+        if (!cancelled && res?.data?.preferences) {
+          const prefs = res.data.preferences;
+          // Store in localStorage for quick access
+          localStorage.setItem(USER_PREFS_KEY, JSON.stringify(prefs));
+        }
+      } catch (error) {
+        console.error('Failed to load user preferences:', error);
+      }
+    };
+    loadPreferences();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,14 +176,35 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   // tagMap snapshot not strictly needed as dependency; getTagName reads cache
   const resolveTagName = useCallback((tagIdOrName) => getTagName(tagIdOrName), []);
 
-  
+  // Determine which content to display based on online status and user settings
+  // Hybrid approach: Show images only when online AND user setting is on
+  const displayContent = useMemo(() => {
+    if (!current) return '';
+    
+    // If offline, always use contentNoImages (text-only for true offline reading)
+    if (!isOnline) {
+      return current.contentNoImages || current.textContent || current.content || '';
+    }
+    
+    // If online, respect user's showImages preference
+    if (showImages) {
+      return current.content || current.textContent || '';
+    } else {
+      return current.contentNoImages || current.textContent || current.content || '';
+    }
+  }, [current, isOnline, showImages]);
 
-  // Preserve exact content/newlines to keep stable offsets across backend and UI
-  const paragraphs = useMemo(() => (
-    (current && current.content)
-      ? String(current.content).split('\n')
-      : []
-  ), [current]);
+  // Check if content is HTML or plain text
+  const isHTMLContent = useMemo(() => {
+    if (!displayContent) return false;
+    return /<[a-z][\s\S]*>/i.test(displayContent);
+  }, [displayContent]);
+
+  // For plain text content: Preserve exact content/newlines to keep stable offsets across backend and UI
+  const paragraphs = useMemo(() => {
+    if (isHTMLContent) return [];
+    return displayContent ? String(displayContent).split('\n') : [];
+  }, [displayContent, isHTMLContent]);
 
   // Precomputed offsets of each paragraph start in the full text (joined with single \n)
   const paragraphStartOffsets = useMemo(() => {
@@ -254,20 +312,91 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     return () => document.removeEventListener('mouseup', onMouseUp);
   }, [paragraphStartOffsets, fullText]);
 
-  // completion detection on scroll (ephemeral; no localStorage)
+  // completion detection on scroll with reading progress tracking and auto-archive
   useEffect(() => {
-    const onScroll = () => {
+    const USER_PREFS_KEY = 'user_preferences_v1';
+    let progressUpdateTimeout = null;
+    
+    const onScroll = async () => {
       const el = contentRef.current;
       if (!el || !current) return;
-      const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
+      
+      // Calculate reading progress percentage
+      const scrollTop = el.scrollTop;
+      const scrollHeight = el.scrollHeight;
+      const clientHeight = el.clientHeight;
+      const scrollableHeight = scrollHeight - clientHeight;
+      const progress = scrollableHeight > 0 ? Math.round((scrollTop / scrollableHeight) * 100) : 100;
+      
+      // Debounced progress update to backend
+      if (progressUpdateTimeout) clearTimeout(progressUpdateTimeout);
+      progressUpdateTimeout = setTimeout(async () => {
+        try {
+          await articlesAPI.update(current.id, { readingProgress: progress });
+        } catch (error) {
+          console.error('Failed to update reading progress:', error);
+        }
+      }, 2000); // Update every 2 seconds of inactivity
+      
+      // Check if user reached the end
+      const remaining = scrollHeight - scrollTop - clientHeight;
       if (remaining <= 100 && !completionShown) {
         setIsCompletionOpen(true);
         setCompletionShown(true);
+        
+        // Auto-progression logic (happens regardless of toggle, but destination differs)
+        try {
+          const userPrefs = JSON.parse(localStorage.getItem(USER_PREFS_KEY)) || {};
+          const isAutoArchiveEnabled = userPrefs.autoArchive;
+          
+          if (current.status !== 'archived') {
+            let nextStatus;
+            
+            // Reading workflow progression
+            if (current.status === 'inbox') {
+              nextStatus = 'continue';
+            } else if (current.status === 'continue') {
+              // Stay in continue if reading is incomplete (progress < 100%)
+              // Move to daily when complete
+              nextStatus = progress >= 100 ? 'daily' : 'continue';
+            } else if (current.status === 'daily') {
+              // Auto-archive toggle only affects this transition:
+              // If enabled: daily -> archived (skip rediscovery)
+              // If disabled: daily -> rediscovery (normal flow)
+              nextStatus = isAutoArchiveEnabled ? 'archived' : 'rediscovery';
+            } else if (current.status === 'rediscovery') {
+              nextStatus = 'archived';
+            } else {
+              nextStatus = 'archived';
+            }
+            
+            // Only update if status actually changes
+            if (nextStatus !== current.status) {
+              await articlesAPI.update(current.id, { status: nextStatus, readingProgress: 100 });
+              setCurrent(prev => ({ ...prev, status: nextStatus, readingProgress: 100 }));
+              
+              // Show appropriate toast message
+              const statusMessages = {
+                'continue': 'Moved to Continue reading',
+                'daily': 'Moved to Daily reads',
+                'rediscovery': 'Moved to Rediscovery',
+                'archived': 'Article archived'
+              };
+              toast.success(statusMessages[nextStatus] || 'Status updated');
+            }
+          }
+        } catch (error) {
+          console.error('Auto-progression failed:', error);
+        }
       }
     };
+    
     const el = contentRef.current;
     if (el) el.addEventListener('scroll', onScroll);
-    return () => { if (el) el && el.removeEventListener('scroll', onScroll); };
+    return () => { 
+      if (el) el.removeEventListener('scroll', onScroll);
+      if (progressUpdateTimeout) clearTimeout(progressUpdateTimeout);
+    };
   }, [current, completionShown]);
 
   // autofocus was removed by request — do not auto-focus the textarea
@@ -606,6 +735,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         <div className="flex items-start justify-between mb-4">
           <div>
             <button onClick={goBack} className="text-sm text-muted-foreground hover:text-foreground mr-3 reader-button">← Back</button>
+            {!isOnline && (
+              <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
+                📖 Offline Mode - Text Only
+              </span>
+            )}
           </div>
         </div>
 
@@ -658,7 +792,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           <div className="flex-1 overflow-y-auto max-h-[70vh]" ref={contentRef}>
             {current ? (
               <article
-                className="prose max-w-none text-reader-article"
+                className="prose prose-lg max-w-none text-reader-article"
                 style={{
                   fontSize: `${fontSizePx}px`,
                   fontFamily: fontFamilyCss,
@@ -667,10 +801,13 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                   padding: '0',
                 }}
               >
-                {!showImages && (
-                  <style>{`.text-reader-article img { display: none !important; }`}</style>
+                {isHTMLContent ? (
+                  <div dangerouslySetInnerHTML={{ __html: displayContent }} />
+                ) : paragraphs.length > 0 ? (
+                  paragraphs.map((p, i) => renderParagraph(p, i))
+                ) : (
+                  <p className="text-muted-foreground">No readable content available for this article.</p>
                 )}
-                {paragraphs.length > 0 ? paragraphs.map((p, i) => renderParagraph(p, i)) : <p className="text-muted-foreground">No readable content available for this article.</p>}
               </article>
             ) : (
               <div className="text-center py-12"><p className="text-muted-foreground">No article data. Select an article from a list to read it.</p></div>

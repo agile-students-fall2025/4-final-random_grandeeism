@@ -31,7 +31,8 @@ import { Button } from './ui/button.jsx';
 import { Input } from './ui/input.jsx';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem, SelectLabel } from './ui/select.jsx';
 import { STATUS } from "../constants/statuses.js";
-import { tagsAPI } from '../services/api.js';
+import { tagsAPI, extractAPI, articlesAPI } from '../services/api.js';
+import Toast from './Toast.jsx';
 
 export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink }) {
   const [newLinkUrl, setNewLinkUrl] = useState('');
@@ -41,6 +42,8 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
   const [newLinkFavorite, setNewLinkFavorite] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Enhanced tag management state
   const [availableTags, setAvailableTags] = useState([]);
@@ -218,38 +221,68 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
   }, []);
 
   const handleAddLinkSubmit = () => {
-    if (newLinkUrl.trim()) {
-      // Convert tag objects to tag IDs for the API
-      const tagIds = newLinkTags.map(tag => 
-        typeof tag === 'object' ? tag.id : tag
-      );
-
-      const newArticle = {
-        id: Date.now().toString(),
-        title: newLinkTitle && newLinkTitle.trim() ? newLinkTitle.trim() : 'New Article',
-        url: newLinkUrl,
-        description: 'Article description will appear here once the link is processed...',
-        readingTime: '2 min',
-        isFavorite: newLinkFavorite,
-        status: newLinkStatus,
-        tags: tagIds,
-        dateAdded: new Date(),
-        isRead: false,
-        hasAnnotations: false
-      };
-
-      if (onAddLink) {
-        onAddLink(newArticle);
-      }
-
-      // Show success message
-      setShowSuccessMessage(true);
-
-      // Hide success message and close modal after 2 seconds
-      setTimeout(() => {
-        setShowSuccessMessage(false);
-        resetForm();
-      }, 2000);
+    if (newLinkUrl.trim() && !isSubmitting) {
+      setIsSubmitting(true);
+      (async () => {
+        let articleToSend = null;
+        try {
+          const extraction = await extractAPI.extract(newLinkUrl.trim());
+          if (extraction && extraction.success && extraction.data) {
+            const ext = extraction.data;
+            const tagIds = newLinkTags.map(tag => typeof tag === 'object' ? tag.id : tag);
+            articleToSend = {
+              title: ext.title || 'New Article',
+              url: newLinkUrl,
+              description: ext.excerpt || 'Article description will appear here once the link is processed...',
+              content: ext.content || '',
+              textContent: ext.textContent || '',
+              readingTime: ext.readingTime ? `${ext.readingTime} min` : '1 min',
+              author: ext.author || '',
+              isFavorite: newLinkFavorite,
+              status: newLinkStatus,
+              tags: tagIds,
+              dateAdded: new Date(),
+              source: ext.source || null,
+              isRead: false,
+              hasAnnotations: false
+            };
+          }
+        } catch (error) {
+          console.warn('Extraction failed, falling back to manual entry:', error);
+        }
+        if (!articleToSend) {
+          const fallbackTagIds = newLinkTags.map(tag => typeof tag === 'object' ? tag.id : tag);
+          articleToSend = {
+            title: 'New Article',
+            url: newLinkUrl,
+            description: 'Article description will appear here once the link is processed...',
+            readingTime: '2 min',
+            isFavorite: newLinkFavorite,
+            status: newLinkStatus,
+            tags: fallbackTagIds,
+            dateAdded: new Date(),
+            isRead: false,
+            hasAnnotations: false
+          };
+        }
+        if (onAddLink) {
+          // Pass a callback to allow parent to close/reset modal after success
+          onAddLink(articleToSend, () => {
+            setShowSuccessMessage(true);
+            setShowToast(true);
+            setTimeout(() => {
+              setShowSuccessMessage(false);
+              setShowToast(false);
+              resetForm();
+              setIsSubmitting(false);
+            }, 2000);
+          }, () => {
+            setIsSubmitting(false);
+          });
+        } else {
+          setIsSubmitting(false);
+        }
+      })();
     }
   };
 
@@ -528,16 +561,19 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
             <DialogClose asChild>
               <Button variant="outline" disabled={showSuccessMessage}>Cancel</Button>
             </DialogClose>
-            <Button type="submit" onClick={handleAddLinkSubmit} disabled={!newLinkUrl.trim() || showSuccessMessage} className="cursor-pointer">Save link</Button>
+            <Button type="submit" onClick={handleAddLinkSubmit} disabled={!newLinkUrl.trim() || showSuccessMessage || isSubmitting} className="cursor-pointer">Save link</Button>
         </DialogFooter>
 
-        {/* Success Message */}
+        {/* Success Message (inline) */}
         {showSuccessMessage && (
           <div className="mt-4 p-4 bg-accent border border-foreground rounded flex items-center gap-2 text-foreground">
             <CheckCircle size={20} />
             <span className="text-sm font-medium">Link saved successfully!</span>
           </div>
         )}
+
+        {/* Toast Confirmation Popup */}
+        <Toast message="Link saved successfully!" show={showToast} />
       </DialogContent>
     </Dialog>
   );

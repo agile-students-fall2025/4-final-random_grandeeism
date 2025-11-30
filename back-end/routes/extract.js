@@ -32,7 +32,8 @@ const { extractContent } = require('../utils/contentExtractor');
  *   - Always have fallback to manual entry
  * ================================
  */
-router.post('/extract', async (req, res) => {
+// Mounted at /api/extract in routes/index.js — handle POST to '/'
+router.post('/', async (req, res) => {
   try {
     const { url } = req.body;
     
