@@ -5,8 +5,9 @@
  * Purpose: Root component that manages page navigation and renders the appropriate page
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { StacksProvider } from './contexts/StacksContext.jsx';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 
 // Import all pages
 import HomePage from './pages/HomePage.jsx';
@@ -52,6 +53,17 @@ import { invalidateTagCache } from './utils/tagsCache.js';
 // import { mockArticles } from './data/mockArticles'; // Adjust path if needed
 
 function App() {
+  return (
+    <AuthProvider>
+      <StacksProvider>
+        <AppContent />
+      </StacksProvider>
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const { isAuthenticated, loading: authLoading, user } = useAuth();
   const [currentPage, setCurrentPage] = useState('landing');
   /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation state */
   /* TODO: Uncomment when development resumes */
@@ -75,6 +87,15 @@ function App() {
   };
   
   // const dragOffset = useRef({ x: 0, y: 0 });
+
+  // Redirect to auth if not authenticated (except for landing/auth pages)
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      if (currentPage !== 'landing' && currentPage !== 'auth') {
+        setCurrentPage('auth');
+      }
+    }
+  }, [authLoading, isAuthenticated, currentPage]);
 
   /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation drag handlers */
   /* TODO: Uncomment when development resumes */

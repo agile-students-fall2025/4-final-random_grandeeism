@@ -12,10 +12,91 @@
  */
 
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { Button } from "../components/ui/button.jsx";
 
 const AuthPage = ({ onNavigate }) => {
   const [mode, setMode] = useState('login'); // 'login' or 'register'
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  
+  const { login, register } = useAuth();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setIsLoading(true);
+
+    try {
+      if (mode === 'register') {
+        // Validate passwords match
+        if (password !== confirmPassword) {
+          setErrorMessage('Passwords do not match');
+          setIsLoading(false);
+          return;
+        }
+
+        // Register new user
+        const result = await register({
+          username: username || email.split('@')[0], // Use email prefix if no username
+          email,
+          password,
+          displayName: username || email.split('@')[0],
+        });
+
+        if (result.success) {
+          onNavigate?.('home');
+        } else {
+          setErrorMessage(result.error || 'Registration failed');
+        }
+      } else {
+        // Login existing user
+        const result = await login({
+          username: email, // Backend accepts email or username
+          password,
+        });
+
+        if (result.success) {
+          onNavigate?.('home');
+        } else {
+          setErrorMessage(result.error || 'Login failed');
+        }
+      }
+    } catch (error) {
+      setErrorMessage(error.message || 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Quick login for development (pre-fills demo credentials)
+  const handleQuickLogin = async () => {
+    setEmail('demo@fieldnotes.app');
+    setPassword('password123');
+    setErrorMessage('');
+    setIsLoading(true);
+
+    try {
+      const result = await login({
+        username: 'demo@fieldnotes.app',
+        password: 'password123',
+      });
+
+      if (result.success) {
+        onNavigate?.('home');
+      } else {
+        setErrorMessage('Demo user not found. Please create an account first.');
+      }
+    } catch (error) {
+      setErrorMessage('Demo login failed. Please register a new account.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-card flex items-center justify-center p-4">
@@ -25,18 +106,31 @@ const AuthPage = ({ onNavigate }) => {
             {mode === 'login' ? 'Welcome Back' : 'Create Account'}
           </h1>
           
-          <div className="space-y-4">
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {errorMessage}
+            </div>
+          )}
+
+          {/* Quick Dev Login Button */}
+          {mode === 'login' && (
+            <button
+              type="button"
+              onClick={handleQuickLogin}
+              className="w-full mb-4 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+            >
+              🚀 Quick Demo Login (dev)
+            </button>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="text-center text-primary">
-                {/* <p className="mb-4">Authentication features will include:</p>
-                <ul className="text-left space-y-2 max-w-xs mx-auto">
-                  <li>• Email and password login</li>
-                  <li>• New user registration</li>
-                  <li>• Password reset via email</li>
-                  <li>• Social login (Google, GitHub)</li>
-                  <li>• Remember me functionality</li>
-                  <li>• Form validation and error messages</li>
-                </ul> */}
-                <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-1 bg-card cursor-pointer mb-3 border-gray-2 p-2 text-sm font-medium outline-none focus:ring-2 focus:ring-[#333] focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60 rounded-md"  onClick={() => onNavigate?.('home')}>
+                {/* Social auth buttons (disabled for now) */}
+                <button 
+                  type="button"
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-1 bg-card cursor-not-allowed mb-3 border-gray-2 p-2 text-sm font-medium outline-none disabled:opacity-60 rounded-md"
+                  disabled
+                >
                   <img
                     src="https://www.svgrepo.com/show/475656/google-color.svg"
                     alt="Google"
@@ -44,7 +138,11 @@ const AuthPage = ({ onNavigate }) => {
                   />
                   Continue with Google
                 </button>
-                <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-1 bg-card cursor-pointer border-gray-2 p-2 text-sm font-medium outline-none focus:ring-2 focus:ring-[#333] focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60 rounded-md"  onClick={() => onNavigate?.('home')}>
+                <button 
+                  type="button"
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-1 bg-card cursor-not-allowed border-gray-2 p-2 text-sm font-medium outline-none disabled:opacity-60 rounded-md"
+                  disabled
+                >
                   <img
                     src="https://www.svgrepo.com/show/512317/github-142.svg"
                     alt="GitHub"
@@ -58,56 +156,81 @@ const AuthPage = ({ onNavigate }) => {
                   <div className="flex-grow h-px bg-muted-foreground"></div>
                 </div>
                 <div className="text-left">
+                  {mode === 'register' && (
+                    <>
+                      <label htmlFor="username" className="inline-block mb-2 text-sm">Username</label>
+                      <input
+                        type="text"
+                        id="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="johndoe"
+                        className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card mb-4"
+                      />
+                    </>
+                  )}
                   <label htmlFor="email" className="inline-block mb-2 text-sm">Email</label>
                   <input
                     type="email"
                     id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="m@example.com"
+                    required
                     className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
                   />
                   <label htmlFor="password" className="inline-block mb-2 text-sm block mt-4">Password</label>
                   <input
                     type="password"
                     id="password"
-                    // placeholder="Enter your password..."
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={8}
                     className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
                   />
-                  {mode === 'register' ? 
+                  {mode === 'register' && (
                     <>
                       <label htmlFor="confirm-password" className="inline-block mb-2 text-sm mt-4">Confirm Password</label>
                       <input
-                      type="password"
-                      id="confirm-password"
-                      // placeholder="Enter your password..."
-                      className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"/>
+                        type="password"
+                        id="confirm-password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={8}
+                        className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
+                      />
                     </>
-                  : <></>
-                  }
-                  <button className="flex-1 text-[14px] border border-border rounded-md py-2 px-4 block w-full hover:cursor-pointer mt-8 bg-primary text-primary-foreground font-medium" onClick={() => onNavigate?.('home')}>
-                    {mode === 'login' ? 'Log In' : 'Create Account'}
+                  )}
+                  <button 
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-1 text-[14px] border border-border rounded-md py-2 px-4 block w-full hover:cursor-pointer mt-8 bg-primary text-primary-foreground font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? 'Loading...' : (mode === 'login' ? 'Log In' : 'Create Account')}
                   </button>
                 </div>
               <div className="text-center w-full flex justify-center align-center mt-6">
                 <p className="text-center mr-2 text-sm text-muted-foreground">{mode === 'login' ? "Don't have an account?" : "Already have an account?"}</p>
                 <button
-                  onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                  type="button"
+                  onClick={() => {
+                    setMode(mode === 'login' ? 'register' : 'login');
+                    setErrorMessage('');
+                  }}
                   className="text-sm text-muted-foreground hover:text-primary underline hover:cursor-pointer"
                 >
                   {mode === 'login' ? "Sign up" : 'Sign in'}
                 </button>
-
-
               </div>
             </div>
-
-            
-          </div>
+          </form>
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-4">
           Protected by reCAPTCHA and subject to Privacy Policy
         </p>
-        {/* <Button variant="outline">Button</Button> */}
       </div>
     </div>
   );

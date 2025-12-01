@@ -3,16 +3,25 @@
  * Handles all HTTP requests to the back-end API
  */
 
-const API_BASE_URL = 'http://localhost:7001/api';
+// Use relative URL in development to leverage Vite's proxy
+// In production, this should be set to the actual backend URL
+const API_BASE_URL = import.meta.env.MODE === 'production' 
+  ? 'http://localhost:7001/api'  // Production URL
+  : '/api';  // Development - uses Vite proxy
 
 /**
- * Generic API request handler
+ * Generic API request handler with automatic JWT token injection
  */
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
+  
+  // Get token from localStorage
+  const token = localStorage.getItem('authToken');
+  
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
     ...options,
