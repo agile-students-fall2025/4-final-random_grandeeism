@@ -847,7 +847,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   return (
     <div className="min-h-screen bg-background pt-6 pb-6 pl-6 pr-16 relative">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-5xl mx-auto max-w-[750px]">
         <div className="flex items-start justify-between mb-4">
           <div>
             <button onClick={goBack} className="text-sm text-muted-foreground hover:text-foreground mr-3 reader-button">← Back</button>
@@ -904,8 +904,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           )}
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-6 flex gap-6 relative">
-          <div className="flex-1 overflow-y-auto max-h-[70vh]" ref={contentRef}>
+        <div className="rounded-lg flex gap-6 relative mt-5">
+          <div className="" ref={contentRef}>
             {current ? (
               <article
                 className="prose prose-lg max-w-none text-reader-article"
