@@ -64,7 +64,11 @@ function App() {
 
 function AppContent() {
   const { isAuthenticated, loading: authLoading, user } = useAuth();
-  const [currentPage, setCurrentPage] = useState('landing');
+  // Initialize currentPage from localStorage or default to 'landing'
+  const [currentPage, setCurrentPage] = useState(() => {
+    const savedPage = localStorage.getItem('currentPage');
+    return savedPage || 'landing';
+  });
   /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation state */
   /* TODO: Uncomment when development resumes */
   // const [isNavExpanded, setIsNavExpanded] = useState(false);
@@ -88,11 +92,24 @@ function AppContent() {
   
   // const dragOffset = useRef({ x: 0, y: 0 });
 
-  // Redirect to auth if not authenticated (except for landing/auth pages)
+  // Save currentPage to localStorage whenever it changes
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      if (currentPage !== 'landing' && currentPage !== 'auth') {
-        setCurrentPage('auth');
+    localStorage.setItem('currentPage', currentPage);
+  }, [currentPage]);
+
+  // Handle authentication redirects
+  useEffect(() => {
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        // Not authenticated - redirect to auth page unless already on landing/auth
+        if (currentPage !== 'landing' && currentPage !== 'auth') {
+          setCurrentPage('auth');
+        }
+      } else {
+        // Authenticated - redirect away from landing/auth pages to home
+        if (currentPage === 'landing' || currentPage === 'auth') {
+          setCurrentPage('home');
+        }
       }
     }
   }, [authLoading, isAuthenticated, currentPage]);
