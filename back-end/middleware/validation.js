@@ -84,6 +84,10 @@ const validateTag = [
 
 /**
  * Validation rules for highlight creation/update
+ * Matches API contract:
+ *  - annotations: optional object { title?, note? }
+ *  - color: optional hex color string like #fef08a
+ *  - position: required object with numeric start/end
  */
 const validateHighlight = [
   body('articleId')
@@ -96,15 +100,35 @@ const validateHighlight = [
     .isLength({ max: 10000 })
     .withMessage('Highlighted text too long')
     .trim(),
-  body('note')
+  body('annotations')
     .optional()
-    .isLength({ max: 5000 })
-    .withMessage('Note must be 5000 characters or less')
-    .trim(),
+    .custom((value) => {
+      if (value === null || value === undefined) return true;
+      if (Array.isArray(value)) throw new Error('`annotations` must be a single object, not an array');
+      if (typeof value !== 'object') throw new Error('`annotations` must be an object');
+      if (value.title !== undefined && typeof value.title !== 'string') throw new Error('`annotations.title` must be a string');
+      if (value.note !== undefined && typeof value.note !== 'string') throw new Error('`annotations.note` must be a string');
+      if (value.title && value.title.length > 500) throw new Error('`annotations.title` must be 500 characters or less');
+      if (value.note && value.note.length > 5000) throw new Error('`annotations.note` must be 5000 characters or less');
+      return true;
+    }),
   body('color')
     .optional()
-    .isIn(['yellow', 'green', 'blue', 'pink', 'purple'])
-    .withMessage('Invalid highlight color')
+    .matches(/^#[0-9A-Fa-f]{6}$/)
+    .withMessage('Color must be a valid hex color (e.g., #FF5733)'),
+  body('position')
+    .notEmpty()
+    .withMessage('Position is required')
+    .custom((value) => {
+      if (typeof value !== 'object' || value === null) throw new Error('`position` must be an object');
+      if (value.start === undefined || value.end === undefined) throw new Error('`position` must include start and end');
+      const start = Number(value.start);
+      const end = Number(value.end);
+      if (!Number.isFinite(start) || !Number.isFinite(end)) throw new Error('`position.start` and `position.end` must be numbers');
+      if (start < 0 || end < 0) throw new Error('`position.start` and `position.end` must be >= 0');
+      if (end <= start) throw new Error('`position.end` must be greater than `position.start`');
+      return true;
+    })
 ];
 
 /**
@@ -218,6 +242,38 @@ module.exports = {
   validateArticle,
   validateTag,
   validateHighlight,
+  // lightweight update validator allowing partial fields
+  validateHighlightUpdate: [
+    body('annotations')
+      .optional()
+      .custom((value) => {
+        if (value === null || value === undefined) return true;
+        if (Array.isArray(value)) throw new Error('`annotations` must be a single object, not an array');
+        if (typeof value !== 'object') throw new Error('`annotations` must be an object');
+        if (value.title !== undefined && typeof value.title !== 'string') throw new Error('`annotations.title` must be a string');
+        if (value.note !== undefined && typeof value.note !== 'string') throw new Error('`annotations.note` must be a string');
+        if (value.title && value.title.length > 500) throw new Error('`annotations.title` must be 500 characters or less');
+        if (value.note && value.note.length > 5000) throw new Error('`annotations.note` must be 5000 characters or less');
+        return true;
+      }),
+    body('color')
+      .optional()
+      .matches(/^#[0-9A-Fa-f]{6}$/)
+      .withMessage('Color must be a valid hex color (e.g., #FF5733)'),
+    body('position')
+      .optional()
+      .custom((value) => {
+        if (value === undefined) return true;
+        if (typeof value !== 'object' || value === null) throw new Error('`position` must be an object');
+        if (value.start === undefined || value.end === undefined) throw new Error('`position` must include start and end');
+        const start = Number(value.start);
+        const end = Number(value.end);
+        if (!Number.isFinite(start) || !Number.isFinite(end)) throw new Error('`position.start` and `position.end` must be numbers');
+        if (start < 0 || end < 0) throw new Error('`position.start` and `position.end` must be >= 0');
+        if (end <= start) throw new Error('`position.end` must be greater than `position.start`');
+        return true;
+      })
+  ],
   validateFeed,
   validateStack,
   validateUserProfile,

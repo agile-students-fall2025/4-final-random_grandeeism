@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { articlesDao, highlightsDao } = require('../lib/daoFactory');
 const { authenticateToken } = require('../middleware/auth');
-const { validateHighlight, handleValidationErrors } = require('../middleware/validation');
+const { validateHighlight, validateHighlightUpdate, handleValidationErrors } = require('../middleware/validation');
 
 // --- Helpers (exposed on router for easier testing) ----------------------
 
@@ -152,7 +152,7 @@ router.get('/article/:articleId', authenticateToken, async (req, res) => {
       });
     }
 
-    const highlights = await highlightsDao.getByArticleId(req.params.articleId);
+    const highlights = await highlightsDao.getByArticleId(req.params.articleId, req.user.id);
 
     // Sort by position in article
     highlights.sort((a, b) => a.position.start - b.position.start);
@@ -246,7 +246,7 @@ router.post('/', authenticateToken, validateHighlight, handleValidationErrors, a
  * PUT /api/highlights/:id
  * Update a highlight/annotation (mock - doesn't persist)
  */
-router.put('/:id', authenticateToken, validateHighlight, handleValidationErrors, async (req, res) => {
+router.put('/:id', authenticateToken, validateHighlightUpdate, handleValidationErrors, async (req, res) => {
   try {
     const highlight = await highlightsDao.getById(req.params.id);
     
@@ -327,7 +327,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     // Check if article still has any highlights
     try {
-      const remainingHighlights = await highlightsDao.getByArticle(articleId);
+      const remainingHighlights = await highlightsDao.getByArticleId(articleId);
       const hasAnnotations = remainingHighlights && remainingHighlights.length > 0;
       await articlesDao.update(articleId, { hasAnnotations });
     } catch (e) {

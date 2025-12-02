@@ -58,7 +58,7 @@ const highlightsDao = {
       const regex = new RegExp(filters.search, 'i');
       query.$or = [
         { text: regex },
-        { note: regex }
+        { 'annotations.note': regex }
       ];
     }
 
@@ -96,13 +96,12 @@ const highlightsDao = {
       articleId: highlightData.articleId,
       userId: highlightData.userId,
       text: highlightData.text,
-      note: highlightData.note || '',
-      color: highlightData.color || 'yellow',
-      position: highlightData.position || {},
+      annotations: highlightData.annotations || { title: '', note: '' },
+      color: highlightData.color || '#fef08a',
+      position: highlightData.position || { start: 0, end: 0 },
       tags: highlightData.tags || [],
       isPublic: highlightData.isPublic || false,
-      metadata: highlightData.metadata || {},
-      ...highlightData
+      metadata: highlightData.metadata || {}
     });
 
     const savedHighlight = await newHighlight.save();
@@ -195,7 +194,7 @@ const highlightsDao = {
    * @returns {Promise<Object|null>} Updated highlight or null if not found
    */
   async updateNote(id, note, userId = null) {
-    return this.update(id, { note }, userId);
+    return this.update(id, { annotations: { note } }, userId);
   },
 
   /**

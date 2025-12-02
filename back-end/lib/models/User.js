@@ -18,7 +18,6 @@ const userSchema = new Schema({
     lowercase: true,
     minlength: 3,
     maxlength: 30,
-    index: true,
     validate: {
       validator: v => /^[a-z0-9_]+$/.test(v),
       message: 'Username can only contain lowercase letters, numbers, and underscores'
@@ -30,7 +29,6 @@ const userSchema = new Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    index: true,
     validate: {
       validator: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
       message: 'Please enter a valid email address'

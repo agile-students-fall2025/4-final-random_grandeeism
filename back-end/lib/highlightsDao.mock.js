@@ -52,7 +52,7 @@ const highlightsDao = {
       const searchLower = filters.search.toLowerCase();
       filteredHighlights = filteredHighlights.filter(highlight => 
         highlight.text.toLowerCase().includes(searchLower) ||
-        (highlight.note && highlight.note.toLowerCase().includes(searchLower))
+        (highlight.annotations?.note && highlight.annotations.note.toLowerCase().includes(searchLower))
       );
     }
 
@@ -80,18 +80,14 @@ const highlightsDao = {
       articleId: highlightData.articleId,
       userId: highlightData.userId || 'user-1', // Default user for mock
       text: highlightData.text,
-      note: highlightData.note || '',
-      color: highlightData.color || 'yellow',
+      annotations: highlightData.annotations || { title: '', note: '' },
+      color: highlightData.color || '#fef08a',
       position: {
-        startOffset: highlightData.position?.startOffset || 0,
-        endOffset: highlightData.position?.endOffset || 0,
-        startContainer: highlightData.position?.startContainer || '',
-        endContainer: highlightData.position?.endContainer || '',
-        ...highlightData.position
+        start: highlightData.position?.start || 0,
+        end: highlightData.position?.end || 0
       },
       createdAt: new Date(),
-      updatedAt: new Date(),
-      ...highlightData
+      updatedAt: new Date()
     };
 
     highlights.push(newHighlight);
@@ -110,13 +106,23 @@ const highlightsDao = {
       return null;
     }
 
-    highlights[index] = {
+    // Handle nested annotations update properly
+    const updatedHighlight = {
       ...highlights[index],
       ...updateData,
       id, // Ensure ID doesn't change
       updatedAt: new Date()
     };
 
+    // If annotations is being updated, merge it properly
+    if (updateData.annotations && highlights[index].annotations) {
+      updatedHighlight.annotations = {
+        ...highlights[index].annotations,
+        ...updateData.annotations
+      };
+    }
+
+    highlights[index] = updatedHighlight;
     return { ...highlights[index] };
   },
 
@@ -193,7 +199,7 @@ const highlightsDao = {
     const queryLower = query.toLowerCase();
     return highlights.filter(highlight => 
       highlight.text.toLowerCase().includes(queryLower) ||
-      (highlight.note && highlight.note.toLowerCase().includes(queryLower))
+      (highlight.annotations?.note && highlight.annotations.note.toLowerCase().includes(queryLower))
     );
   },
 
@@ -202,7 +208,7 @@ const highlightsDao = {
    * @returns {Promise<Array>} Highlights that have notes
    */
   async getWithNotes() {
-    return highlights.filter(highlight => highlight.note && highlight.note.trim().length > 0);
+    return highlights.filter(highlight => highlight.annotations?.note && highlight.annotations.note.trim().length > 0);
   },
 
   /**
@@ -210,7 +216,7 @@ const highlightsDao = {
    * @returns {Promise<Array>} Highlights that don't have notes
    */
   async getWithoutNotes() {
-    return highlights.filter(highlight => !highlight.note || highlight.note.trim().length === 0);
+    return highlights.filter(highlight => !highlight.annotations?.note || highlight.annotations.note.trim().length === 0);
   },
 
   /**
