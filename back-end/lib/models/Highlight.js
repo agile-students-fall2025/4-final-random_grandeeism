@@ -27,25 +27,39 @@ const highlightSchema = new Schema({
     trim: true,
     maxlength: 10000 // Maximum length for highlighted text
   },
-  note: {
-    type: String,
-    default: '',
-    trim: true,
-    maxlength: 2000 // Maximum length for user notes
+  annotations: {
+    title: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 200
+    },
+    note: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 2000
+    }
   },
   color: {
     type: String,
-    default: 'yellow',
-    enum: ['yellow', 'green', 'blue', 'purple', 'red', 'orange', 'pink'],
-    lowercase: true
+    default: '#fef08a', // Default hex color (yellow)
+    trim: true,
+    validate: {
+      validator: function(v) {
+        // Accept hex colors or named colors for backward compatibility
+        return /^#[0-9A-Fa-f]{6}$/.test(v) || ['yellow', 'green', 'blue', 'purple', 'red', 'orange', 'pink'].includes(v.toLowerCase());
+      },
+      message: props => `${props.value} is not a valid color! Use hex format (#RRGGBB) or color names.`
+    }
   },
   position: {
-    startOffset: {
+    start: {
       type: Number,
       required: true,
       min: 0
     },
-    endOffset: {
+    end: {
       type: Number,
       required: true,
       min: 0
@@ -95,7 +109,7 @@ highlightSchema.index({ userId: 1, createdAt: -1 });
 highlightSchema.index({ color: 1, userId: 1 });
 highlightSchema.index({ tags: 1, userId: 1 });
 highlightSchema.index({ isPublic: 1 });
-highlightSchema.index({ 'position.startOffset': 1, 'position.endOffset': 1 });
+highlightSchema.index({ 'position.start': 1, 'position.end': 1 });
 
 // Virtual for highlight length
 highlightSchema.virtual('length').get(function() {
@@ -109,7 +123,7 @@ highlightSchema.virtual('range').get(function() {
 
 // Virtual for has note
 highlightSchema.virtual('hasNote').get(function() {
-  return this.note && this.note.trim().length > 0;
+  return this.annotations?.note && this.annotations.note.trim().length > 0;
 });
 
 // Virtual for article reference
@@ -130,17 +144,24 @@ highlightSchema.virtual('user', {
 
 // Instance methods
 highlightSchema.methods.addNote = function(noteText) {
-  this.note = noteText.trim();
+  if (!this.annotations) {
+    this.annotations = { title: '', note: '' };
+  }
+  this.annotations.note = noteText.trim();
   return this.save();
 };
 
 highlightSchema.methods.updateColor = function(newColor) {
-  const validColors = ['yellow', 'green', 'blue', 'purple', 'red', 'orange', 'pink'];
-  if (validColors.includes(newColor.toLowerCase())) {
-    this.color = newColor.toLowerCase();
+  // Accept hex colors or named colors
+  const isValidHex = /^#[0-9A-Fa-f]{6}$/.test(newColor);
+  const validColorNames = ['yellow', 'green', 'blue', 'purple', 'red', 'orange', 'pink'];
+  const isValidName = validColorNames.includes(newColor.toLowerCase());
+  
+  if (isValidHex || isValidName) {
+    this.color = newColor;
     return this.save();
   }
-  throw new Error('Invalid highlight color');
+  throw new Error('Invalid highlight color: use hex format (#RRGGBB) or color names');
 };
 
 highlightSchema.methods.addTag = function(tag) {
@@ -171,7 +192,7 @@ highlightSchema.statics.findByArticle = function(articleId, userId = null) {
   } else {
     query.isPublic = true; // Only public highlights if no user specified
   }
-  return this.find(query).sort({ 'position.startOffset': 1 });
+  return this.find(query).sort({ 'position.start': 1 });
 };
 
 highlightSchema.statics.findByUser = function(userId, limit = null) {
@@ -186,7 +207,7 @@ highlightSchema.statics.findByColor = function(color, userId) {
 highlightSchema.statics.findWithNotes = function(userId) {
   return this.find({ 
     userId,
-    note: { $exists: true, $ne: '' }
+    'annotations.note': { $exists: true, $ne: '' }
   }).sort({ createdAt: -1 });
 };
 
@@ -211,7 +232,7 @@ highlightSchema.statics.search = function(query, userId) {
     userId,
     $or: [
       { text: regex },
-      { note: regex }
+      { 'annotations.note': regex }
     ]
   }).sort({ createdAt: -1 });
 };
@@ -236,8 +257,8 @@ highlightSchema.statics.getTagsUsed = function(userId) {
 // Pre-save middleware
 highlightSchema.pre('save', function(next) {
   // Validate position offsets
-  if (this.position.startOffset >= this.position.endOffset) {
-    return next(new Error('Start offset must be less than end offset'));
+  if (this.position.start >= this.position.end) {
+    return next(new Error('Start position must be less than end position'));
   }
   
   // Ensure tags are normalized
@@ -247,9 +268,9 @@ highlightSchema.pre('save', function(next) {
     this.tags = [...new Set(this.tags)];
   }
   
-  // Trim note
-  if (this.note) {
-    this.note = this.note.trim();
+  // Trim annotations note if present
+  if (this.annotations?.note) {
+    this.annotations.note = this.annotations.note.trim();
   }
   
   next();

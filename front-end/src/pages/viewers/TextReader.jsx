@@ -246,9 +246,16 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   // Load highlights from backend for this article
   const refreshHighlights = useCallback(async () => {
     if (!current) return;
+    console.log('=== Loading Highlights ===');
+    console.log('Article ID:', current.id);
+    console.log('Article userId:', current.userId);
+    console.log('Current user ID:', user?.id);
+    console.log('Article belongs to user?', current.userId === user?.id || String(current.userId) === String(user?.id));
     try {
       const res = await highlightsAPI.getByArticle(current.id);
       const fetchedHighlights = res?.data || [];
+      console.log('\u2713 Loaded highlights:', fetchedHighlights);
+      console.log('\u2713 Highlight count:', fetchedHighlights.length);
       setHighlights(fetchedHighlights);
       
       // Update article's hasAnnotations property based on highlights presence
@@ -262,10 +269,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         }
       }
     } catch (e) {
-      console.error('Failed to load highlights', e);
+      console.error('\u2717 Failed to load highlights:', e);
+      console.error('Error details:', e.response?.data);
       setHighlights([]);
     }
-  }, [current]);
+  }, [current, user]);
 
   // refresh highlights when current article is set
   useEffect(() => {
@@ -293,12 +301,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         if (!container) { setSelection(null); return; }
         if (!container.contains(range.commonAncestorContainer)) { setSelection(null); return; }
 
+        // Capture text immediately before it can be cleared
         const text = sel.toString().trim();
         if (!text) { setSelection(null); return; }
+        
+        // Store range for later use
+        const storedRange = range.cloneRange();
 
         // For HTML content, calculate position based on text up to selection
         if (isHTMLContent) {
-          const containerText = container.innerText || container.textContent || '';
           const beforeSelection = range.cloneRange();
           beforeSelection.selectNodeContents(container);
           beforeSelection.setEnd(range.startContainer, range.startOffset);
@@ -306,7 +317,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           const absEnd = absStart + text.length;
           
           const rect = range.getBoundingClientRect();
-          setSelection({ text, absStart, absEnd, rect });
+          setSelection({ text, absStart, absEnd, rect, range: storedRange });
           return;
         }
 
@@ -343,7 +354,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         if (absEnd <= absStart) { setSelection(null); return; }
 
         const rect = range.getBoundingClientRect();
-        setSelection({ text, absStart, absEnd, rect });
+        setSelection({ text, absStart, absEnd, rect, range: storedRange });
       } catch (e) {
         console.error('Selection error', e);
         setSelection(null);
@@ -445,18 +456,39 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   
 
   const applyHighlight = async (colorHex) => {
-    if (!selection || !current) return;
+    if (!selection || !current) {
+      console.log('applyHighlight aborted: selection or current missing', { selection: !!selection, current: !!current });
+      return;
+    }
+    // Only allow creating highlights if user is authenticated
+    if (!user?.id) {
+      console.error('Cannot create highlight: User not authenticated');
+      toast.error('Please log in to create highlights');
+      return;
+    }
+    
+    const payload = {
+      articleId: current.id,
+      userId: user.id,
+      text: selection.text,
+      color: colorHex || DEFAULT_HIGHLIGHT_COLOR,
+      position: { start: selection.absStart, end: selection.absEnd },
+      annotations: { title: '', note: '' }
+    };
+    
+    console.log('=== Creating Highlight ===');
+    console.log('User ID:', user.id);
+    console.log('Article ID:', current.id);
+    console.log('Selected text:', selection.text);
+    console.log('Position:', { start: selection.absStart, end: selection.absEnd });
+    console.log('Color:', colorHex || DEFAULT_HIGHLIGHT_COLOR);
+    console.log('Full payload:', payload);
+    
     try {
-      const userId = 1; // TODO: replace with authenticated user id when available
-      const payload = {
-        articleId: current.id,
-        userId,
-        text: selection.text,
-        color: colorHex || DEFAULT_HIGHLIGHT_COLOR,
-        position: { start: selection.absStart, end: selection.absEnd },
-        annotations: { title: '', note: '' }
-      };
       const res = await highlightsAPI.create(payload);
+      console.log('✓ API Response:', res);
+      console.log('✓ Created highlight ID:', res?.data?.id);
+      
       await refreshHighlights();
       if (res?.data?.id) {
         // Open sidebar focused on new highlight in edit mode
@@ -468,11 +500,20 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       } else {
         setShowHighlightsPanel(true);
       }
+      toast.success('Highlight created!');
     } catch (e) {
-      console.error('Failed to create highlight', e);
+      console.error('✗ Failed to create highlight');
+      console.error('Error object:', e);
+      console.error('Error message:', e.message);
+      console.error('Error response:', e.response?.data);
+      console.error('Error status:', e.response?.status);
+      toast.error(`Failed to create highlight: ${e.message}`);
     } finally {
-      setSelection(null);
-      try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
+      // Keep selection visible briefly so user can see what was highlighted
+      setTimeout(() => {
+        setSelection(null);
+        try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
+      }, 500);
     }
   };
 
@@ -830,9 +871,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       );
       
       let currentPos = 0;
-      let textNode;
       
-      while (textNode = walker.nextNode()) {
+      for (let textNode = walker.nextNode(); textNode; textNode = walker.nextNode()) {
         const nodeText = textNode.nodeValue || '';
         const nodeStart = currentPos;
         const nodeEnd = currentPos + nodeText.length;
@@ -1125,24 +1165,44 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
         {/* Selection toolbar */}
         {selection && (
-          <div style={{ position: 'fixed', left: selection.rect.left + window.scrollX, top: selection.rect.top + window.scrollY - 48, zIndex: 60 }}>
+          <div 
+            style={{ position: 'fixed', left: selection.rect.left + window.scrollX, top: selection.rect.top + window.scrollY - 48, zIndex: 60 }}
+            onMouseDown={(e) => e.preventDefault()}
+          >
             <div className="flex items-center gap-2 bg-card border border-border rounded shadow p-2">
               <input
                 type="color"
+                name="highlightColor"
                 value={selectedColor}
                 onChange={(e) => setSelectedColor(e.target.value)}
+                onMouseDown={(e) => e.preventDefault()}
+                onFocus={(e) => e.preventDefault()}
                 aria-label="Pick highlight color"
                 className="w-8 h-8 p-0 border border-border rounded cursor-pointer"
               />
               <input
                 type="text"
+                name="highlightColorHex"
                 value={selectedColor}
                 onChange={(e) => setSelectedColor(e.target.value)}
+                onMouseDown={(e) => e.preventDefault()}
                 className="w-24 px-2 py-1 text-xs border border-border rounded bg-background"
                 placeholder="#fef08a"
               />
-              <button onClick={() => applyHighlight(selectedColor)} className="px-2 py-1 text-sm bg-primary text-white rounded reader-button">Highlight</button>
-              <button onClick={() => setSelection(null)} className="px-2 py-1 text-sm reader-button text-muted-foreground hover:text-foreground">Cancel</button>
+              <button 
+                onClick={(e) => { e.preventDefault(); }} 
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); applyHighlight(selectedColor); }}
+                className="px-2 py-1 text-sm bg-primary text-white rounded reader-button"
+              >
+                Highlight
+              </button>
+              <button 
+                onClick={() => setSelection(null)} 
+                onMouseDown={(e) => e.preventDefault()}
+                className="px-2 py-1 text-sm reader-button text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         )}

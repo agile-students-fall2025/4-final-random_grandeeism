@@ -47,8 +47,7 @@ const articleSchema = new Schema({
   feedId: {
     type: Schema.Types.ObjectId,
     ref: 'Feed',
-    default: null,
-    index: true
+    default: null
   },
   // Store readingTime in minutes (number) for consistency; mock layer had strings
   readingTimeMinutes: {
