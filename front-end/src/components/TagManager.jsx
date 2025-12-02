@@ -194,10 +194,8 @@ export default function TagManager({
 
   const addNewTag = async () => {
     const trimmedTag = newTag.trim();
-    
     if (trimmedTag && !localTags.includes(trimmedTag)) {
       try {
-        // create (if not exists) then add
         let tagIdOrName = trimmedTag;
         const existing = (availableTags || []).find(t => t.name.toLowerCase() === trimmedTag.toLowerCase());
         if (!existing) {
@@ -205,17 +203,14 @@ export default function TagManager({
             const created = await tagsAPI.create({ name: trimmedTag });
             if (created?.data) {
               tagIdOrName = created.data.id;
-              setAvailableTags(prev => [...prev, created.data]);
+              onUpdateTags?.(); // Trigger callback to refresh tags
             }
-          } catch (e) { console.error('Create tag failed', e); }
-        } else {
-          tagIdOrName = existing.id;
+          } catch (e) {
+            console.error('Failed to create tag:', e);
+            return;
+          }
         }
-        if (onUpdateTags) {
-          await onUpdateTags(articleId, [...localTags, trimmedTag]);
-        } else {
-          await articlesAPI.addTag(articleId, tagIdOrName);
-        }
+        await articlesAPI.addTag(articleId, tagIdOrName);
         setLocalTags(prev => [...prev, trimmedTag]);
         setNewTag("");
       } catch (e) {

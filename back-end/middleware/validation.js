@@ -129,6 +129,75 @@ const validateFeed = [
 ];
 
 /**
+ * Validation rules for stack creation/update
+ */
+const validateStack = [
+  body('name')
+    .notEmpty()
+    .withMessage('Stack name is required')
+    .isLength({ max: 100 })
+    .withMessage('Stack name must be 100 characters or less')
+    .trim()
+    .escape(),
+  body('query')
+    .optional()
+    .isLength({ max: 500 })
+    .withMessage('Query must be 500 characters or less')
+    .trim(),
+  body('filters')
+    .optional()
+    .isObject()
+    .withMessage('Filters must be an object')
+];
+
+/**
+ * Validation rules for user profile update
+ */
+const validateUserProfile = [
+  body('displayName')
+    .optional()
+    .isLength({ max: 100 })
+    .withMessage('Display name must be 100 characters or less')
+    .trim(),
+  body('bio')
+    .optional()
+    .isLength({ max: 500 })
+    .withMessage('Bio must be 500 characters or less')
+    .trim(),
+  body('avatar')
+    .optional()
+    .isURL()
+    .withMessage('Avatar must be a valid URL'),
+  body('preferences')
+    .optional()
+    .isObject()
+    .withMessage('Preferences must be an object')
+];
+
+/**
+ * Validation rules for password change
+ */
+const validatePasswordChange = [
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('Current password is required'),
+  body('newPassword')
+    .isLength({ min: 8 })
+    .withMessage('New password must be at least 8 characters long')
+];
+
+/**
+ * Validation rules for tag assignment to articles
+ */
+const validateTagAssignment = [
+  body('tagId')
+    .notEmpty()
+    .withMessage('Tag ID is required')
+    .isString()
+    .withMessage('Tag ID must be a string')
+];
+
+/**
  * Middleware to handle validation errors
  * Should be placed after validation rules in route handlers
  */
@@ -150,5 +219,9 @@ module.exports = {
   validateTag,
   validateHighlight,
   validateFeed,
+  validateStack,
+  validateUserProfile,
+  validatePasswordChange,
+  validateTagAssignment,
   handleValidationErrors 
 };

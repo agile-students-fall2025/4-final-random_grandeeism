@@ -9,15 +9,25 @@ const API_BASE_URL = import.meta.env.MODE === 'production'
   ? 'http://localhost:7001/api'  // Production URL
   : '/api';  // Development - uses Vite proxy
 
+export const setAuthToken = (token) => {
+  localStorage.setItem('authToken', token);
+};
+
+export const getAuthToken = () => {
+  return localStorage.getItem('authToken');
+};
+
+export const clearAuthToken = () => {
+  localStorage.removeItem('authToken');
+};
+
 /**
  * Generic API request handler with automatic JWT token injection
  */
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  
-  // Get token from localStorage
-  const token = localStorage.getItem('authToken');
-  
+  const token = getAuthToken();
+
   const config = {
     headers: {
       'Content-Type': 'application/json',
@@ -29,43 +39,26 @@ const apiRequest = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
-    
-    // Check if response is OK first
+
     if (!response.ok) {
-      // Try to get error message from JSON, but handle HTML responses
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       } else {
-        throw new Error(`HTTP error! status: ${response.status} - Server returned non-JSON response`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
     }
-    
-    // Check content type before parsing JSON
+
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
-      throw new Error(`Expected JSON response but got ${contentType || 'unknown content type'}. Response: ${text.substring(0, 100)}`);
+      throw new Error('Expected JSON response but received invalid content.');
     }
-    
-    const data = await response.json();
-    return data;
+
+    return await response.json();
   } catch (error) {
-    // If it's a network error or CORS issue, provide helpful message
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      console.error(`API request failed for ${endpoint}:`, error);
-      throw new Error(`Cannot connect to backend server at ${url}. Make sure the backend is running on port 7001.`);
-    }
-    
-    // If it's a JSON parse error, provide helpful message
-    if (error.message.includes('JSON') || error.message.includes('<!DOCTYPE')) {
-      console.error(`API request failed for ${endpoint}:`, error);
-      throw new Error(`Backend returned invalid response. Make sure the backend server is running and the endpoint ${endpoint} exists.`);
-    }
-    
     console.error(`API request failed for ${endpoint}:`, error);
-    throw error;
+    throw new Error(error.message || 'An unexpected error occurred.');
   }
 };
 

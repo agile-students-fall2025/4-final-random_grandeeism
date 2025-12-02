@@ -3,7 +3,7 @@ const router = express.Router();
 const { articlesDao, tagsDao } = require('../lib/daoFactory');
 const { extractContent } = require('../utils/contentExtractor');
 const { authenticateToken } = require('../middleware/auth');
-const { validateArticle, handleValidationErrors } = require('../middleware/validation');
+const { validateArticle, validateTagAssignment, handleValidationErrors } = require('../middleware/validation');
 
 /**
  * GET /api/articles
@@ -481,7 +481,7 @@ router.patch('/:id/favorite', authenticateToken, async (req, res) => {
  * POST /api/articles/:id/tags
  * Add a tag to an article by tag ID
  */
-router.post('/:id/tags', authenticateToken, async (req, res) => {
+router.post('/:id/tags', authenticateToken, validateTagAssignment, handleValidationErrors, async (req, res) => {
   try {
     const { tagId: requestedTagId } = req.body;
     if (!requestedTagId) {
