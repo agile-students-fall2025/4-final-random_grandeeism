@@ -10,6 +10,7 @@ import { Label } from "../components/ui/label.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Skeleton } from "../components/ui/skeleton.jsx";
 import { toast } from "sonner";
+import { tagsAPI } from "../services/api.js";
 
 export default function TagsPage({ onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,14 +49,14 @@ export default function TagsPage({ onNavigate }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/tags");
-      const data = await res.json();
+      const data = await tagsAPI.getAll();
       if (data.success) {
         setTags(data.data);
       } else {
         setError(data.error || "Failed to fetch tags");
       }
     } catch (e) {
+      console.error('Failed to fetch tags:', e);
       setError("Failed to fetch tags");
     }
     setLoading(false);
@@ -98,12 +99,7 @@ export default function TagsPage({ onNavigate }) {
     const tagObj = tags.find(t => t.name === oldTag);
     if (!tagObj) return;
     try {
-      const res = await fetch(`/api/tags/${tagObj.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newTag })
-      });
-      const data = await res.json();
+      const data = await tagsAPI.update(tagObj.id, { name: newTag });
       if (data.success) {
         toast.success('Tag renamed', {
           description: `"${oldTag}" has been renamed to "${newTag}"`
@@ -115,6 +111,7 @@ export default function TagsPage({ onNavigate }) {
         });
       }
     } catch (e) {
+      console.error('Failed to rename tag:', e);
       toast.error('Failed to rename tag', {
         description: 'Please check your connection and try again'
       });
@@ -125,8 +122,7 @@ export default function TagsPage({ onNavigate }) {
     const tagObj = tags.find(t => t.name === tag);
     if (!tagObj) return;
     try {
-      const res = await fetch(`/api/tags/${tagObj.id}`, { method: 'DELETE' });
-      const data = await res.json();
+      const data = await tagsAPI.delete(tagObj.id);
       if (data.success) {
         toast.success('Tag deleted', {
           description: `"${tag}" has been deleted`
@@ -138,6 +134,7 @@ export default function TagsPage({ onNavigate }) {
         });
       }
     } catch (e) {
+      console.error('Failed to delete tag:', e);
       toast.error('Failed to delete tag', {
         description: 'Please check your connection and try again'
       });
@@ -148,12 +145,7 @@ export default function TagsPage({ onNavigate }) {
     const trimmedTag = newTagName.trim();
     if (!trimmedTag || tagStats.some(t => t.tag === trimmedTag)) return;
     try {
-      const res = await fetch('/api/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmedTag })
-      });
-      const data = await res.json();
+      const data = await tagsAPI.create({ name: trimmedTag });
       if (data.success) {
         toast.success('Tag created', {
           description: `"${trimmedTag}" has been created`
@@ -167,6 +159,7 @@ export default function TagsPage({ onNavigate }) {
         });
       }
     } catch (e) {
+      console.error('Failed to create tag:', e);
       toast.error('Failed to create tag', {
         description: 'Please check your connection and try again'
       });

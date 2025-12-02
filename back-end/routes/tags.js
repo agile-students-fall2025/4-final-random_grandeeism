@@ -16,19 +16,31 @@ router.get('/', authenticateToken, async (req, res) => {
     // Get all tags with filters for authenticated user
     let tags = await tagsDao.getAll({ search, category, userId: req.user.id });
 
+    // Dynamically calculate article count for each tag
+    const tagsWithCounts = await Promise.all(tags.map(async (tag) => {
+      const articles = await articlesDao.getAll({ 
+        userId: req.user.id, 
+        tag: tag.id 
+      });
+      return {
+        ...tag,
+        articleCount: articles.length
+      };
+    }));
+
     // Sort by article count, name, or most recent
     if (sort === 'popular') {
-      tags.sort((a, b) => b.articleCount - a.articleCount);
+      tagsWithCounts.sort((a, b) => b.articleCount - a.articleCount);
     } else if (sort === 'alphabetical') {
-      tags.sort((a, b) => a.name.localeCompare(b.name));
+      tagsWithCounts.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sort === 'recent') {
-      tags.sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
+      tagsWithCounts.sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
     }
 
     res.json({
       success: true,
-      count: tags.length,
-      data: tags
+      count: tagsWithCounts.length,
+      data: tagsWithCounts
     });
   } catch (error) {
     res.status(500).json({

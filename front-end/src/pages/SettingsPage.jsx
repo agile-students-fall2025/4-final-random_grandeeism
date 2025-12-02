@@ -21,10 +21,12 @@ import { Checkbox } from "../components/ui/checkbox.jsx";
 import { usersAPI } from "../services/api.js";
 import BulkExportModal from "../components/BulkExportModal.jsx";
 import { exportAllNotesAsZip, exportAllUserData } from "../utils/exportUtils.js";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 const SettingsPage = ({ onNavigate }) => {
   const mockArticles = [];
   const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuth();
   const SETTINGS_KEY = 'reader_settings_v1';
   const USER_PREFS_KEY = 'user_preferences_v1';
   const [fontFamily, setFontFamily] = useState(() => {
@@ -38,12 +40,12 @@ const SettingsPage = ({ onNavigate }) => {
   });
   const [showBulkExportModal, setShowBulkExportModal] = useState(false);
   
-  // Profile state - TODO: load from backend API call
+  // Profile state - initialized from authenticated user
   const [profileData, setProfileData] = useState({
-    email: 'user@example.com',
-    name: 'User',
-    username: 'user',
-    avatar: ''
+    email: user?.email || 'user@example.com',
+    name: user?.name || user?.username || 'User',
+    username: user?.username || 'user',
+    avatar: user?.avatar || ''
   });
   const initialProfileData = { ...profileData }; // Store original values for reset
   // Track the value when user starts editing each field
@@ -83,8 +85,9 @@ const SettingsPage = ({ onNavigate }) => {
       localStorage.setItem(USER_PREFS_KEY, JSON.stringify(updated));
       
       // Save to backend
-      const userId = 1; // TODO: replace with authenticated user id
-      await usersAPI.updateProfile(userId, { preferences: { autoArchive: checked } });
+      if (user?._id) {
+        await usersAPI.updateProfile(user._id, { preferences: { autoArchive: checked } });
+      }
       toast.success(`Auto-archive ${checked ? 'enabled' : 'disabled'}`);
     } catch (error) {
       console.error('Failed to update auto-archive preference:', error);
@@ -117,13 +120,25 @@ const SettingsPage = ({ onNavigate }) => {
     }
   };
 
+  // Update profile data when user changes
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        email: user.email || 'user@example.com',
+        name: user.name || user.username || 'User',
+        username: user.username || 'user',
+        avatar: user.avatar || ''
+      });
+    }
+  }, [user]);
+
   // Load user preferences from backend on mount
   useEffect(() => {
     let cancelled = false;
     const loadPreferences = async () => {
       try {
-        const userId = 1; // TODO: replace with authenticated user id
-        const res = await usersAPI.getProfile(userId);
+        if (!user?._id) return;
+        const res = await usersAPI.getProfile(user._id);
         if (!cancelled && res?.data?.preferences) {
           const prefs = res.data.preferences;
           // Update autoArchive state if available
@@ -139,7 +154,7 @@ const SettingsPage = ({ onNavigate }) => {
     };
     loadPreferences();
     return () => { cancelled = true; };
-  }, []);
+  }, [user]);
 
   // Profile change handlers - update state on change
   const handleProfileInputChange = (field, value) => {
@@ -549,8 +564,10 @@ const SettingsPage = ({ onNavigate }) => {
                 </div>
                 <div>
                   <Button 
-                  // variant="destructive" 
-                  onClick={() => onNavigate('landing')}
+                  onClick={async () => {
+                    await logout();
+                    onNavigate('landing');
+                  }}
                   className="w-full sm:w-auto"
                 >
                   <LogOut size={16} className="mr-2" />
@@ -573,10 +590,11 @@ const SettingsPage = ({ onNavigate }) => {
                     <Button 
                       variant="outline" 
                       // onClick={() => onNavigate('auth')}
-                      className="w-full sm:w-auto text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash size={16} className="mr-2" />
-                      Delete Account
+                      <span className="hidden sm:inline">Delete Account</span>
+                      <span className="sm:hidden">Delete</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent>

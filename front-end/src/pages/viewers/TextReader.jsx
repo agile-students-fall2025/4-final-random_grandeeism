@@ -258,7 +258,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [goBack]);
 
-  // selection handling (supports multi-paragraph selections)
+  // selection handling (supports both HTML and plain text content)
   useEffect(() => {
     const onMouseUp = () => {
       try {
@@ -269,6 +269,24 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         if (!container) { setSelection(null); return; }
         if (!container.contains(range.commonAncestorContainer)) { setSelection(null); return; }
 
+        const text = sel.toString().trim();
+        if (!text) { setSelection(null); return; }
+
+        // For HTML content, calculate position based on text up to selection
+        if (isHTMLContent) {
+          const containerText = container.innerText || container.textContent || '';
+          const beforeSelection = range.cloneRange();
+          beforeSelection.selectNodeContents(container);
+          beforeSelection.setEnd(range.startContainer, range.startOffset);
+          const absStart = (beforeSelection.toString() || '').length;
+          const absEnd = absStart + text.length;
+          
+          const rect = range.getBoundingClientRect();
+          setSelection({ text, absStart, absEnd, rect });
+          return;
+        }
+
+        // For plain text content with paragraphs
         // start paragraph
         let sNode = range.startContainer;
         let sP = sNode.nodeType === Node.ELEMENT_NODE && sNode.nodeName.toLowerCase() === 'p' ? sNode : sNode.parentNode;
@@ -300,7 +318,6 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         const absEnd = (paragraphStartOffsets[eIdx] || 0) + endInPara;
         if (absEnd <= absStart) { setSelection(null); return; }
 
-        const text = fullText.slice(absStart, absEnd);
         const rect = range.getBoundingClientRect();
         setSelection({ text, absStart, absEnd, rect });
       } catch (e) {
@@ -310,7 +327,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     };
     document.addEventListener('mouseup', onMouseUp);
     return () => document.removeEventListener('mouseup', onMouseUp);
-  }, [paragraphStartOffsets, fullText]);
+  }, [paragraphStartOffsets, fullText, isHTMLContent]);
 
   // completion detection on scroll with reading progress tracking and auto-archive
   useEffect(() => {
@@ -729,6 +746,105 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     );
   };
 
+  // Apply highlights to HTML content by wrapping highlighted text with marks
+  const applyHighlightsToHTML = useCallback((htmlContent) => {
+    if (!highlights || highlights.length === 0) return htmlContent;
+    
+    // Create a temporary div to parse and manipulate the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    // Get all text content to calculate positions
+    const fullTextContent = tempDiv.innerText || tempDiv.textContent || '';
+    
+    // Sort highlights by start position
+    const sortedHighlights = [...highlights].sort((a, b) => {
+      const aStart = Number(a.position?.start ?? a.start ?? 0);
+      const bStart = Number(b.position?.start ?? b.start ?? 0);
+      return aStart - bStart;
+    });
+    
+    // Process each highlight
+    sortedHighlights.forEach(highlight => {
+      const start = Number(highlight.position?.start ?? highlight.start ?? 0);
+      const end = Number(highlight.position?.end ?? highlight.end ?? 0);
+      
+      if (start >= end || start < 0 || end > fullTextContent.length) return;
+      
+      const highlightText = fullTextContent.substring(start, end);
+      if (!highlightText.trim()) return;
+      
+      // Create a TreeWalker to find text nodes
+      const walker = document.createTreeWalker(
+        tempDiv,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+      
+      let currentPos = 0;
+      let textNode;
+      
+      while (textNode = walker.nextNode()) {
+        const nodeText = textNode.nodeValue || '';
+        const nodeStart = currentPos;
+        const nodeEnd = currentPos + nodeText.length;
+        
+        // Check if this text node contains part of the highlight
+        if (nodeEnd > start && nodeStart < end) {
+          const highlightStartInNode = Math.max(0, start - nodeStart);
+          const highlightEndInNode = Math.min(nodeText.length, end - nodeStart);
+          
+          // Split the text node and wrap the highlighted part
+          const beforeText = nodeText.substring(0, highlightStartInNode);
+          const highlightedText = nodeText.substring(highlightStartInNode, highlightEndInNode);
+          const afterText = nodeText.substring(highlightEndInNode);
+          
+          const fragment = document.createDocumentFragment();
+          
+          if (beforeText) {
+            fragment.appendChild(document.createTextNode(beforeText));
+          }
+          
+          if (highlightedText) {
+            const mark = document.createElement('mark');
+            mark.setAttribute('data-highlight-id', highlight.id);
+            mark.style.backgroundColor = highlight.color || '#fffbdd';
+            mark.style.padding = '0.08rem 0.24rem';
+            mark.style.borderRadius = '4px';
+            if (isDark) {
+              mark.style.boxShadow = 'inset 0 -6px 0 rgba(0,0,0,0.18)';
+            }
+            mark.style.cursor = 'pointer';
+            mark.style.transition = 'all 0.2s ease';
+            mark.textContent = highlightedText;
+            mark.onclick = () => {
+              setFocusedHighlightId(highlight.id);
+              setShowHighlightsPanel(true);
+            };
+            fragment.appendChild(mark);
+          }
+          
+          if (afterText) {
+            fragment.appendChild(document.createTextNode(afterText));
+          }
+          
+          textNode.parentNode.replaceChild(fragment, textNode);
+        }
+        
+        currentPos = nodeEnd;
+      }
+    });
+    
+    return tempDiv.innerHTML;
+  }, [highlights, isDark]);
+
+  // Memoize the processed HTML content with highlights
+  const processedHTMLContent = useMemo(() => {
+    if (!isHTMLContent) return displayContent;
+    return applyHighlightsToHTML(displayContent);
+  }, [isHTMLContent, displayContent, applyHighlightsToHTML]);
+
   return (
     <div className="min-h-screen bg-background pt-6 pb-6 pl-6 pr-16 relative">
       <div className="max-w-6xl mx-auto">
@@ -802,7 +918,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 }}
               >
                 {isHTMLContent ? (
-                  <div dangerouslySetInnerHTML={{ __html: displayContent }} />
+                  <div dangerouslySetInnerHTML={{ __html: processedHTMLContent }} />
                 ) : paragraphs.length > 0 ? (
                   paragraphs.map((p, i) => renderParagraph(p, i))
                 ) : (

@@ -106,7 +106,11 @@ tagSchema.methods.decrementCount = function(amount = 1) {
 
 tagSchema.methods.updateCount = async function() {
   const Article = mongoose.model('Article');
-  const count = await Article.countDocuments({ tags: this.name, userId: this.userId });
+  // Count articles that have this tag's ID (stored as string) in their tags array
+  const count = await Article.countDocuments({ 
+    tags: this._id.toString(), 
+    userId: this.userId 
+  });
   if (this.articleCount !== count) {
     this.articleCount = count;
     await this.save();
