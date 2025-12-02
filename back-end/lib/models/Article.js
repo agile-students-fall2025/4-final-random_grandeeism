@@ -78,6 +78,10 @@ const articleSchema = new Schema({
     type: Date,
     default: Date.now
   },
+  publishedDate: {
+    type: Date,
+    default: null
+  },
   hasAnnotations: {
     type: Boolean,
     default: false
@@ -199,6 +203,15 @@ articleSchema.statics.findUntagged = function(userId) {
 
 // Pre-save middleware
 articleSchema.pre('save', function(next) {
+  // Auto-calculate reading time and word count from content
+  if (this.isModified('content') || this.isModified('textContent')) {
+    const { getWordCount, calculateReadingTimeMinutes } = require('../../utils/readingTime.js');
+    const contentToAnalyze = this.textContent || this.content || '';
+    
+    this.wordCount = getWordCount(contentToAnalyze);
+    this.readingTimeMinutes = calculateReadingTimeMinutes(contentToAnalyze);
+  }
+  
   // Auto-generate excerpt from content if not provided
   if (!this.excerpt && this.content) {
     const raw = this.content.replace(/\s+/g, ' ').trim();

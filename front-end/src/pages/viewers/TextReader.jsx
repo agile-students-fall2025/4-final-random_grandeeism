@@ -5,9 +5,10 @@ import CompletionModal from '../../components/CompletionModal.jsx';
 import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
 import TagManagerModal from '../../components/TagManagerModal.jsx';
 import { Button } from '../../components/ui/button.jsx';
-import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon } from 'lucide-react';
+import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon, ArrowLeft } from 'lucide-react';
 import { ensureTagsLoaded, getTagName, getTagMapSnapshot, addSingleTag } from '../../utils/tagsCache.js';
 import { articlesAPI, tagsAPI, highlightsAPI, usersAPI } from '../../services/api.js';
+import { calculateReadingTime } from '../../utils/readingTime.js';
 import '../../styles/textReader.css';
 import { toast } from 'sonner';
 
@@ -866,8 +867,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     <div className="min-h-screen bg-background pt-6 pb-6 pl-6 pr-16 relative">
       <div className="mx-auto" style={{ maxWidth: contentMaxWidth }}>
         <div className="flex items-start justify-between mb-4">
-          <div>
-            <button onClick={goBack} className="text-sm text-muted-foreground hover:text-foreground mr-3 reader-button">← Back</button>
+          <div className="flex items-center gap-2">
+            <Button onClick={goBack} variant="ghost" size="sm" className="gap-1.5">
+              <ArrowLeft size={16} />
+              Back
+            </Button>
             {!isOnline && (
               <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
                 📖 Offline Mode - Text Only
@@ -882,8 +886,10 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               <h1 className="text-3xl font-bold mb-2">{current.title}</h1>
               <p className="text-muted-foreground mb-4">
                 {current.author && <span className="mr-2">{current.author}</span>}
-                {current.readingTime && <span className="mr-2">• {current.readingTime}</span>}
-                {current.dateAdded && <span className="mr-2">• {new Date(current.dateAdded).toLocaleDateString()}</span>}
+                {displayContent && <span className="mr-2">• {calculateReadingTime(displayContent)}</span>}
+                {(current.publishedDate || current.dateAdded) && (
+                  <span className="mr-2">• {new Date(current.publishedDate || current.dateAdded).toLocaleDateString()} •</span>
+                )}
                 {current.url && (
                   <a href={current.url} target="_blank" rel="noreferrer" className="underline reader-link">Source</a>
                 )}
