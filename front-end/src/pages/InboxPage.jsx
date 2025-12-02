@@ -11,6 +11,7 @@ import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
+import { Skeleton } from "../components/ui/skeleton.jsx";
 import { articlesAPI, feedsAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
@@ -434,7 +435,27 @@ const InboxPage = ({ onNavigate, setPageRefresh }) => {
                 <p className="text-lg font-medium mb-2 text-destructive">{error}</p>
                 <p className="text-sm text-muted-foreground">Could not load inbox articles.</p>
               </div>
-            ) : loading ? null : displayedArticles.length > 0 ? (
+            ) : loading ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="border border-border rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                    </div>
+                    <Skeleton className="h-4 w-full" />
+                    <div className="flex gap-2">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Skeleton className="h-5 w-16 rounded" />
+                      <Skeleton className="h-5 w-20 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : displayedArticles.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {displayedArticles.map(article => (
                   <ArticleCard
