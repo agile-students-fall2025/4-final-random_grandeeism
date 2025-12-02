@@ -555,39 +555,45 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     try {
       let tagId = null;
       let tagObj = null;
-      // Support object, numeric id, or name string
+      // Support object, ID string (including MongoDB ObjectIds), or name string
       if (tagIdOrName && typeof tagIdOrName === 'object') {
         tagId = tagIdOrName.id;
         tagObj = tagIdOrName;
-      } else if (/^\d+$/.test(String(tagIdOrName))) {
-        tagId = Number(tagIdOrName);
       } else if (typeof tagIdOrName === 'string') {
-        const existing = allTags.find(t => t.name.toLowerCase() === tagIdOrName.toLowerCase());
-        if (existing) {
-          tagId = existing.id;
-          tagObj = existing;
+        // First try to find by ID (works for both numeric and MongoDB ObjectId strings)
+        const existingById = allTags.find(t => String(t.id) === String(tagIdOrName));
+        if (existingById) {
+          tagId = existingById.id;
+          tagObj = existingById;
         } else {
-          // Fallback: attempt to create if not found (defensive in case modal didn't create)
-          try {
-            const createResp = await tagsAPI.create({ name: tagIdOrName });
-            if (createResp?.data) {
-              tagId = createResp.data.id;
-              tagObj = createResp.data;
-              setAllTags(prev => prev.some(t => t.id === tagId) ? prev : [...prev, tagObj]);
-            }
-          } catch (e) {
-            // If already exists, refetch list and resolve
-            const msg = String(e?.message || '').toLowerCase();
-            if (msg.includes('already exists')) {
-              const list = await tagsAPI.getAll({ search: tagIdOrName });
-              const resolved = list?.data?.find(t => t.name.toLowerCase() === tagIdOrName.toLowerCase());
-              if (resolved) {
-                tagId = resolved.id;
-                tagObj = resolved;
+          // If not found by ID, try to find by name
+          const existingByName = allTags.find(t => t.name.toLowerCase() === tagIdOrName.toLowerCase());
+          if (existingByName) {
+            tagId = existingByName.id;
+            tagObj = existingByName;
+          } else {
+            // Fallback: attempt to create if not found (defensive in case modal didn't create)
+            try {
+              const createResp = await tagsAPI.create({ name: tagIdOrName });
+              if (createResp?.data) {
+                tagId = createResp.data.id;
+                tagObj = createResp.data;
                 setAllTags(prev => prev.some(t => t.id === tagId) ? prev : [...prev, tagObj]);
               }
-            } else {
-              throw e;
+            } catch (e) {
+              // If already exists, refetch list and resolve
+              const msg = String(e?.message || '').toLowerCase();
+              if (msg.includes('already exists')) {
+                const list = await tagsAPI.getAll({ search: tagIdOrName });
+                const resolved = list?.data?.find(t => t.name.toLowerCase() === tagIdOrName.toLowerCase());
+                if (resolved) {
+                  tagId = resolved.id;
+                  tagObj = resolved;
+                  setAllTags(prev => prev.some(t => t.id === tagId) ? prev : [...prev, tagObj]);
+                }
+              } else {
+                throw e;
+              }
             }
           }
         }
@@ -631,16 +637,33 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     if (!current || String(current.id) !== String(articleId)) return;
     try {
       let tagId = null;
-      if (tagIdOrName && typeof tagIdOrName === 'object') tagId = tagIdOrName.id;
-      else if (/^\d+$/.test(String(tagIdOrName))) tagId = Number(tagIdOrName);
-      else if (typeof tagIdOrName === 'string') {
-        const existing = allTags.find(t => t.name.toLowerCase() === tagIdOrName.toLowerCase());
-        if (existing) tagId = existing.id;
+      if (tagIdOrName && typeof tagIdOrName === 'object') {
+        tagId = tagIdOrName.id;
+      } else if (typeof tagIdOrName === 'string') {
+        // First try to find by ID (works for both numeric and MongoDB ObjectId strings)
+        const existingById = allTags.find(t => String(t.id) === String(tagIdOrName));
+        if (existingById) {
+          tagId = existingById.id;
+        } else {
+          // If not found by ID, try to find by name
+          const existingByName = allTags.find(t => t.name.toLowerCase() === tagIdOrName.toLowerCase());
+          if (existingByName) {
+            tagId = existingByName.id;
+          } else {
+            // If still not found in allTags, the tagIdOrName might already be a valid ID
+            // (happens when allTags hasn't loaded yet but we have a valid tag ID)
+            tagId = tagIdOrName;
+          }
+        }
+      } else if (typeof tagIdOrName === 'number') {
+        tagId = tagIdOrName;
       }
+      
       if (tagId == null) {
         console.warn('Tag remove aborted: unresolved tag', tagIdOrName);
         return;
       }
+      
       await articlesAPI.removeTag(current.id, tagId);
       const res = await articlesAPI.getById(current.id);
       if (res?.data) setCurrent(res.data);
