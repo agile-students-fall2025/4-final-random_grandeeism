@@ -152,7 +152,7 @@ export default function TagsPage({ onNavigate }) {
         });
         setNewTagName("");
         setIsCreateTagModalOpen(false);
-        fetchTags();
+        fetchTags(); // Ensure the tag list is refreshed
       } else {
         toast.error('Failed to create tag', {
           description: data.error || 'An error occurred while creating the tag'
