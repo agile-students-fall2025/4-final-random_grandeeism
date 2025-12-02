@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } from 'react';
 // STATUS constants no longer needed for persistence; using raw strings
 import { ThemeContext } from '../../contexts/ThemeContext.jsx';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import CompletionModal from '../../components/CompletionModal.jsx';
 import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
 import TagManagerModal from '../../components/TagManagerModal.jsx';
@@ -49,6 +50,9 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [completionShown, setCompletionShown] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tagModalOpen, setTagModalOpen] = useState(false);
+
+  // Get authenticated user
+  const { user } = useAuth();
 
   // Reader settings persisted locally (frontend only)
   const { setTheme: setAppTheme, effectiveTheme } = useContext(ThemeContext);
@@ -129,9 +133,12 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     const USER_PREFS_KEY = 'user_preferences_v1';
     let cancelled = false;
     const loadPreferences = async () => {
+      // Only load preferences if user is authenticated
+      if (!user?.id) {
+        return;
+      }
       try {
-        const userId = 1; // TODO: replace with authenticated user id
-        const res = await usersAPI.getProfile(userId);
+        const res = await usersAPI.getProfile(user.id);
         if (!cancelled && res?.data?.preferences) {
           const prefs = res.data.preferences;
           // Store in localStorage for quick access
@@ -143,7 +150,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     };
     loadPreferences();
     return () => { cancelled = true; };
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     let cancelled = false;
