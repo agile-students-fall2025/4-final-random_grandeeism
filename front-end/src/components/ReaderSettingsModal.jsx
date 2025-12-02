@@ -1,4 +1,4 @@
-import { X, Type, Image, Moon, Sun } from "lucide-react";
+import { X, Type, Image, Moon, Sun, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 // Ensure `motion` is referenced for linters that don't detect JSX usage
 void motion;
@@ -15,6 +15,13 @@ const FONT_SIZES = [
   { value: 'large', label: 'Large', preview: 'Aa' },
 ];
 
+const CONTENT_WIDTHS = [
+  { value: 'narrow', label: 'Narrow', description: '600px - Focused reading' },
+  { value: 'normal', label: 'Normal', description: '750px - Comfortable' },
+  { value: 'wide', label: 'Wide', description: '900px - Spacious' },
+  { value: 'full', label: 'Full', description: 'Full width - Maximum' },
+];
+
 export default function ReaderSettingsModal({
   isOpen,
   onClose,
@@ -26,6 +33,8 @@ export default function ReaderSettingsModal({
   onShowImagesChange,
   readerTheme,
   onReaderThemeChange,
+  contentWidth,
+  onContentWidthChange,
 }) {
   if (!isOpen) return null;
 
@@ -127,6 +136,34 @@ export default function ReaderSettingsModal({
                       {size.preview}
                     </div>
                     <div className="text-muted-foreground text-[12px]">{size.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content Width */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Maximize2 size={18} className="text-foreground" />
+                <h3 className="text-foreground">Content Width</h3>
+              </div>
+              <div className="space-y-2">
+                {CONTENT_WIDTHS.map((width) => (
+                  <button
+                    key={width.value}
+                    onClick={() => onContentWidthChange(width.value)}
+                    className={`w-full p-4 border rounded-lg text-left transition-all ${
+                      contentWidth === width.value
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50 hover:bg-accent'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-foreground mb-1">{width.label}</div>
+                        <div className="text-muted-foreground text-[12px]">{width.description}</div>
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>

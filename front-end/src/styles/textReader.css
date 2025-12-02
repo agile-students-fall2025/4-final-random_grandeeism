@@ -35,6 +35,12 @@
   transition: all 0.2s ease;
 }
 
+article p {
+  line-height: 1.7;
+  font-size: 1em;
+  padding-bottom: calc(1.72 / 1.72 * 16 / 16 * 30)
+}
+
 .reader-interactive:hover {
   opacity: 0.8;
   transform: translateY(-1px);
