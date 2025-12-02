@@ -25,12 +25,13 @@ const validateRegistration = [
 
 /**
  * Validation rules for user login
+ * Note: 'username' field accepts either username or email
  */
 const validateLogin = [
-  body('email')
-    .isEmail()
-    .withMessage('Must be a valid email address')
-    .normalizeEmail(),
+  body('username')
+    .notEmpty()
+    .withMessage('Username or email is required')
+    .trim(),
   body('password')
     .notEmpty()
     .withMessage('Password is required')

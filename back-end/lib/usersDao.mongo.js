@@ -11,14 +11,24 @@ const { User } = require('./models');
 /**
  * Helper to convert MongoDB ObjectId to string format for consistency with mock DAO
  */
-const transformToStringId = (doc) => {
+const transformToStringId = (doc, includePassword = false) => {
   if (!doc) return null;
+  
+  // Save password before toJSON strips it
+  const password = doc.password;
+  
   const obj = doc.toJSON ? doc.toJSON() : doc;
   if (obj._id) {
     obj.id = obj._id.toString();
     delete obj._id;
     delete obj.__v;
   }
+  
+  // Restore password if it was present and should be included
+  if (includePassword && password) {
+    obj.password = password;
+  }
+  
   return obj;
 };
 
@@ -74,13 +84,12 @@ const usersDao = {
    * @returns {Promise<Object|null>} User object or null if not found
    */
   async getByEmail(email, includePassword = false) {
-    let query = User.findByEmail(email.toLowerCase());
-    if (!includePassword) {
-      query = query.select('-password');
-    }
-
-    const user = await query.exec();
-    return transformToStringId(user);
+    // findByEmail already includes password via select('+password')
+    const user = await User.findByEmail(email.toLowerCase());
+    
+    if (!user) return null;
+    
+    return transformToStringId(user, includePassword);
   },
 
   /**
@@ -90,13 +99,12 @@ const usersDao = {
    * @returns {Promise<Object|null>} User object or null if not found
    */
   async getByUsername(username, includePassword = false) {
-    let query = User.findByUsername(username.toLowerCase());
-    if (!includePassword) {
-      query = query.select('-password');
-    }
-
-    const user = await query.exec();
-    return transformToStringId(user);
+    // findByUsername already includes password via select('+password')
+    const user = await User.findByUsername(username.toLowerCase());
+    
+    if (!user) return null;
+    
+    return transformToStringId(user, includePassword);
   },
 
   /**

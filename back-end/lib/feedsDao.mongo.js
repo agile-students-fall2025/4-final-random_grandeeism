@@ -19,6 +19,10 @@ const transformToStringId = (doc) => {
     delete obj._id;
     delete obj.__v;
   }
+  // Convert userId ObjectId to string for consistency with JWT
+  if (obj.userId && typeof obj.userId === 'object') {
+    obj.userId = obj.userId.toString();
+  }
   return obj;
 };
 
