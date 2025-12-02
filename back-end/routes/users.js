@@ -4,8 +4,7 @@ const bcrypt = require('bcryptjs');
 const daoFactory = require('../lib/daoFactory');
 const { usersDao } = require('../lib/daoFactory');
 const { authenticateToken } = require('../middleware/auth');
-const { body } = require('express-validator');
-const { handleValidationErrors } = require('../middleware/validation');
+const { validateUserProfile, validatePasswordChange, handleValidationErrors } = require('../middleware/validation');
 
 /**
  * GET /api/users/profile/:id
@@ -52,12 +51,7 @@ router.get('/profile/:id', authenticateToken, async (req, res) => {
  */
 router.put('/profile/:id', 
   authenticateToken,
-  [
-    body('displayName').optional().isLength({ max: 100 }).trim(),
-    body('bio').optional().isLength({ max: 500 }).trim(),
-    body('avatar').optional().isURL(),
-    body('preferences').optional().isObject()
-  ],
+  validateUserProfile,
   handleValidationErrors,
   async (req, res) => {
   try {
@@ -112,10 +106,7 @@ router.put('/profile/:id',
  */
 router.put('/password/:id',
   authenticateToken,
-  [
-    body('currentPassword').notEmpty().withMessage('Current password is required'),
-    body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
-  ],
+  validatePasswordChange,
   handleValidationErrors,
   async (req, res) => {
   try {
