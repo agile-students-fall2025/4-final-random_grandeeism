@@ -11,6 +11,7 @@ import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
+import { Loader } from "../components/ui/loader.jsx";
 import { articlesAPI, feedsAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { useTagResolution } from "../hooks/useTagResolution.js";
@@ -471,7 +472,7 @@ const SearchPage = ({ onNavigate, initialTag, setPageRefresh }) => {
           <div className="min-h-[200px]">
             {loading ? (
               <div className="flex justify-center items-center min-h-[120px]">
-                <span className="animate-spin mr-2">🌀</span> Loading articles...
+                <Loader className="mr-2" size={20} /> Loading articles...
               </div>
             ) : error ? (
               <div className="bg-destructive/10 border border-destructive rounded-lg p-8 text-center">

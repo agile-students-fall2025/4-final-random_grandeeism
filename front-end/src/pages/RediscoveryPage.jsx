@@ -11,6 +11,7 @@ import SaveStackModal from "../components/SaveStackModal.jsx";
 import TagManagerModal from "../components/TagManagerModal.jsx";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
+import { Loader } from "../components/ui/loader.jsx";
 import { articlesAPI, tagsAPI } from "../services/api.js";
 import applyFiltersAndSort from "../utils/searchUtils.js";
 import { STATUS } from "../constants/statuses.js";
@@ -403,7 +404,10 @@ const RediscoveryPage = ({ onNavigate, setPageRefresh }) => {
               </div>
             ) : loading ? (
               <div className="bg-card border border-border rounded-lg p-8 text-center">
-                <p className="text-lg font-medium mb-2">Loading rediscovery articles...</p>
+                <div className="flex items-center justify-center mb-2">
+                  <Loader className="mr-2" size={20} />
+                  <p className="text-lg font-medium">Loading rediscovery articles...</p>
+                </div>
                 <p className="text-sm text-muted-foreground">Please wait while we fetch your content.</p>
               </div>
             ) : displayedArticles.length > 0 ? (

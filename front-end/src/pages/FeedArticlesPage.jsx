@@ -9,6 +9,7 @@ import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
+import { Loader } from "../components/ui/loader.jsx";
 import useTagResolution from "../hooks/useTagResolution.js";
 import { useStacks } from "../contexts/useStacks.js";
 
@@ -426,9 +427,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
           {loading ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16 px-6">
-                <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <FileText className="size-8 text-muted-foreground" />
-                </div>
+                <Loader size={48} className="text-muted-foreground mb-4" />
                 <CardTitle className="text-xl mb-2">Loading articles...</CardTitle>
                 <CardDescription className="text-center max-w-md">
                   Fetching articles from the feed.
