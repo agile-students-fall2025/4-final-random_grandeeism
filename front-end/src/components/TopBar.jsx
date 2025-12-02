@@ -38,6 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 export default function TopBar({
   // Navigation
@@ -82,8 +83,15 @@ export default function TopBar({
   totalCount = 0
 }) {
   // Internal State
+  const { logout } = useAuth();
 
   // Event Handlers
+  const handleSignOut = async () => {
+    await logout();
+    if (onNavigate) {
+      onNavigate('landing');
+    }
+  };
 
   return (
     <div className="bg-background border-b border-border sticky top-0 z-40 w-full">
@@ -163,7 +171,7 @@ export default function TopBar({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={() => onNavigate && onNavigate('landing')}
+                onClick={handleSignOut}
               >
                 <LogOut size={16} className="mr-2" />
                 Sign Out
