@@ -4,6 +4,7 @@ import { ThemeContext } from '../../contexts/ThemeContext.jsx';
 import CompletionModal from '../../components/CompletionModal.jsx';
 import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
 import TagManagerModal from '../../components/TagManagerModal.jsx';
+import { Button } from '../../components/ui/button.jsx';
 import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon } from 'lucide-react';
 import { ensureTagsLoaded, getTagName, getTagMapSnapshot, addSingleTag } from '../../utils/tagsCache.js';
 import { articlesAPI, tagsAPI, highlightsAPI, usersAPI } from '../../services/api.js';
@@ -65,17 +66,24 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [readerTheme, setReaderTheme] = useState(() => {
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.readerTheme || effectiveTheme || 'light'; } catch { return effectiveTheme || 'light'; }
   });
+  const [contentWidth, setContentWidth] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY))?.contentWidth || 'normal'; } catch { return 'normal'; }
+  });
 
   const persistReaderSettings = (next) => {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)); } catch (e) { console.error('persist reader settings failed', e); }
   };
-  const onFontSizeChange = (size) => { setFontSize(size); persistReaderSettings({ fontSize: size, fontFamily, showImages, readerTheme }); };
-  const onFontFamilyChange = (fam) => { setFontFamily(fam); persistReaderSettings({ fontSize, fontFamily: fam, showImages, readerTheme }); };
-  const onShowImagesChange = (val) => { setShowImages(val); persistReaderSettings({ fontSize, fontFamily, showImages: val, readerTheme }); };
+  const onFontSizeChange = (size) => { setFontSize(size); persistReaderSettings({ fontSize: size, fontFamily, showImages, readerTheme, contentWidth }); };
+  const onFontFamilyChange = (fam) => { setFontFamily(fam); persistReaderSettings({ fontSize, fontFamily: fam, showImages, readerTheme, contentWidth }); };
+  const onShowImagesChange = (val) => { setShowImages(val); persistReaderSettings({ fontSize, fontFamily, showImages: val, readerTheme, contentWidth }); };
   const onReaderThemeChange = (theme) => {
     setReaderTheme(theme);
-    persistReaderSettings({ fontSize, fontFamily, showImages, readerTheme: theme });
+    persistReaderSettings({ fontSize, fontFamily, showImages, readerTheme: theme, contentWidth });
     try { if (setAppTheme) setAppTheme(theme); } catch { /* ignore */ }
+  };
+  const onContentWidthChange = (width) => {
+    setContentWidth(width);
+    persistReaderSettings({ fontSize, fontFamily, showImages, readerTheme, contentWidth: width });
   };
 
   // Listen for online/offline events for hybrid offline reading
@@ -100,12 +108,21 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   // computed reader classes/styles based on settings
   const fontSizePx = fontSize === 'small' ? 18 : fontSize === 'large' ? 22 : 20;
   const fontFamilyMap = {
-    'serif': "Literata, Georgia, 'Times New Roman', serif",
+    'serif': "MR-Literata, Georgia, 'Times New Roman', serif",
     'sans-serif': "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
     'mono': "SFMono-Regular, Menlo, Monaco, 'Courier New', monospace",
   };
   const fontFamilyCss = fontFamilyMap[fontFamily] || fontFamilyMap.serif;
   const isDark = readerTheme === 'dark';
+  
+  // Content width mapping
+  const contentWidthMap = {
+    'narrow': '600px',
+    'normal': '750px',
+    'wide': '900px',
+    'full': '100%'
+  };
+  const contentMaxWidth = contentWidthMap[contentWidth] || contentWidthMap.normal;
 
   // Load user preferences from backend on mount
   useEffect(() => {
@@ -847,7 +864,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   return (
     <div className="min-h-screen bg-background pt-6 pb-6 pl-6 pr-16 relative">
-      <div className="max-w-6xl mx-auto">
+      <div className="mx-auto" style={{ maxWidth: contentMaxWidth }}>
         <div className="flex items-start justify-between mb-4">
           <div>
             <button onClick={goBack} className="text-sm text-muted-foreground hover:text-foreground mr-3 reader-button">← Back</button>
@@ -886,14 +903,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                     </div>
                   );
                 })()}
-                <button 
+                <Button 
                   onClick={() => setTagModalOpen(true)}
-                  className="px-3 py-1.5 text-sm bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-md flex items-center gap-1.5 transition-colors"
-                  title="Manage Tags"
+                  variant="secondary"
+                  size="sm"
+                  className="gap-1.5"
                 >
                   <TagIcon size={14} />
                   Manage Tags
-                </button>
+                </Button>
               </div>
             </>
           ) : (
@@ -904,8 +922,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           )}
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-6 flex gap-6 relative">
-          <div className="flex-1 overflow-y-auto max-h-[70vh]" ref={contentRef}>
+        <div className="rounded-lg flex gap-6 relative mt-5">
+          <div className="" ref={contentRef}>
             {current ? (
               <article
                 className="prose prose-lg max-w-none text-reader-article"
@@ -1111,6 +1129,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           onShowImagesChange={onShowImagesChange}
           readerTheme={readerTheme}
           onReaderThemeChange={onReaderThemeChange}
+          contentWidth={contentWidth}
+          onContentWidthChange={onContentWidthChange}
         />
         {current && (
           <TagManagerModal

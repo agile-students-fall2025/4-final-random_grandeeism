@@ -217,7 +217,7 @@ const SettingsPage = ({ onNavigate }) => {
     { value: "mono", label: "Monospace" },
   ];
   const fontPreviewMap = {
-    'serif': "Literata, Georgia, 'Times New Roman', serif",
+    'serif': "MR-Literata, Georgia, 'Times New Roman', serif",
     'sans-serif': "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
     'mono': "'Courier New', Courier, monospace",
   };

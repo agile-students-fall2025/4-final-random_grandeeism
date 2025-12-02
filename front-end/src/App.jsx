@@ -6,6 +6,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { StacksProvider } from './contexts/StacksContext.jsx';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 
@@ -54,20 +55,49 @@ import { invalidateTagCache } from './utils/tagsCache.js';
 
 function App() {
   return (
-    <AuthProvider>
-      <StacksProvider>
-        <AppContent />
-      </StacksProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <StacksProvider>
+          <AppContent />
+        </StacksProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
 function AppContent() {
   const { isAuthenticated, loading: authLoading, user } = useAuth();
-  // Initialize currentPage from localStorage or default to 'landing'
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Initialize currentPage from URL path
   const [currentPage, setCurrentPage] = useState(() => {
-    const savedPage = localStorage.getItem('currentPage');
-    return savedPage || 'landing';
+    const path = location.pathname;
+    if (path === '/' || path === '/landing') return 'landing';
+    if (path === '/auth') return 'auth';
+    if (path.startsWith('/article/')) return 'text-reader';
+    if (path.startsWith('/video/')) return 'video-player';
+    if (path.startsWith('/audio/')) return 'audio-player';
+    // Map other paths to pages
+    const pathMap = {
+      '/home': 'home',
+      '/search': 'search',
+      '/inbox': 'inbox',
+      '/daily-reading': 'daily-reading',
+      '/continue-reading': 'continue-reading',
+      '/rediscovery': 'rediscovery',
+      '/text': 'text',
+      '/videos': 'videos',
+      '/audio': 'audio',
+      '/archive': 'archive',
+      '/statistics': 'statistics',
+      '/settings': 'settings',
+      '/feeds': 'feeds',
+      '/feed-articles': 'feed-articles',
+      '/tags': 'tags',
+      '/favorites': 'favorites',
+    };
+    return pathMap[path] || 'landing';
   });
   /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation state */
   /* TODO: Uncomment when development resumes */
@@ -92,10 +122,37 @@ function AppContent() {
   
   // const dragOffset = useRef({ x: 0, y: 0 });
 
-  // Save currentPage to localStorage whenever it changes
+  // Sync currentPage with URL
   useEffect(() => {
-    localStorage.setItem('currentPage', currentPage);
-  }, [currentPage]);
+    const pathMap = {
+      'landing': '/',
+      'auth': '/auth',
+      'home': '/home',
+      'search': '/search',
+      'inbox': '/inbox',
+      'daily-reading': '/daily-reading',
+      'continue-reading': '/continue-reading',
+      'rediscovery': '/rediscovery',
+      'text': '/text',
+      'videos': '/videos',
+      'audio': '/audio',
+      'archive': '/archive',
+      'statistics': '/statistics',
+      'settings': '/settings',
+      'feeds': '/feeds',
+      'feed-articles': '/feed-articles',
+      'tags': '/tags',
+      'favorites': '/favorites',
+    };
+    
+    // Don't update URL for viewer pages as they have dynamic paths
+    if (currentPage !== 'text-reader' && currentPage !== 'video-player' && currentPage !== 'audio-player') {
+      const newPath = pathMap[currentPage];
+      if (newPath && location.pathname !== newPath) {
+        navigate(newPath, { replace: true });
+      }
+    }
+  }, [currentPage, navigate, location.pathname]);
 
   // Handle authentication redirects
   useEffect(() => {
@@ -184,19 +241,25 @@ function AppContent() {
     } else if (page === 'text') {
       setCurrentPage('text');
     } else if (page === 'text-reader') {
-      // Support navigating directly to the text reader. The caller may provide
-      // an `article` in the `view` object; store it so the reader can render it.
-      if (view && view.article) setSelectedArticle(view.article);
+      // Navigate to article reader with URL
+      if (view && view.article) {
+        navigate(`/article/${view.article.id}`);
+        setSelectedArticle(view.article);
+      }
       setCurrentPage('text-reader');
     } else if (page === 'video-player') {
-      // Support navigating directly to the video player. The caller may provide
-      // an `article` in the `view` object; store it so the player can render it.
-      if (view && view.article) setSelectedArticle(view.article);
+      // Navigate to video player with URL
+      if (view && view.article) {
+        navigate(`/video/${view.article.id}`);
+        setSelectedArticle(view.article);
+      }
       setCurrentPage('video-player');
     } else if (page === 'audio-player') {
-      // Support navigating directly to the audio player. The caller may provide
-      // an `article` in the `view` object; store it so the player can render it.
-      if (view && view.article) setSelectedArticle(view.article);
+      // Navigate to audio player with URL
+      if (view && view.article) {
+        navigate(`/audio/${view.article.id}`);
+        setSelectedArticle(view.article);
+      }
       setCurrentPage('audio-player');
     } else if (page === 'videos') {
       setCurrentPage('videos');
@@ -260,23 +323,11 @@ function AppContent() {
       case 'favorites':
         return <FavoritesPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'text-reader':
-        return <TextReader onNavigate={handleNavigate} article={selectedArticle} />;
+        return <TextReaderWrapper onNavigate={handleNavigate} />;
       case 'audio-player':
-        return (
-          <AudioPlayer 
-            article={selectedArticle}
-            onUpdateArticle={(updatedArticle) => setSelectedArticle(updatedArticle)}
-            onClose={() => handleNavigate('home')}
-          />
-        );
+        return <AudioPlayerWrapper onNavigate={handleNavigate} />;
       case 'video-player':
-        return (
-          <VideoPlayer 
-            article={selectedArticle}
-            onUpdateArticle={(updatedArticle) => setSelectedArticle(updatedArticle)}
-            onClose={() => handleNavigate('home')}
-          />
-        );
+        return <VideoPlayerWrapper onNavigate={handleNavigate} />;
       default:
         return <HomePage onNavigate={handleNavigate} />;
     }
@@ -285,6 +336,27 @@ function AppContent() {
   return (
     <StacksProvider>
       <div className="relative min-h-screen bg-background">
+        {/* Render current page */}
+        <Routes>
+          <Route path="/article/:articleId" element={<TextReaderWrapper onNavigate={handleNavigate} />} />
+          <Route path="/video/:articleId" element={<VideoPlayerWrapper onNavigate={handleNavigate} />} />
+          <Route path="/audio/:articleId" element={<AudioPlayerWrapper onNavigate={handleNavigate} />} />
+          <Route path="*" element={
+            <>
+              {renderPage()}
+              
+              {/* Floating Add Button - Show on all pages except landing, auth, and viewer pages */}
+              {currentPage !== 'landing' && 
+               currentPage !== 'auth' && 
+               currentPage !== 'text-reader' && 
+               currentPage !== 'audio-player' && 
+               currentPage !== 'video-player' && (
+                <FloatingAddButton onClick={() => setIsAddLinkModalOpen(true)} />
+              )}
+            </>
+          } />
+        </Routes>
+        
         {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation */}
         {/* TODO: Uncomment when development resumes */}
         {/* Simple navigation menu for testing */}
@@ -475,11 +547,6 @@ function AppContent() {
           )}
         </div> */}
 
-        {/* Render current page */}
-        {renderPage()}
-
-        {/* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Test Navigation (draggable dev menu) */}
-        {/* TODO: Uncomment when development resumes */}
         {/* Floating Add Button - Show on all pages except landing, auth, and viewer pages */}
         {currentPage !== 'landing' && 
          currentPage !== 'auth' && 
@@ -532,6 +599,58 @@ function AppContent() {
         <Toaster />
       </div>
     </StacksProvider>
+  );
+}
+
+// Wrapper components to handle URL params
+function TextReaderWrapper({ onNavigate }) {
+  const { articleId } = useParams();
+  return <TextReader onNavigate={onNavigate} articleId={articleId} />;
+}
+
+function AudioPlayerWrapper({ onNavigate }) {
+  const { articleId } = useParams();
+  const [article, setArticle] = useState(null);
+  
+  useEffect(() => {
+    if (articleId) {
+      articlesAPI.getById(articleId).then(response => {
+        if (response.success) {
+          setArticle(response.data);
+        }
+      });
+    }
+  }, [articleId]);
+  
+  return (
+    <AudioPlayer 
+      article={article}
+      onUpdateArticle={setArticle}
+      onClose={() => onNavigate('home')}
+    />
+  );
+}
+
+function VideoPlayerWrapper({ onNavigate }) {
+  const { articleId } = useParams();
+  const [article, setArticle] = useState(null);
+  
+  useEffect(() => {
+    if (articleId) {
+      articlesAPI.getById(articleId).then(response => {
+        if (response.success) {
+          setArticle(response.data);
+        }
+      });
+    }
+  }, [articleId]);
+  
+  return (
+    <VideoPlayer 
+      article={article}
+      onUpdateArticle={setArticle}
+      onClose={() => onNavigate('home')}
+    />
   );
 }
 
