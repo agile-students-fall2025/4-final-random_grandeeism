@@ -6,7 +6,18 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { X, Plus, Minus, Tag } from "lucide-react";
+import { Plus, Minus, Tag } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Badge } from "./ui/badge";
 
 export default function TagManagerModal({ 
   isOpen, 
@@ -195,49 +206,45 @@ export default function TagManagerModal({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-background border border-border rounded-lg w-full max-w-md mx-4 shadow-lg">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-semibold">Manage Tags</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-accent rounded-md transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-4">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Manage Tags</DialogTitle>
+          <DialogDescription>
+            Add or remove tags for this article
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
           {/* Article Info */}
-          <div className="mb-4">
+          <div>
             <h3 className="font-medium text-sm text-muted-foreground mb-1">Article:</h3>
             <p className="text-sm truncate">{article?.title}</p>
           </div>
 
           {/* Current Tags */}
-          <div className="mb-4">
+          <div>
             <h3 className="font-medium text-sm text-muted-foreground mb-2">Current Tags:</h3>
             {currentTags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {currentTags.map(tag => (
-                  <div 
+                  <Badge 
                     key={`current-tag-${tag.id}`}
-                    className="flex items-center gap-1 px-2 py-1 bg-accent rounded-md text-sm"
+                    variant="secondary"
+                    className="flex items-center gap-1.5 pl-2 pr-1 py-1"
                   >
                     <Tag size={12} />
                     <span>{tag.name}</span>
-                    <button
+                    <Button
                       onClick={() => handleRemoveTag(tag)}
-                      className="ml-1 p-0.5 hover:bg-accent-foreground/10 rounded transition-colors"
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 ml-0.5 hover:bg-destructive/20"
                     >
                       <Minus size={12} />
-                    </button>
-                  </div>
+                    </Button>
+                  </Badge>
                 ))}
               </div>
             ) : (
@@ -246,17 +253,16 @@ export default function TagManagerModal({
           </div>
 
           {/* Add New Tag */}
-          <div className="mb-4">
+          <div>
             <h3 className="font-medium text-sm text-muted-foreground mb-2">Add Tag:</h3>
             <div className="relative" ref={dropdownRef}>
-              <input
+              <Input
                 ref={inputRef}
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type to search tags..."
-                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               
               {/* Dropdown */}
@@ -295,17 +301,13 @@ export default function TagManagerModal({
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-2 p-4 border-t border-border">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors"
-          >
+        
+        <DialogFooter>
+          <Button onClick={onClose} variant="default">
             Done
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -4,6 +4,7 @@ import { ThemeContext } from '../../contexts/ThemeContext.jsx';
 import CompletionModal from '../../components/CompletionModal.jsx';
 import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
 import TagManagerModal from '../../components/TagManagerModal.jsx';
+import { Button } from '../../components/ui/button.jsx';
 import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon } from 'lucide-react';
 import { ensureTagsLoaded, getTagName, getTagMapSnapshot, addSingleTag } from '../../utils/tagsCache.js';
 import { articlesAPI, tagsAPI, highlightsAPI, usersAPI } from '../../services/api.js';
@@ -902,14 +903,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                     </div>
                   );
                 })()}
-                <button 
+                <Button 
                   onClick={() => setTagModalOpen(true)}
-                  className="px-3 py-1.5 text-sm bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-md flex items-center gap-1.5 transition-colors"
-                  title="Manage Tags"
+                  variant="secondary"
+                  size="sm"
+                  className="gap-1.5"
                 >
                   <TagIcon size={14} />
                   Manage Tags
-                </button>
+                </Button>
               </div>
             </>
           ) : (
