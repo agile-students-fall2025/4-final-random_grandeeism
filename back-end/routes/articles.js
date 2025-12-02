@@ -24,9 +24,10 @@ router.get('/', authenticateToken, async (req, res) => {
     if (tag) {
       // Support filtering by tag id or tag name
       const tagLower = String(tag).toLowerCase();
-      const allTags = await tagsDao.getAll({});
+      const allTags = await tagsDao.getAll({ userId: req.user.id });
       const match = allTags.find(t => String(t.id) === String(tag) || String(t.name).toLowerCase() === tagLower);
-      filters.tag = match ? match.id : tag; // if not found, pass through for DAO to handle
+      // Convert to string since tags are stored as strings in Article model
+      filters.tag = match ? String(match.id) : String(tag);
     }
 
     if (untagged === 'true') {
@@ -502,8 +503,8 @@ router.post('/:id/tags', authenticateToken, async (req, res) => {
     }
 
     // Verify tag exists using DAO
-  const allTags = await tagsDao.getAll({});
-  const tag = allTags.find(t => String(t.id) === String(requestedTagId) || String(t.name).toLowerCase() === String(requestedTagId).toLowerCase());
+    const allTags = await tagsDao.getAll({ userId: req.user.id });
+    const tag = allTags.find(t => String(t.id) === String(requestedTagId) || String(t.name).toLowerCase() === String(requestedTagId).toLowerCase());
     if (!tag) {
       return res.status(404).json({ success: false, error: 'Tag not found' });
     }
@@ -550,8 +551,8 @@ router.delete('/:id/tags/:tagId', authenticateToken, async (req, res) => {
     }
 
     // Verify tag exists using DAO
-  const allTags = await tagsDao.getAll({});
-  const tag = allTags.find(t => String(t.id) === String(req.params.tagId) || String(t.name).toLowerCase() === String(req.params.tagId).toLowerCase());
+    const allTags = await tagsDao.getAll({ userId: req.user.id });
+    const tag = allTags.find(t => String(t.id) === String(req.params.tagId) || String(t.name).toLowerCase() === String(req.params.tagId).toLowerCase());
     if (!tag) {
       return res.status(404).json({ success: false, error: 'Tag not found' });
     }

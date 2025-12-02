@@ -39,14 +39,14 @@ export default function TagArticlesPage({ onNavigate, tag }) {
   const [error, setError] = useState(null);
 
   // Use shared tag resolution hook
-  const { tags, resolveTagName, resolveArticleTags, resolveTagId, refreshTags } = useTagResolution();
+  const { tags, resolveTagName, resolveArticleTags, resolveTagId, refreshTags, loading: tagsLoading } = useTagResolution();
 
   // Create base filters for search functionality (convert tag name to ID if needed)
   const baseLockedFilters = useMemo(() => {
     if (!tag) return {};
-    const tagId = resolveTagName(tag);
-    return { tag: tagId };
-  }, [tag, resolveTagName]);
+    // Just pass the tag as-is - backend will resolve it to ID or name
+    return { tag: tag };
+  }, [tag]);
 
   // Get the display name for the current tag
   const tagDisplayName = useMemo(() => {

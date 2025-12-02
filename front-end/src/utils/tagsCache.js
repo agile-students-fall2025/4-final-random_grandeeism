@@ -36,9 +36,18 @@ export async function ensureTagsLoaded(fetchFn) {
 export function getTagName(idOrName) {
   if (idOrName == null) return '';
   const s = String(idOrName);
-  if (!/^\d+$/.test(s)) return s; // already a name/string
-  // If numeric but mapping not ready yet, return empty to avoid flashing raw ID
+  
+  // Check if this looks like a MongoDB ObjectId (24-character hexadecimal string)
+  // or a numeric ID
+  const isObjectId = /^[a-f0-9]{24}$/i.test(s);
+  const isNumericId = /^\d+$/.test(s);
+  
+  // If it's not an ID format, assume it's already a tag name
+  if (!isObjectId && !isNumericId) return s;
+  
+  // If it's an ID but mapping not ready yet, return empty to avoid flashing raw ID
   if (!TAG_MAP[s]) return '';
+  
   return TAG_MAP[s];
 }
 

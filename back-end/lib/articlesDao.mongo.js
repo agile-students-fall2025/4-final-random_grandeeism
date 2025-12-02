@@ -53,9 +53,10 @@ const articlesDao = {
       query.status = filters.status;
     }
 
-    // Tag filter
+    // Tag filter - tags are stored as strings (ObjectId converted to string)
     if (filters.tag) {
-      query.tags = filters.tag;
+      // Ensure the tag is a string for matching
+      query.tags = String(filters.tag);
     }
 
     // Favorite filter
