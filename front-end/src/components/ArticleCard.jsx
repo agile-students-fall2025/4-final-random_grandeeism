@@ -36,6 +36,7 @@ import ExportNotesModal from './ExportNotesModal.jsx';
 import StatusChangeModal from './StatusChangeModal.jsx';
 import { tagsAPI } from '../services/api.js';
 import { ensureTagsLoaded, getTagName, getTagMapSnapshot } from '../utils/tagsCache.js';
+import { calculateReadingTime } from '../utils/readingTime.js';
 
 export default function ArticleCard({
   article,
@@ -274,7 +275,7 @@ export default function ArticleCard({
             </>
           )}
           <span>|</span>
-          <span>{article.readingTime || '2 min read'}</span>
+          <span>{article.content ? calculateReadingTime(article.content) : (article.readingTime || '2 min read')}</span>
         </div>
 
         {/* Tags */}

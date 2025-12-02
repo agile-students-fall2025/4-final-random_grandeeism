@@ -57,9 +57,10 @@ export default function TagsPage({ onNavigate }) {
       }
     } catch (e) {
       console.error('Failed to fetch tags:', e);
-      setError("Failed to fetch tags");
+      setError("Failed to fetch tags. Please check your connection.");
+    } finally {
+      setLoading(false); // Ensure loading is set to false
     }
-    setLoading(false);
   };
 
   // Calculate tag statistics

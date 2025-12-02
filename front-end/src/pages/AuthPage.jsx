@@ -11,11 +11,13 @@
  *  - Form validation and error handling
  */
 
-import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext.jsx';
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from "../components/ui/button.jsx";
+import { Loader } from "../components/ui/loader.jsx";
 
 const AuthPage = ({ onNavigate }) => {
+  const { login, register } = useAuth();
   const [mode, setMode] = useState('login'); // 'login' or 'register'
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -23,8 +25,6 @@ const AuthPage = ({ onNavigate }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  
-  const { login, register } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -206,9 +206,14 @@ const AuthPage = ({ onNavigate }) => {
                   <button 
                     type="submit"
                     disabled={isLoading}
-                    className="flex-1 text-[14px] border border-border rounded-md py-2 px-4 block w-full hover:cursor-pointer mt-8 bg-primary text-primary-foreground font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="flex-1 text-[14px] border border-border rounded-md py-2 px-4 block w-full hover:cursor-pointer mt-8 bg-primary text-primary-foreground font-medium disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
                   >
-                    {isLoading ? 'Loading...' : (mode === 'login' ? 'Log In' : 'Create Account')}
+                    {isLoading ? (
+                      <>
+                        <Loader className="mr-2" size={16} />
+                        Loading...
+                      </>
+                    ) : (mode === 'login' ? 'Log In' : 'Create Account')}
                   </button>
                 </div>
               <div className="text-center w-full flex justify-center align-center mt-6">
