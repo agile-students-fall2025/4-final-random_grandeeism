@@ -11,11 +11,12 @@
  *  - Form validation and error handling
  */
 
-import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext.jsx';
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from "../components/ui/button.jsx";
 
 const AuthPage = ({ onNavigate }) => {
+  const { login, register } = useAuth();
   const [mode, setMode] = useState('login'); // 'login' or 'register'
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -23,8 +24,6 @@ const AuthPage = ({ onNavigate }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  
-  const { login, register } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -5,16 +5,17 @@
  * Purpose: Provides global authentication state and functions (login, logout, register)
  */
 
-import { createContext, useState, useEffect, useContext } from 'react';
-import { authAPI } from '../services/api.js';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { authAPI, setAuthToken, clearAuthToken, getAuthToken } from '../services/api.js';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null); // Ensure this is exported
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [token, setToken] = useState(getAuthToken());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!token);
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
@@ -31,20 +32,24 @@ export const AuthProvider = ({ children }) => {
             setUser(JSON.parse(storedUser));
           } else {
             // Token invalid, clear storage
-            localStorage.removeItem('authToken');
+            clearAuthToken();
             localStorage.removeItem('authUser');
           }
         } catch (err) {
           console.error('Token verification failed:', err);
-          localStorage.removeItem('authToken');
+          clearAuthToken();
           localStorage.removeItem('authUser');
         }
       }
-      setLoading(false);
+      setLoading(false); // Ensure loading is set to false
     };
 
     initAuth();
   }, []);
+
+  useEffect(() => {
+    setIsAuthenticated(!!token);
+  }, [token]);
 
   // Login function
   const login = async (credentials) => {
@@ -56,6 +61,7 @@ export const AuthProvider = ({ children }) => {
         const { user, token } = response.data;
         setUser(user);
         setToken(token);
+        setAuthToken(token);
         localStorage.setItem('authToken', token);
         localStorage.setItem('authUser', JSON.stringify(user));
         return { success: true };
@@ -79,6 +85,7 @@ export const AuthProvider = ({ children }) => {
         const { user, token } = response.data;
         setUser(user);
         setToken(token);
+        setAuthToken(token);
         localStorage.setItem('authToken', token);
         localStorage.setItem('authUser', JSON.stringify(user));
         return { success: true };
@@ -103,6 +110,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       setToken(null);
+      clearAuthToken();
       localStorage.removeItem('authToken');
       localStorage.removeItem('authUser');
     }
@@ -116,6 +124,7 @@ export const AuthProvider = ({ children }) => {
       if (response.success && response.data) {
         const newToken = response.data.token;
         setToken(newToken);
+        setAuthToken(newToken);
         localStorage.setItem('authToken', newToken);
       }
     } catch (err) {
@@ -133,7 +142,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     refreshToken,
-    isAuthenticated: !!token && !!user,
+    isAuthenticated,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -148,4 +157,4 @@ export const useAuth = () => {
   return context;
 };
 
-export default AuthContext;
+export default AuthContext; // Ensure default export is provided
