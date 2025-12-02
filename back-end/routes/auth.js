@@ -27,9 +27,11 @@ router.post('/register', validateRegistration, handleValidationErrors, async (re
     }
 
     // Check if user already exists using DAO
+    // Query both username and email to prevent duplicate accounts
     const existingByUsername = await usersDao.getByUsername(username);
     const existingByEmail = await usersDao.getByEmail(email);
 
+    // Return 409 Conflict if user already exists
     if (existingByUsername || existingByEmail) {
       return res.status(409).json({
         success: false,
@@ -37,7 +39,8 @@ router.post('/register', validateRegistration, handleValidationErrors, async (re
       });
     }
 
-    // Hash password
+    // Hash password using bcrypt with salt rounds of 10
+    // This ensures passwords are never stored in plain text
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -63,14 +66,17 @@ router.post('/register', validateRegistration, handleValidationErrors, async (re
       }
     });
 
-    // Generate JWT token
+    // Generate JWT token containing user ID and username
+    // Token is signed with JWT_SECRET and expires based on JWT_EXPIRES_IN
+    // Client will use this token for authenticated requests
     const token = jwt.sign(
       { id: newUser.id, username: newUser.username },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
 
-    // Don't send password in response
+    // Remove password from response before sending to client
+    // Using destructuring to exclude password field
     const { password: _, ...userWithoutPassword } = newUser;
 
     res.status(201).json({
@@ -185,11 +191,15 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
     }
 
     // Find user by username or email - need password for verification
+    // The 'username' field can contain either username or email
+    // includePassword=true is required to get the hashed password for comparison
     let user = await usersDao.getByUsername(username, true); // includePassword = true
     if (!user) {
+      // Try email if username lookup failed
       user = await usersDao.getByEmail(username, true); // includePassword = true
     }
 
+    // Return generic "Invalid credentials" to prevent user enumeration attacks
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -197,7 +207,8 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
       });
     }
 
-    // Verify password
+    // Verify password using bcrypt.compare
+    // This securely compares the plain text password with the hashed password
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -244,7 +255,8 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
 router.post('/verify', authenticateToken, async (req, res) => {
   try {
     // User is already verified by authenticateToken middleware
-    // Find user from decoded token (available in req.user)
+    // The middleware decodes the JWT and attaches user data to req.user
+    // Find user from decoded token (available in req.user.id)
     const user = await usersDao.getById(req.user.id);
 
     if (!user) {
@@ -280,7 +292,7 @@ router.post('/verify', authenticateToken, async (req, res) => {
 router.post('/refresh', authenticateToken, async (req, res) => {
   try {
     // User is already verified by authenticateToken middleware
-    // Find user from decoded token
+    // Find user from decoded token to ensure user still exists
     const user = await usersDao.getById(req.user.id);
 
     if (!user) {
@@ -290,7 +302,8 @@ router.post('/refresh', authenticateToken, async (req, res) => {
       });
     }
 
-    // Generate new token
+    // Generate new token with same user data but fresh expiration
+    // This extends the session without requiring re-authentication
     const newToken = jwt.sign(
       { id: user.id, username: user.username },
       JWT_SECRET,

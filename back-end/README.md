@@ -89,24 +89,48 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Edit `.env` with your MongoDB Atlas connection string:
+Edit `.env` with your configuration. See `.env.example` for all available options:
 
 ```env
-# MongoDB Atlas Connection
-MONGODB_URI=mongodb+srv://fieldnotes-user:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/fieldnotes?retryWrites=true&w=majority
-
-# JWT Secret (CHANGE THIS!)
-JWT_SECRET=your-super-secret-jwt-key-change-in-production-minimum-32-characters-long
-
 # Server Configuration
 PORT=7001
-USE_MOCK_DB=false
+NODE_ENV=development
+
+# Database Configuration
+# For development with mock data (no MongoDB required):
+USE_MOCK_DB=true
+
+# For production with MongoDB Atlas:
+# USE_MOCK_DB=false
+# MONGODB_URI=mongodb+srv://fieldnotes-user:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/fieldnotes?retryWrites=true&w=majority
+
+# JWT Authentication
+# ⚠️ CRITICAL: Generate a secure secret for production!
+# Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+JWT_SECRET=your-super-secret-jwt-key-change-in-production-minimum-32-characters-long
+JWT_EXPIRES_IN=7d
+
+# CORS (Optional)
+FRONTEND_URL=http://localhost:5173
 ```
 
 **⚠️ Security Notes:**
-- Never commit `.env` to git (already in `.gitignore`)
-- Use a strong, unique JWT_SECRET (at least 32 characters)
-- Generate JWT_SECRET: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+- **Never commit `.env` to git** (already in `.gitignore`)
+- **Use a strong, unique JWT_SECRET** (at least 32 characters)
+- **Generate JWT_SECRET**: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+- **Change default JWT_SECRET** before deploying to production
+- **Use different secrets** for development and production environments
+
+**All Environment Variables:**
+
+See `.env.example` for complete documentation of all environment variables including:
+- `PORT` - Server port (default: 7001)
+- `NODE_ENV` - Environment mode (development/production/test)
+- `MONGODB_URI` - MongoDB Atlas connection string
+- `USE_MOCK_DB` - Use mock data instead of MongoDB (true/false)
+- `JWT_SECRET` - Secret key for signing JWT tokens
+- `JWT_EXPIRES_IN` - Token expiration time (default: 7d)
+- `FRONTEND_URL` - CORS origin for front-end (optional)
 
 ### 4. Run the Server
 
@@ -145,130 +169,318 @@ All API routes (except `/api/auth/register` and `/api/auth/login`) require a val
        │    { username, email, password }
        ▼
 ┌─────────────┐
-│   Express   │────► Hash password (bcrypt)
-│   Server    │────► Create user in MongoDB
-└──────┬──────┘────► Generate JWT token
+│   Express   │────► Validate input (express-validator)
+│   Server    │────► Check if user exists (username/email)
+│             │────► Hash password (bcrypt, 10 salt rounds)
+│             │────► Create user in MongoDB/Mock DB
+└──────┬──────┘────► Generate JWT token (signed with JWT_SECRET)
        │
-       │ 2. Returns: { user, token }
+       │ 2. Returns: { success: true, data: { user, token } }
        ▼
 ┌─────────────┐
 │   Client    │────► Store token in localStorage
+│             │────► Store user data in localStorage
 └──────┬──────┘
        │
        │ 3. All subsequent requests:
        │    Authorization: Bearer <token>
+       │    Content-Type: application/json
        ▼
 ┌─────────────┐
-│  Middleware │────► Verify JWT signature
-│    Auth     │────► Decode user ID from token
-└──────┬──────┘────► Attach user to req.user
+│  Middleware │────► Extract token from Authorization header
+│ authenticate│────► Verify JWT signature with JWT_SECRET
+│    Token    │────► Check token expiration
+│             │────► Decode user ID and username from token
+└──────┬──────┘────► Attach decoded user to req.user
        │
        │ 4. If valid:
        ▼
 ┌─────────────┐
-│   Route     │────► Access req.user.id
+│   Route     │────► Access req.user.id (from token)
 │  Handler    │────► Filter data by userId
-└─────────────┘────► Return only user's data
+│             │────► Return only user's data
+└─────────────┘
+       │
+       │ 5. If invalid/expired:
+       ▼
+┌─────────────┐
+│   Client    │────► Receive 401/403 error
+│             │────► Redirect to login or refresh token
+└─────────────┘
 ```
+
+### Authentication Flow Steps
+
+1. **Registration/Login**: User provides credentials → Server validates → Hashes password → Creates/verifies user → Generates JWT token
+2. **Token Storage**: Client stores token in `localStorage` or memory
+3. **Authenticated Requests**: Client includes token in `Authorization: Bearer <token>` header
+4. **Token Verification**: Middleware verifies token signature and expiration
+5. **Request Processing**: Route handler accesses `req.user.id` to filter user-specific data
+6. **Token Refresh**: Client can call `/api/auth/refresh` to get a new token before expiration
 
 ### Authentication Endpoints
 
 #### Register New User
+
+**Endpoint**: `POST /api/auth/register`  
+**Authentication**: Not required (public endpoint)  
+**Validation**: Email format, username (3-30 chars), password (8+ chars)
+
+**Request:**
 ```bash
-POST /api/auth/register
-Content-Type: application/json
+curl -X POST http://localhost:7001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "johndoe",
+    "email": "john@example.com",
+    "password": "securepassword123",
+    "displayName": "John Doe"
+  }'
+```
 
-{
-  "username": "johndoe",
-  "email": "john@example.com",
-  "password": "securepassword123",
-  "displayName": "John Doe" // optional
-}
-
-# Response:
+**Success Response (201):**
+```json
 {
   "success": true,
   "data": {
-    "user": { "id": "...", "username": "johndoe", ... },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "username": "johndoe",
+      "email": "john@example.com",
+      "displayName": "John Doe",
+      "preferences": { ... },
+      "stats": { ... }
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUwN2YxZjc3YmNmODZjZDc5OTQzOTAxMSIsInVzZXJuYW1lIjoiam9obmRvZSIsImlhdCI6MTY0NzA4NzMyLCJleHAiOjE2NDc2OTM1MzJ9..."
+  },
+  "message": "User registered successfully"
 }
 ```
+
+**Error Responses:**
+- `400 Bad Request`: Missing required fields or validation failed
+- `409 Conflict`: Username or email already exists
+- `500 Internal Server Error`: Server error
+
+---
 
 #### Login
+
+**Endpoint**: `POST /api/auth/login`  
+**Authentication**: Not required (public endpoint)  
+**Note**: The `username` field accepts either username or email
+
+**Request:**
 ```bash
-POST /api/auth/login
-Content-Type: application/json
+curl -X POST http://localhost:7001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "johndoe",
+    "password": "securepassword123"
+  }'
+```
 
-{
-  "username": "johndoe",  // or email
-  "password": "securepassword123"
-}
+**Or with email:**
+```bash
+curl -X POST http://localhost:7001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "john@example.com",
+    "password": "securepassword123"
+  }'
+```
 
-# Response:
+**Success Response (200):**
+```json
 {
   "success": true,
   "data": {
-    "user": { "id": "...", "username": "johndoe", ... },
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "username": "johndoe",
+      "email": "john@example.com",
+      "lastLogin": "2024-01-15T10:30:00.000Z"
+    },
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
+  },
+  "message": "Login successful"
 }
 ```
 
-#### Verify Token
-```bash
-POST /api/auth/verify
-Authorization: Bearer <token>
+**Error Responses:**
+- `400 Bad Request`: Missing username or password
+- `401 Unauthorized`: Invalid credentials (generic message to prevent user enumeration)
+- `500 Internal Server Error`: Server error
 
-# Response:
+---
+
+#### Verify Token
+
+**Endpoint**: `POST /api/auth/verify`  
+**Authentication**: Required (Bearer token)
+
+**Request:**
+```bash
+curl -X POST http://localhost:7001/api/auth/verify \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json"
+```
+
+**Success Response (200):**
+```json
 {
   "success": true,
   "data": {
-    "user": { "id": "...", "username": "johndoe", ... },
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "username": "johndoe",
+      "email": "john@example.com"
+    },
     "valid": true
   }
 }
 ```
 
-#### Refresh Token
-```bash
-POST /api/auth/refresh
-Authorization: Bearer <old-token>
+**Error Responses:**
+- `401 Unauthorized`: Token missing
+- `403 Forbidden`: Invalid or expired token
+- `404 Not Found`: User not found (token valid but user deleted)
+- `500 Internal Server Error`: Server error
 
-# Response:
+---
+
+#### Refresh Token
+
+**Endpoint**: `POST /api/auth/refresh`  
+**Authentication**: Required (Bearer token)  
+**Purpose**: Get a new token with extended expiration without re-authenticating
+
+**Request:**
+```bash
+curl -X POST http://localhost:7001/api/auth/refresh \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json"
+```
+
+**Success Response (200):**
+```json
 {
   "success": true,
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // new token
-  }
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // new token with fresh expiration
+  },
+  "message": "Token refreshed successfully"
+}
+```
+
+**Error Responses:**
+- `401 Unauthorized`: Token missing
+- `403 Forbidden`: Invalid or expired token
+- `404 Not Found`: User not found
+- `500 Internal Server Error`: Server error
+
+---
+
+#### Logout
+
+**Endpoint**: `POST /api/auth/logout`  
+**Authentication**: Optional (token not validated)  
+**Note**: This is a stateless logout. Client should delete token from storage.
+
+**Request:**
+```bash
+curl -X POST http://localhost:7001/api/auth/logout \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json"
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Logout successful"
 }
 ```
 
 ### Protected Route Example
 
-```bash
-# Get user's articles (requires authentication)
-GET /api/articles
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+All protected routes require the `Authorization: Bearer <token>` header. The middleware automatically verifies the token and attaches user information to `req.user`.
 
-# Response: Only returns articles belonging to authenticated user
+**Example: Get User's Articles**
+
+```bash
+curl -X GET http://localhost:7001/api/articles \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json"
+```
+
+**Success Response (200):**
+```json
 {
   "success": true,
   "count": 10,
-  "data": [ ... ]
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439012",
+      "title": "My Article",
+      "userId": "507f1f77bcf86cd799439011",
+      "status": "inbox"
+    }
+  ]
 }
+```
 
-# Without token or invalid token:
+**Error Responses:**
+
+**Missing Token (401):**
+```json
 {
   "success": false,
-  "message": "Access token required"  // 401
+  "message": "Access token required"
 }
+```
 
-# Trying to access another user's data:
+**Invalid/Expired Token (403):**
+```json
 {
   "success": false,
-  "error": "Access denied: You can only view your own articles"  // 403
+  "message": "Invalid or expired token"
 }
+```
+
+**How It Works:**
+1. Client sends request with `Authorization: Bearer <token>` header
+2. `authenticateToken` middleware extracts and verifies the token
+3. If valid, middleware decodes token and sets `req.user = { id: "...", username: "..." }`
+4. Route handler uses `req.user.id` to filter data for the authenticated user
+5. Response contains only data belonging to that user
+
+### Front-End Integration Example
+
+**JavaScript/React Example:**
+
+```javascript
+// Store token after login/register
+const response = await fetch('http://localhost:7001/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: 'johndoe', password: 'password123' })
+});
+
+const data = await response.json();
+if (data.success) {
+  localStorage.setItem('authToken', data.data.token);
+  localStorage.setItem('authUser', JSON.stringify(data.data.user));
+}
+
+// Use token in subsequent requests
+const token = localStorage.getItem('authToken');
+const articles = await fetch('http://localhost:7001/api/articles', {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }
+});
 ```
 
 ## API Routes
@@ -713,6 +925,26 @@ This sprint focuses on:
 
 **Note:** Data does not need to persist yet. Database integration comes in Sprint 3.
 
+## Environment Variables Summary
+
+All environment variables are documented in `.env.example`. Here's a quick reference:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PORT` | No | `7001` | Server port number |
+| `NODE_ENV` | No | `development` | Environment mode |
+| `MONGODB_URI` | Conditional | - | MongoDB connection string (required if `USE_MOCK_DB=false`) |
+| `USE_MOCK_DB` | No | `false` | Use mock data (`true`) or MongoDB (`false`) |
+| `JWT_SECRET` | Yes | `dev-secret...` | Secret key for JWT signing (⚠️ change in production!) |
+| `JWT_EXPIRES_IN` | No | `7d` | Token expiration time |
+| `FRONTEND_URL` | No | - | CORS origin (optional) |
+
+**Quick Setup:**
+1. Copy `.env.example` to `.env`
+2. For development with mock data: Set `USE_MOCK_DB=true`
+3. For production: Set `USE_MOCK_DB=false` and provide `MONGODB_URI`
+4. Generate a secure `JWT_SECRET` for production
+
 ## Resources
 
 - [Express.js Documentation](https://expressjs.com/)
@@ -720,6 +952,7 @@ This sprint focuses on:
 - [Mocha Testing Framework](https://mochajs.org/)
 - [Chai Assertion Library](https://www.chaijs.com/)
 - [MongoDB Atlas Setup](https://www.mongodb.com/cloud/atlas)
+- [JWT.io - JWT Debugger](https://jwt.io/) - Debug and verify JWT tokens
 
 ## Contributing
 
