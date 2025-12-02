@@ -9,6 +9,7 @@ import { Input } from "../components/ui/input.jsx";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
+import { Loader } from "../components/ui/loader.jsx";
 
 export default function FeedsPage({ onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -379,9 +380,7 @@ export default function FeedsPage({ onNavigate }) {
           {loading ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12 px-6">
-                <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4 animate-spin">
-                  <Rss className="size-8 text-muted-foreground" />
-                </div>
+                <Loader size={48} className="text-muted-foreground mb-4" />
                 <CardTitle className="text-xl mb-2">Loading feeds...</CardTitle>
                 <CardDescription className="text-center max-w-md">
                   Please wait while we fetch your RSS feeds.
