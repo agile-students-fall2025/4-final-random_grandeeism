@@ -23,7 +23,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   },
   {
     "id": 2,
@@ -43,7 +44,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 2
+    "userId": 2,
+    "mediaType": "text"
   },
   {
     "id": 3,
@@ -64,7 +66,8 @@ const mockArticles = [
     "hasAnnotations": true,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   },
   {
     "id": 4,
@@ -83,7 +86,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   },
   {
     "id": 5,
@@ -104,7 +108,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   },
   {
     "id": 6,
@@ -124,7 +129,8 @@ const mockArticles = [
     "hasAnnotations": true,
     "readProgress": 65,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 2
+    "userId": 2,
+    "mediaType": "text"
   },
   {
     "id": 7,
@@ -145,7 +151,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   },
   {
     "id": 8,
@@ -166,7 +173,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 2
+    "userId": 2,
+    "mediaType": "text"
   },
   {
     "id": 9,
@@ -187,7 +195,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   },
   {
     "id": 10,
@@ -208,7 +217,8 @@ const mockArticles = [
     "hasAnnotations": true,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 2
+    "userId": 2,
+    "mediaType": "text"
   },
   {
     "id": 11,
@@ -230,7 +240,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   },
   {
     "id": 12,
@@ -252,7 +263,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 2
+    "userId": 2,
+    "mediaType": "text"
   },
   {
     "id": 13,
@@ -274,7 +286,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   },
   {
     "id": 14,
@@ -296,7 +309,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 2
+    "userId": 2,
+    "mediaType": "text"
   },
   {
     "id": 15,
@@ -318,7 +332,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   },
   {
     "id": 16,
@@ -340,7 +355,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 50,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    "userId": 2
+    "userId": 2,
+    "mediaType": "text"
   },
   {
     "id": 18,
@@ -361,7 +377,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    "userId": 2
+    "userId": 2,
+    "mediaType": "text"
   },
   {
     "id": 19,
@@ -383,7 +400,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   },
   {
     "id": 20,
@@ -405,7 +423,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 100,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    "userId": 2
+    "userId": 2,
+    "mediaType": "text"
   },
   {
     "id": 21,
@@ -422,7 +441,8 @@ const mockArticles = [
     "hasAnnotations": false,
     "readProgress": 0,
     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "userId": 1
+    "userId": 1,
+    "mediaType": "text"
   }
 ];
 

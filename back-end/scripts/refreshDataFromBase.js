@@ -40,6 +40,24 @@ function recomputeTagCounts(tags, articles) {
   return tags.map(t => ({ ...t, articleCount: countMap.get(t.id) || 0 }));
 }
 
+function addMediaTypeFields(articles) {
+  const { detectMediaType, extractYouTubeVideoId } = require('../utils/youtubeUtils');
+  
+  return articles.map(article => {
+    const mediaType = detectMediaType(article.url);
+    const enhanced = {
+      ...article,
+      mediaType: article.mediaType || mediaType
+    };
+    
+    if (mediaType === 'video' && !article.videoId) {
+      enhanced.videoId = extractYouTubeVideoId(article.url);
+    }
+    
+    return enhanced;
+  });
+}
+
 function main() {
   // Load base seeds
   const { mockUsers: baseUsers } = loadModule(basePaths.users);
@@ -51,7 +69,7 @@ function main() {
   // Seeds already normalized; shallow clone for safety.
   const users = baseUsers.map(u => ({ ...u }));
   const feeds = baseFeeds.map(f => ({ ...f }));
-  const articles = baseArticles.map(a => ({ ...a }));
+  const articles = addMediaTypeFields(baseArticles.map(a => ({ ...a })));
   const highlights = baseHighlights.map(h => ({ ...h }));
   const tagsWithCounts = recomputeTagCounts(baseTags.map(t => ({ ...t })), articles).sort((a, b) => a.id - b.id);
 

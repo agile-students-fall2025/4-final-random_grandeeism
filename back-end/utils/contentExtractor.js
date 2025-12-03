@@ -19,6 +19,43 @@ const { Readability } = require('@mozilla/readability');
  */
 async function extractContent(url) {
   try {
+    // Special handling for YouTube videos - don't try to extract content
+    const { isYouTubeUrl, extractYouTubeVideoId } = require('./youtubeUtils');
+    if (isYouTubeUrl(url)) {
+      const videoId = extractYouTubeVideoId(url);
+      
+      // Try to fetch video title from YouTube oEmbed API (no API key needed)
+      let title = 'YouTube Video';
+      try {
+        const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+        const response = await axios.get(oembedUrl, { timeout: 5000 });
+        if (response.data && response.data.title) {
+          title = response.data.title;
+        }
+      } catch (oembedError) {
+        console.warn('Failed to fetch YouTube title from oEmbed:', oembedError.message);
+      }
+      
+      // For YouTube videos, return minimal metadata
+      return {
+        success: true,
+        data: {
+          title: title,
+          content: '',
+          textContent: '',
+          excerpt: 'YouTube video content',
+          author: null,
+          url,
+          source: 'YouTube',
+          wordCount: 0,
+          readingTime: 0,
+          publishedDate: null,
+          mediaType: 'video',
+          videoId: videoId
+        },
+      };
+    }
+
     // Fetch the HTML content
     const response = await axios.get(url, {
       headers: {
