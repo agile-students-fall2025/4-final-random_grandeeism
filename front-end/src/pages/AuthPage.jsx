@@ -26,20 +26,63 @@ const AuthPage = ({ onNavigate }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const validateForm = () => {
+    if (mode === 'register') {
+      // Validate username
+      const finalUsername = username || email.split('@')[0];
+      if (!finalUsername || finalUsername.length < 3) {
+        setErrorMessage('Username must be at least 3 characters long');
+        return false;
+      }
+      if (finalUsername.length > 30) {
+        setErrorMessage('Username must be 30 characters or less');
+        return false;
+      }
+
+      // Validate email
+      if (!email || !email.includes('@')) {
+        setErrorMessage('Please enter a valid email address');
+        return false;
+      }
+
+      // Validate password
+      if (!password || password.length < 8) {
+        setErrorMessage('Password must be at least 8 characters long');
+        return false;
+      }
+
+      // Validate passwords match
+      if (password !== confirmPassword) {
+        setErrorMessage('Passwords do not match');
+        return false;
+      }
+    } else {
+      // Login validation
+      if (!email) {
+        setErrorMessage('Please enter your email address');
+        return false;
+      }
+      if (!password) {
+        setErrorMessage('Please enter your password');
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+
+    // Client-side validation
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       if (mode === 'register') {
-        // Validate passwords match
-        if (password !== confirmPassword) {
-          setErrorMessage('Passwords do not match');
-          setIsLoading(false);
-          return;
-        }
-
         // Register new user
         const result = await register({
           username: username || email.split('@')[0], // Use email prefix if no username
@@ -165,8 +208,9 @@ const AuthPage = ({ onNavigate }) => {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         placeholder="johndoe"
-                        className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card mb-4"
+                        className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card mb-1"
                       />
+                      <p className="text-xs text-muted-foreground mb-4">3-30 characters</p>
                     </>
                   )}
                   <label htmlFor="email" className="inline-block mb-2 text-sm">Email</label>
@@ -189,6 +233,9 @@ const AuthPage = ({ onNavigate }) => {
                     minLength={8}
                     className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
                   />
+                  {mode === 'register' && (
+                    <p className="text-xs text-muted-foreground mt-1">At least 8 characters</p>
+                  )}
                   {mode === 'register' && (
                     <>
                       <label htmlFor="confirm-password" className="inline-block mb-2 text-sm mt-4">Confirm Password</label>

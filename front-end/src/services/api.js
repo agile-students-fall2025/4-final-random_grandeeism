@@ -44,7 +44,20 @@ const apiRequest = async (endpoint, options = {}) => {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        
+        // Handle validation errors (array format from express-validator)
+        if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          const errorMessages = errorData.errors.map(err => err.msg || err.message).join('. ');
+          throw new Error(errorMessages);
+        }
+        
+        // Handle single error message
+        if (errorData.error) {
+          throw new Error(errorData.error);
+        }
+        
+        // Fallback to status message
+        throw new Error(`HTTP error! status: ${response.status}`);
       } else {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
