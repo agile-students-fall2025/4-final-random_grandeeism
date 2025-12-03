@@ -106,6 +106,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   }, []);
 
   const contentRef = useRef(null);
+  const selectionToolbarRef = useRef(null);
   const [allTags, setAllTags] = useState([]);
   // maintain a local snapshot of tagMap for possible future reactive displays; unused directly for resolution
   const [tagMap, setTagMap] = useState(getTagMapSnapshot()); // eslint-disable-line no-unused-vars
@@ -293,8 +294,13 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   // selection handling (supports both HTML and plain text content)
   useEffect(() => {
-    const onMouseUp = () => {
+    const onMouseUp = (e) => {
       try {
+        // If the mouse up occurred inside the selection toolbar, do not alter selection
+        const toolbarEl = selectionToolbarRef.current;
+        if (toolbarEl && e && toolbarEl.contains(e.target)) {
+          return;
+        }
         const sel = window.getSelection();
         if (!sel || sel.isCollapsed) { setSelection(null); return; }
         const range = sel.getRangeAt(0);
@@ -461,6 +467,12 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       console.log('applyHighlight aborted: selection or current missing', { selection: !!selection, current: !!current });
       return;
     }
+    // Validate selected text (avoid pure whitespace or zero-length)
+    const trimmed = (selection.text || '').trim();
+    if (trimmed.length === 0 || selection.absEnd <= selection.absStart) {
+      toast.error('Please select some text to highlight');
+      return;
+    }
     // Only allow creating highlights if user is authenticated
     if (!user?.id) {
       console.error('Cannot create highlight: User not authenticated');
@@ -468,12 +480,41 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       return;
     }
     
+    // Normalize positions: clamp to content length
+    const fullLen = isHTMLContent ? (displayContent ? String(displayContent).replace(/<[^>]*>/g, '').length : 0) : fullText.length;
+    const startPos = Math.max(0, Math.min(selection.absStart, fullLen));
+    const endPos = Math.max(startPos + 1, Math.min(selection.absEnd, fullLen));
+
+    // Prevent duplicate highlight on same exact range for same user/article
+    const duplicate = (highlights || []).some(h => {
+      const hStart = Number(h.position?.start ?? h.start ?? -1);
+      const hEnd = Number(h.position?.end ?? h.end ?? -1);
+      return h.articleId === current.id && h.userId === user.id && hStart === startPos && hEnd === endPos && (h.text || '').trim() === trimmed;
+    });
+    if (duplicate) {
+      toast.info('That passage is already highlighted');
+      // Focus the existing one instead of creating another
+      const existing = (highlights || []).find(h => {
+        const hStart = Number(h.position?.start ?? h.start ?? -1);
+        const hEnd = Number(h.position?.end ?? h.end ?? -1);
+        return h.articleId === current.id && h.userId === user.id && hStart === startPos && hEnd === endPos && (h.text || '').trim() === trimmed;
+      });
+      if (existing?.id) {
+        setFocusedHighlightId(existing.id);
+        setShowHighlightsPanel(true);
+        setEditingNoteId(existing.id);
+        setEditingTitle(existing.annotations?.title || '');
+        setEditingNoteValue(existing.annotations?.note || '');
+      }
+      return;
+    }
+
     const payload = {
       articleId: current.id,
       userId: user.id,
-      text: selection.text,
+      text: trimmed,
       color: colorHex || DEFAULT_HIGHLIGHT_COLOR,
-      position: { start: selection.absStart, end: selection.absEnd },
+      position: { start: startPos, end: endPos },
       annotations: { title: '', note: '' }
     };
     
@@ -498,8 +539,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         setEditingTitle('');
         setShowHighlightsPanel(true);
         setFocusedHighlightId(res.data.id);
+        // Now that the highlight is saved and sidebar opened, clear native selection
+        // so the page returns to normal view
+        setSelection(null);
+        try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
       } else {
         setShowHighlightsPanel(true);
+        // Clear selection even if no ID returned to avoid lingering UI
+        setSelection(null);
+        try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
       }
       toast.success('Highlight created!');
     } catch (e) {
@@ -509,12 +557,6 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       console.error('Error response:', e.response?.data);
       console.error('Error status:', e.response?.status);
       toast.error(`Failed to create highlight: ${e.message}`);
-    } finally {
-      // Keep selection visible briefly so user can see what was highlighted
-      setTimeout(() => {
-        setSelection(null);
-        try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
-      }, 500);
     }
   };
 
@@ -532,11 +574,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     setEditingNoteId(null);
     setEditingNoteValue('');
     setEditingTitle('');
-    // Instead of staying on details view, automatically return to all highlights list
     setFocusedHighlightId(null);
     await refreshHighlights();
-  // Auto-list view now; optional scroll without closing panel
-  setTimeout(() => scrollToHighlight(savedId, { keepPanelOpen: true }), 150);
+    // Close sidebar and jump to the highlight
+    setShowHighlightsPanel(false);
+    setTimeout(() => scrollToHighlight(savedId), 150);
   };
 
   const cancelEditingNote = () => {
@@ -544,32 +586,71 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     setEditingNoteValue('');
   };
 
+  // Centralize opening of highlight details in sidebar
+  const openHighlightDetails = useCallback((id) => {
+    if (!id) return;
+    setFocusedHighlightId(id);
+    setShowHighlightsPanel(true);
+    const h = (highlights || []).find(x => x.id === id);
+    if (h) {
+      setEditingNoteId(id);
+      setEditingTitle(h.annotations?.title || '');
+      setEditingNoteValue(h.annotations?.note || '');
+    }
+    // Clear any active text selection to avoid conflicts
+    try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
+    setSelection(null);
+  }, [highlights]);
+
+  // Handle clicks on highlighted text
+  useEffect(() => {
+    const handleClick = (e) => {
+      const target = e.target.closest('[data-highlight-id]');
+      if (target) {
+        e.stopPropagation();
+        const highlightId = target.getAttribute('data-highlight-id');
+        if (highlightId) {
+          openHighlightDetails(highlightId);
+        }
+      }
+    };
+
+    const container = contentRef.current;
+    if (container) {
+      container.addEventListener('click', handleClick);
+      return () => container.removeEventListener('click', handleClick);
+    }
+  }, [openHighlightDetails]);
+
   const scrollToHighlight = (id, { keepPanelOpen = false } = {}) => {
     const el = document.querySelector(`[data-highlight-id="${id}"]`);
     if (!el) return;
-    
+
     const container = contentRef.current;
-    if (!container) return;
-    
-    // Get positions relative to the scrollable container
-    const containerRect = container.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    
-    // Calculate the scroll position needed to center the highlight in the container
-    const scrollTop = container.scrollTop;
-    const elOffsetTop = elRect.top - containerRect.top + scrollTop;
-    const containerCenter = container.clientHeight / 2;
-    const targetScrollTop = elOffsetTop - containerCenter;
-    
-    // Scroll smoothly within the container
-    container.scrollTo({
-      top: targetScrollTop,
-      behavior: 'smooth'
-    });
-    
-    // Close panel only if user-triggered jump and not preserving list view
+    // If container can scroll, prefer centering inside it
+    if (container && (container.scrollHeight > container.clientHeight)) {
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const currentTop = container.scrollTop;
+      const offsetTop = elRect.top - containerRect.top + currentTop;
+      const center = container.clientHeight / 2;
+      const targetTop = Math.max(0, offsetTop - center);
+      container.scrollTo({ top: targetTop, behavior: 'smooth' });
+    } else {
+      // Fallback to window scroll if container isn't scrollable
+      try {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      } catch {
+        const rect = el.getBoundingClientRect();
+        const absoluteTop = rect.top + window.scrollY - (window.innerHeight / 2);
+        window.scrollTo({ top: Math.max(0, absoluteTop), behavior: 'smooth' });
+      }
+    }
+
     if (!keepPanelOpen) setShowHighlightsPanel(false);
   };
+
+  // Fallback retry is added later after processedHTMLContent declaration to avoid TDZ
 
   const appliedFavorite = current?.isFavorite;
 
@@ -826,7 +907,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
-            onClick={() => { setFocusedHighlightId(part.highlight.id); setShowHighlightsPanel(true); }}
+            onClick={(e) => { e.stopPropagation(); openHighlightDetails(part.highlight.id); }}
           >
             {part.text}
           </mark>
@@ -906,10 +987,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
             mark.style.cursor = 'pointer';
             mark.style.transition = 'all 0.2s ease';
             mark.textContent = highlightedText;
-            mark.onclick = () => {
-              setFocusedHighlightId(highlight.id);
-              setShowHighlightsPanel(true);
-            };
+            mark.setAttribute('data-highlight-click', highlight.id);
             fragment.appendChild(mark);
           }
           
@@ -932,6 +1010,18 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     if (!isHTMLContent) return displayContent;
     return applyHighlightsToHTML(displayContent);
   }, [isHTMLContent, displayContent, applyHighlightsToHTML]);
+
+  // Fallback: after highlights refresh or HTML processing, if focusedHighlightId is set but element not found yet, try again
+  useEffect(() => {
+    if (!focusedHighlightId) return;
+    const container = contentRef.current;
+    if (!container) return;
+    const el = document.querySelector(`[data-highlight-id="${focusedHighlightId}"]`);
+    if (!el) {
+      const t = setTimeout(() => scrollToHighlight(focusedHighlightId, { keepPanelOpen: true }), 120);
+      return () => clearTimeout(t);
+    }
+  }, [processedHTMLContent, paragraphs, focusedHighlightId]);
 
   return (
     <div className="min-h-screen bg-background pt-6 pb-6 pl-6 pr-16 relative">
@@ -999,7 +1089,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         </div>
 
         <div className="rounded-lg flex gap-6 relative mt-5">
-          <div className="" ref={contentRef}>
+          <div className="" ref={contentRef} style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
             {current ? (
               <article
                 className="prose prose-lg max-w-none text-reader-article"
@@ -1009,6 +1099,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                   backgroundColor: 'transparent',
                   color: isDark ? '#e6eef8' : undefined,
                   padding: '0',
+                  userSelect: 'text',
+                  WebkitUserSelect: 'text',
                 }}
               >
                 {isHTMLContent ? (
@@ -1104,11 +1196,16 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                       <div className="flex gap-2">
                         <button
                           onClick={saveEditingNote}
-                          className={`px-3 py-1 rounded text-sm ${isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-primary text-white'} reader-button hover:opacity-90 transform hover:-translate-y-0.5 transition-all`}
+                          className="px-3 py-1 rounded text-sm bg-primary text-primary-foreground reader-button hover:bg-primary/90 transition-all"
                         >
                           Save
                         </button>
-                        <button onClick={cancelEditingNote} className="px-3 py-1 bg-card border border-border rounded text-sm reader-button hover:bg-accent transform hover:-translate-y-0.5 transition-all">Cancel</button>
+                        <button
+                          onClick={cancelEditingNote}
+                          className="px-3 py-1 bg-card border border-border rounded text-sm reader-button hover:bg-accent transition-all"
+                        >
+                          Cancel
+                        </button>
                       </div>
                     </div>
                   )}
@@ -1173,39 +1270,32 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         {selection && (
           <div 
             style={{ position: 'fixed', left: selection.rect.left + window.scrollX, top: selection.rect.top + window.scrollY - 48, zIndex: 60 }}
-            onMouseDown={(e) => e.preventDefault()}
+            ref={selectionToolbarRef}
           >
             <div className="flex items-center gap-2 bg-card border border-border rounded shadow p-2">
               <input
                 type="color"
-                name="highlightColor"
                 value={selectedColor}
                 onChange={(e) => setSelectedColor(e.target.value)}
-                onMouseDown={(e) => e.preventDefault()}
-                onFocus={(e) => e.preventDefault()}
-                aria-label="Pick highlight color"
                 className="w-8 h-8 p-0 border border-border rounded cursor-pointer"
+                aria-label="Pick highlight color"
               />
               <input
                 type="text"
-                name="highlightColorHex"
                 value={selectedColor}
                 onChange={(e) => setSelectedColor(e.target.value)}
-                onMouseDown={(e) => e.preventDefault()}
                 className="w-24 px-2 py-1 text-xs border border-border rounded bg-background"
                 placeholder="#fef08a"
               />
               <button 
-                onClick={(e) => { e.preventDefault(); }} 
-                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); applyHighlight(selectedColor); }}
-                className="px-2 py-1 text-sm bg-primary text-white rounded reader-button"
+                onClick={() => applyHighlight(selectedColor)}
+                className="px-2 py-1 text-sm bg-primary text-primary-foreground rounded reader-button hover:bg-primary/90"
               >
                 Highlight
               </button>
               <button 
-                onClick={() => setSelection(null)} 
-                onMouseDown={(e) => e.preventDefault()}
-                className="px-2 py-1 text-sm reader-button text-muted-foreground hover:text-foreground"
+                onClick={() => setSelection(null)}
+                className="px-3 py-1 text-sm bg-card border border-border rounded reader-button hover:bg-accent transition-all"
               >
                 Cancel
               </button>
