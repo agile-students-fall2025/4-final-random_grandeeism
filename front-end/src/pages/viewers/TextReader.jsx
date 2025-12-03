@@ -634,6 +634,42 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     setEditingNoteValue('');
   };
 
+  // Centralize opening of highlight details in sidebar
+  const openHighlightDetails = useCallback((id) => {
+    if (!id) return;
+    setFocusedHighlightId(id);
+    setShowHighlightsPanel(true);
+    const h = (highlights || []).find(x => x.id === id);
+    if (h) {
+      setEditingNoteId(id);
+      setEditingTitle(h.annotations?.title || '');
+      setEditingNoteValue(h.annotations?.note || '');
+    }
+    // Clear any active text selection to avoid conflicts
+    try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
+    setSelection(null);
+  }, [highlights]);
+
+  // Handle clicks on highlighted text
+  useEffect(() => {
+    const handleClick = (e) => {
+      const target = e.target.closest('[data-highlight-id]');
+      if (target) {
+        e.stopPropagation();
+        const highlightId = target.getAttribute('data-highlight-id');
+        if (highlightId) {
+          openHighlightDetails(highlightId);
+        }
+      }
+    };
+
+    const container = contentRef.current;
+    if (container) {
+      container.addEventListener('click', handleClick);
+      return () => container.removeEventListener('click', handleClick);
+    }
+  }, [openHighlightDetails]);
+
   const scrollToHighlight = (id, { keepPanelOpen = false } = {}) => {
     const el = document.querySelector(`[data-highlight-id="${id}"]`);
     if (!el) return;
@@ -919,7 +955,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
-            onClick={() => { setFocusedHighlightId(part.highlight.id); setShowHighlightsPanel(true); }}
+            onClick={(e) => { e.stopPropagation(); openHighlightDetails(part.highlight.id); }}
           >
             {part.text}
           </mark>
@@ -999,10 +1035,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
             mark.style.cursor = 'pointer';
             mark.style.transition = 'all 0.2s ease';
             mark.textContent = highlightedText;
-            mark.onclick = () => {
-              setFocusedHighlightId(highlight.id);
-              setShowHighlightsPanel(true);
-            };
+            mark.setAttribute('data-highlight-click', highlight.id);
             fragment.appendChild(mark);
           }
           
