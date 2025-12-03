@@ -41,6 +41,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [selection, setSelection] = useState(null);
   const [selectedColor, setSelectedColor] = useState(DEFAULT_HIGHLIGHT_COLOR);
   const [showHighlightsPanel, setShowHighlightsPanel] = useState(false);
+  const [tempHighlight, setTempHighlight] = useState(null);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteValue, setEditingNoteValue] = useState('');
   const [focusedHighlightId, setFocusedHighlightId] = useState(null);
@@ -324,7 +325,17 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           const absEnd = absStart + text.length;
           
           const rect = range.getBoundingClientRect();
-          setSelection({ text, absStart, absEnd, rect, range: storedRange });
+          const selectionData = { text, absStart, absEnd, rect, range: storedRange };
+          setSelection(selectionData);
+          
+          // Create temporary visual highlight immediately for HTML content
+          setTempHighlight({
+            id: 'temp-highlight',
+            text,
+            position: { start: absStart, end: absEnd },
+            color: selectedColor,
+            isTemp: true
+          });
           return;
         }
 
@@ -361,15 +372,33 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         if (absEnd <= absStart) { setSelection(null); return; }
 
         const rect = range.getBoundingClientRect();
-        setSelection({ text, absStart, absEnd, rect, range: storedRange });
+        const selectionData = { text, absStart, absEnd, rect, range: storedRange };
+        setSelection(selectionData);
+        
+        // Create temporary visual highlight immediately
+        setTempHighlight({
+          id: 'temp-highlight',
+          text,
+          position: { start: absStart, end: absEnd },
+          color: selectedColor,
+          isTemp: true
+        });
       } catch (e) {
         console.error('Selection error', e);
         setSelection(null);
+        setTempHighlight(null);
       }
     };
     document.addEventListener('mouseup', onMouseUp);
     return () => document.removeEventListener('mouseup', onMouseUp);
-  }, [paragraphStartOffsets, fullText, isHTMLContent]);
+  }, [paragraphStartOffsets, fullText, isHTMLContent, selectedColor]);
+
+  // Update temp highlight color when selected color changes
+  useEffect(() => {
+    if (tempHighlight && selection) {
+      setTempHighlight(prev => prev ? { ...prev, color: selectedColor } : null);
+    }
+  }, [selectedColor, selection, tempHighlight]);
 
   // completion detection on scroll with reading progress tracking and auto-archive
   useEffect(() => {
@@ -530,6 +559,9 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     console.log('Full payload:', payload);
     
     try {
+      // Clear temp highlight before creating permanent one
+      setTempHighlight(null);
+      
       const res = await highlightsAPI.create(payload);
       console.log('✓ API Response:', res);
       console.log('✓ Created highlight ID:', res?.data?.id);
@@ -874,9 +906,13 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     const pStart = paragraphStartOffsets[idx] || 0;
     const pEnd = pStart + (text || '').length;
     const pClass = 'mb-6';
-    if (!highlights || highlights.length === 0) return <p key={idx} className={pClass}>{text}</p>;
+    
+    // Combine real highlights with temp highlight
+    const allHighlights = tempHighlight ? [...(highlights || []), tempHighlight] : (highlights || []);
+    
+    if (!allHighlights || allHighlights.length === 0) return <p key={idx} className={pClass}>{text}</p>;
 
-    const ranges = (highlights || [])
+    const ranges = (allHighlights || [])
       .map(h => ({
         ...h,
         start: Math.max(pStart, Number(h.position?.start ?? h.start ?? 0)),
@@ -923,7 +959,10 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   // Apply highlights to HTML content by wrapping highlighted text with marks
   const applyHighlightsToHTML = useCallback((htmlContent) => {
-    if (!highlights || highlights.length === 0) return htmlContent;
+    // Combine real highlights with temp highlight
+    const allHighlights = tempHighlight ? [...(highlights || []), tempHighlight] : (highlights || []);
+    
+    if (!allHighlights || allHighlights.length === 0) return htmlContent;
     
     // Create a temporary div to parse and manipulate the HTML
     const tempDiv = document.createElement('div');
@@ -933,7 +972,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     const fullTextContent = tempDiv.innerText || tempDiv.textContent || '';
     
     // Sort highlights by start position
-    const sortedHighlights = [...highlights].sort((a, b) => {
+    const sortedHighlights = [...allHighlights].sort((a, b) => {
       const aStart = Number(a.position?.start ?? a.start ?? 0);
       const bStart = Number(b.position?.start ?? b.start ?? 0);
       return aStart - bStart;
@@ -1008,7 +1047,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     });
     
     return tempDiv.innerHTML;
-  }, [highlights, isDark]);
+  }, [highlights, isDark, tempHighlight]);
 
   // Memoize the processed HTML content with highlights
   const processedHTMLContent = useMemo(() => {
@@ -1304,7 +1343,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 Highlight
               </button>
               <button 
-                onClick={() => setSelection(null)}
+                onClick={() => {
+                  setSelection(null);
+                  setTempHighlight(null);
+                  try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
+                }}
                 className="px-3 py-1 text-sm bg-card border border-border rounded reader-button hover:bg-accent transition-all"
               >
                 Cancel
