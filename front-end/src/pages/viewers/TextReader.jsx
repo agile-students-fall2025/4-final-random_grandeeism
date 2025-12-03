@@ -1209,11 +1209,16 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                       <div className="flex gap-2">
                         <button
                           onClick={saveEditingNote}
-                          className={`px-3 py-1 rounded text-sm ${isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-primary text-white'} reader-button hover:opacity-90 transform hover:-translate-y-0.5 transition-all`}
+                          className="px-3 py-1 rounded text-sm bg-primary text-primary-foreground reader-button hover:bg-primary/90 transition-all"
                         >
                           Save
                         </button>
-                        <button onClick={cancelEditingNote} className="px-3 py-1 bg-card border border-border rounded text-sm reader-button hover:bg-accent transform hover:-translate-y-0.5 transition-all">Cancel</button>
+                        <button
+                          onClick={cancelEditingNote}
+                          className="px-3 py-1 bg-card border border-border rounded text-sm reader-button hover:bg-accent transition-all"
+                        >
+                          Cancel
+                        </button>
                       </div>
                     </div>
                   )}
@@ -1305,7 +1310,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               <button 
                 onClick={(e) => { e.preventDefault(); }} 
                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); applyHighlight(selectedColor); }}
-                className="px-2 py-1 text-sm bg-primary text-white rounded reader-button"
+                className="px-2 py-1 text-sm bg-primary text-primary-foreground rounded reader-button hover:bg-primary/90"
               >
                 Highlight
               </button>
