@@ -574,11 +574,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     setEditingNoteId(null);
     setEditingNoteValue('');
     setEditingTitle('');
-    // Instead of staying on details view, automatically return to all highlights list
     setFocusedHighlightId(null);
     await refreshHighlights();
-  // Auto-list view now; optional scroll without closing panel
-  setTimeout(() => scrollToHighlight(savedId, { keepPanelOpen: true }), 150);
+    // Close sidebar and jump to the highlight
+    setShowHighlightsPanel(false);
+    setTimeout(() => scrollToHighlight(savedId), 150);
   };
 
   const cancelEditingNote = () => {
