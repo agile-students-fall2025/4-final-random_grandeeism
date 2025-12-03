@@ -46,7 +46,7 @@ const buildNewHighlight = ({ articleId, userId, text, color, position, annotatio
       title: providedTitle || generateTitle(text),
       note: providedNote || ''
     },
-    color: color || '#fef08a',
+    color: (color ? color.trim() : null) || '#fef08a',
     position: {
       start: position.start,
       end: position.end
@@ -85,7 +85,7 @@ const buildUpdatedHighlight = (highlight, body) => {
   }
 
   if (newColor !== undefined) {
-    updatedHighlight.color = newColor;
+    updatedHighlight.color = newColor.trim();
   }
 
   // preserve id/articleId/userId, update updatedAt

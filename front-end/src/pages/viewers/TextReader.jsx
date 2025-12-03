@@ -509,11 +509,14 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       return;
     }
 
+    // Trim and validate color to remove spaces and invisible characters
+    const cleanColor = (colorHex || DEFAULT_HIGHLIGHT_COLOR).trim();
+    
     const payload = {
       articleId: current.id,
       userId: user.id,
       text: trimmed,
-      color: colorHex || DEFAULT_HIGHLIGHT_COLOR,
+      color: cleanColor,
       position: { start: startPos, end: endPos },
       annotations: { title: '', note: '' }
     };
@@ -900,7 +903,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
             key={i}
             data-highlight-id={part.highlight.id}
             style={{
-              backgroundColor: part.highlight.color || '#fffbdd',
+              backgroundColor: (part.highlight.color || '#fffbdd').trim(),
               padding: '0.08rem 0.24rem',
               borderRadius: 4,
               boxShadow: isDark ? 'inset 0 -6px 0 rgba(0,0,0,0.18)' : undefined,
@@ -978,7 +981,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           if (highlightedText) {
             const mark = document.createElement('mark');
             mark.setAttribute('data-highlight-id', highlight.id);
-            mark.style.backgroundColor = highlight.color || '#fffbdd';
+            mark.style.backgroundColor = (highlight.color || '#fffbdd').trim();
             mark.style.padding = '0.08rem 0.24rem';
             mark.style.borderRadius = '4px';
             if (isDark) {
@@ -1283,7 +1286,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               <input
                 type="text"
                 value={selectedColor}
-                onChange={(e) => setSelectedColor(e.target.value)}
+                onChange={(e) => setSelectedColor(e.target.value.trim())}
                 className="w-24 px-2 py-1 text-xs border border-border rounded bg-background"
                 placeholder="#fef08a"
               />
