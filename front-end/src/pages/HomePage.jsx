@@ -135,7 +135,11 @@ const HomePage = ({ onNavigate, setPageRefresh }) => {
   // Article management functions
   const handleArticleClick = (article) => {
     // Navigate to the appropriate viewer based on media type
+    console.log('handleArticleClick - article:', article);
+    console.log('handleArticleClick - mediaType:', article.mediaType);
+    console.log('handleArticleClick - videoId:', article.videoId);
     const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
+    console.log('handleArticleClick - destination:', destination);
     onNavigate && onNavigate(destination, { article });
   };
 
