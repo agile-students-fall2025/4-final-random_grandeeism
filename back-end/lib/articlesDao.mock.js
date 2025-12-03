@@ -75,8 +75,14 @@ const articlesDao = {
    * @returns {Promise<Object>} Created article
    */
   async create(articleData) {
+    const { detectMediaType, extractYouTubeVideoId } = require('../utils/youtubeUtils.js');
+    
+    const mediaType = articleData.mediaType || detectMediaType(articleData.url);
+    const videoId = mediaType === 'video' ? extractYouTubeVideoId(articleData.url) : null;
+    
     const newArticle = {
       id: generateId(),
+      ...articleData,
       title: articleData.title || 'Untitled',
       url: articleData.url,
       author: articleData.author || 'Unknown Author',
@@ -91,9 +97,11 @@ const articlesDao = {
       hasAnnotations: false,
       readProgress: 0,
       content: articleData.content || '',
-      ...articleData
+      mediaType,
+      videoId
     };
 
+    console.log('Created article with mediaType:', mediaType, 'videoId:', videoId);
     articles.push(newArticle);
     return { ...newArticle };
   },

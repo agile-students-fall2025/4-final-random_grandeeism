@@ -123,6 +123,15 @@ const articleSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  mediaType: {
+    type: String,
+    enum: ['text', 'video', 'audio'],
+    default: 'text'
+  },
+  videoId: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true, // Adds createdAt and updatedAt
@@ -202,6 +211,17 @@ articleSchema.statics.findUntagged = function(userId) {
 
 // Pre-save middleware
 articleSchema.pre('save', function(next) {
+  // Auto-detect mediaType and videoId from URL
+  if (this.isModified('url') || this.isNew) {
+    const { detectMediaType, extractYouTubeVideoId } = require('../../utils/youtubeUtils.js');
+    
+    this.mediaType = detectMediaType(this.url);
+    
+    if (this.mediaType === 'video') {
+      this.videoId = extractYouTubeVideoId(this.url);
+    }
+  }
+  
   // Auto-calculate reading time and word count from content
   if (this.isModified('content') || this.isModified('textContent')) {
     const { getWordCount, calculateReadingTimeMinutes } = require('../../utils/readingTime.js');
