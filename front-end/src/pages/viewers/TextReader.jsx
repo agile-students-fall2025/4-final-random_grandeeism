@@ -245,19 +245,6 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   const fullText = useMemo(() => paragraphs.join('\n'), [paragraphs]);
 
-  // Helper: re-assert native selection to preserve blue highlight
-  const restoreSelection = useCallback(() => {
-    try {
-      if (!selection || !selection.range) return;
-      const sel = window.getSelection();
-      if (!sel) return;
-      sel.removeAllRanges();
-      sel.addRange(selection.range);
-    } catch {
-      // ignore
-    }
-  }, [selection]);
-
   // Load highlights from backend for this article
   const refreshHighlights = useCallback(async () => {
     if (!current) return;
@@ -383,41 +370,6 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     document.addEventListener('mouseup', onMouseUp);
     return () => document.removeEventListener('mouseup', onMouseUp);
   }, [paragraphStartOffsets, fullText, isHTMLContent]);
-
-  // Ensure native selection stays visible while UI updates (e.g., opening panels/modals)
-  useEffect(() => {
-    if (!selection || !selection.range) return;
-    try {
-      const sel = window.getSelection();
-      if (!sel) return;
-      // If current selection is collapsed or differs, re-apply our stored range
-      const needsRestore = sel.isCollapsed || sel.rangeCount === 0;
-      if (needsRestore) {
-        sel.removeAllRanges();
-        sel.addRange(selection.range);
-      }
-    } catch {
-      // ignore
-    }
-  }, [selection, showHighlightsPanel, settingsOpen, tagModalOpen]);
-
-  // Re-assert selection on focus changes that may collapse native selection
-  useEffect(() => {
-    const onFocusIn = () => {
-      try {
-        if (!selection || !selection.range) return;
-        const sel = window.getSelection();
-        if (!sel) return;
-        // If selection collapsed due to focus shift, restore it
-        if (sel.isCollapsed || sel.rangeCount === 0) {
-          sel.removeAllRanges();
-          sel.addRange(selection.range);
-        }
-      } catch { /* ignore */ }
-    };
-    document.addEventListener('focusin', onFocusIn, true);
-    return () => document.removeEventListener('focusin', onFocusIn, true);
-  }, [selection]);
 
   // completion detection on scroll with reading progress tracking and auto-archive
   useEffect(() => {
@@ -1137,7 +1089,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         </div>
 
         <div className="rounded-lg flex gap-6 relative mt-5">
-          <div className="" ref={contentRef}>
+          <div className="" ref={contentRef} style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
             {current ? (
               <article
                 className="prose prose-lg max-w-none text-reader-article"
@@ -1147,6 +1099,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                   backgroundColor: 'transparent',
                   color: isDark ? '#e6eef8' : undefined,
                   padding: '0',
+                  userSelect: 'text',
+                  WebkitUserSelect: 'text',
                 }}
               >
                 {isHTMLContent ? (
@@ -1316,40 +1270,31 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         {selection && (
           <div 
             style={{ position: 'fixed', left: selection.rect.left + window.scrollX, top: selection.rect.top + window.scrollY - 48, zIndex: 60 }}
-            onMouseDown={(e) => e.preventDefault()}
             ref={selectionToolbarRef}
           >
             <div className="flex items-center gap-2 bg-card border border-border rounded shadow p-2">
               <input
                 type="color"
-                name="highlightColor"
                 value={selectedColor}
                 onChange={(e) => setSelectedColor(e.target.value)}
-                onMouseDown={(e) => { e.preventDefault(); restoreSelection(); }}
-                onFocus={() => restoreSelection()}
-                onClick={() => restoreSelection()}
-                aria-label="Pick highlight color"
                 className="w-8 h-8 p-0 border border-border rounded cursor-pointer"
+                aria-label="Pick highlight color"
               />
               <input
                 type="text"
-                name="highlightColorHex"
                 value={selectedColor}
                 onChange={(e) => setSelectedColor(e.target.value)}
-                onMouseDown={(e) => e.preventDefault()}
                 className="w-24 px-2 py-1 text-xs border border-border rounded bg-background"
                 placeholder="#fef08a"
               />
               <button 
-                onClick={(e) => { e.preventDefault(); }} 
-                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); applyHighlight(selectedColor); }}
+                onClick={() => applyHighlight(selectedColor)}
                 className="px-2 py-1 text-sm bg-primary text-primary-foreground rounded reader-button hover:bg-primary/90"
               >
                 Highlight
               </button>
               <button 
-                onClick={() => setSelection(null)} 
-                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setSelection(null)}
                 className="px-3 py-1 text-sm bg-card border border-border rounded reader-button hover:bg-accent transition-all"
               >
                 Cancel
