@@ -1317,7 +1317,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
               <button 
                 onClick={() => setSelection(null)} 
                 onMouseDown={(e) => e.preventDefault()}
-                className="px-2 py-1 text-sm reader-button text-muted-foreground hover:text-foreground"
+                className="px-3 py-1 text-sm bg-card border border-border rounded reader-button hover:bg-accent transition-all"
               >
                 Cancel
               </button>
