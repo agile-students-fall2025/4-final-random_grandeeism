@@ -106,6 +106,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   }, []);
 
   const contentRef = useRef(null);
+  const selectionToolbarRef = useRef(null);
   const [allTags, setAllTags] = useState([]);
   // maintain a local snapshot of tagMap for possible future reactive displays; unused directly for resolution
   const [tagMap, setTagMap] = useState(getTagMapSnapshot()); // eslint-disable-line no-unused-vars
@@ -244,6 +245,19 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   const fullText = useMemo(() => paragraphs.join('\n'), [paragraphs]);
 
+  // Helper: re-assert native selection to preserve blue highlight
+  const restoreSelection = useCallback(() => {
+    try {
+      if (!selection || !selection.range) return;
+      const sel = window.getSelection();
+      if (!sel) return;
+      sel.removeAllRanges();
+      sel.addRange(selection.range);
+    } catch {
+      // ignore
+    }
+  }, [selection]);
+
   // Load highlights from backend for this article
   const refreshHighlights = useCallback(async () => {
     if (!current) return;
@@ -293,8 +307,13 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   // selection handling (supports both HTML and plain text content)
   useEffect(() => {
-    const onMouseUp = () => {
+    const onMouseUp = (e) => {
       try {
+        // If the mouse up occurred inside the selection toolbar, do not alter selection
+        const toolbarEl = selectionToolbarRef.current;
+        if (toolbarEl && e && toolbarEl.contains(e.target)) {
+          return;
+        }
         const sel = window.getSelection();
         if (!sel || sel.isCollapsed) { setSelection(null); return; }
         const range = sel.getRangeAt(0);
@@ -364,6 +383,41 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     document.addEventListener('mouseup', onMouseUp);
     return () => document.removeEventListener('mouseup', onMouseUp);
   }, [paragraphStartOffsets, fullText, isHTMLContent]);
+
+  // Ensure native selection stays visible while UI updates (e.g., opening panels/modals)
+  useEffect(() => {
+    if (!selection || !selection.range) return;
+    try {
+      const sel = window.getSelection();
+      if (!sel) return;
+      // If current selection is collapsed or differs, re-apply our stored range
+      const needsRestore = sel.isCollapsed || sel.rangeCount === 0;
+      if (needsRestore) {
+        sel.removeAllRanges();
+        sel.addRange(selection.range);
+      }
+    } catch {
+      // ignore
+    }
+  }, [selection, showHighlightsPanel, settingsOpen, tagModalOpen]);
+
+  // Re-assert selection on focus changes that may collapse native selection
+  useEffect(() => {
+    const onFocusIn = () => {
+      try {
+        if (!selection || !selection.range) return;
+        const sel = window.getSelection();
+        if (!sel) return;
+        // If selection collapsed due to focus shift, restore it
+        if (sel.isCollapsed || sel.rangeCount === 0) {
+          sel.removeAllRanges();
+          sel.addRange(selection.range);
+        }
+      } catch { /* ignore */ }
+    };
+    document.addEventListener('focusin', onFocusIn, true);
+    return () => document.removeEventListener('focusin', onFocusIn, true);
+  }, [selection]);
 
   // completion detection on scroll with reading progress tracking and auto-archive
   useEffect(() => {
@@ -461,6 +515,12 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       console.log('applyHighlight aborted: selection or current missing', { selection: !!selection, current: !!current });
       return;
     }
+    // Validate selected text (avoid pure whitespace or zero-length)
+    const trimmed = (selection.text || '').trim();
+    if (trimmed.length === 0 || selection.absEnd <= selection.absStart) {
+      toast.error('Please select some text to highlight');
+      return;
+    }
     // Only allow creating highlights if user is authenticated
     if (!user?.id) {
       console.error('Cannot create highlight: User not authenticated');
@@ -468,12 +528,41 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       return;
     }
     
+    // Normalize positions: clamp to content length
+    const fullLen = isHTMLContent ? (displayContent ? String(displayContent).replace(/<[^>]*>/g, '').length : 0) : fullText.length;
+    const startPos = Math.max(0, Math.min(selection.absStart, fullLen));
+    const endPos = Math.max(startPos + 1, Math.min(selection.absEnd, fullLen));
+
+    // Prevent duplicate highlight on same exact range for same user/article
+    const duplicate = (highlights || []).some(h => {
+      const hStart = Number(h.position?.start ?? h.start ?? -1);
+      const hEnd = Number(h.position?.end ?? h.end ?? -1);
+      return h.articleId === current.id && h.userId === user.id && hStart === startPos && hEnd === endPos && (h.text || '').trim() === trimmed;
+    });
+    if (duplicate) {
+      toast.info('That passage is already highlighted');
+      // Focus the existing one instead of creating another
+      const existing = (highlights || []).find(h => {
+        const hStart = Number(h.position?.start ?? h.start ?? -1);
+        const hEnd = Number(h.position?.end ?? h.end ?? -1);
+        return h.articleId === current.id && h.userId === user.id && hStart === startPos && hEnd === endPos && (h.text || '').trim() === trimmed;
+      });
+      if (existing?.id) {
+        setFocusedHighlightId(existing.id);
+        setShowHighlightsPanel(true);
+        setEditingNoteId(existing.id);
+        setEditingTitle(existing.annotations?.title || '');
+        setEditingNoteValue(existing.annotations?.note || '');
+      }
+      return;
+    }
+
     const payload = {
       articleId: current.id,
       userId: user.id,
-      text: selection.text,
+      text: trimmed,
       color: colorHex || DEFAULT_HIGHLIGHT_COLOR,
-      position: { start: selection.absStart, end: selection.absEnd },
+      position: { start: startPos, end: endPos },
       annotations: { title: '', note: '' }
     };
     
@@ -498,8 +587,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         setEditingTitle('');
         setShowHighlightsPanel(true);
         setFocusedHighlightId(res.data.id);
+        // Now that the highlight is saved and sidebar opened, clear native selection
+        // so the page returns to normal view
+        setSelection(null);
+        try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
       } else {
         setShowHighlightsPanel(true);
+        // Clear selection even if no ID returned to avoid lingering UI
+        setSelection(null);
+        try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
       }
       toast.success('Highlight created!');
     } catch (e) {
@@ -509,12 +605,6 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       console.error('Error response:', e.response?.data);
       console.error('Error status:', e.response?.status);
       toast.error(`Failed to create highlight: ${e.message}`);
-    } finally {
-      // Keep selection visible briefly so user can see what was highlighted
-      setTimeout(() => {
-        setSelection(null);
-        try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
-      }, 500);
     }
   };
 
@@ -547,29 +637,32 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const scrollToHighlight = (id, { keepPanelOpen = false } = {}) => {
     const el = document.querySelector(`[data-highlight-id="${id}"]`);
     if (!el) return;
-    
+
     const container = contentRef.current;
-    if (!container) return;
-    
-    // Get positions relative to the scrollable container
-    const containerRect = container.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    
-    // Calculate the scroll position needed to center the highlight in the container
-    const scrollTop = container.scrollTop;
-    const elOffsetTop = elRect.top - containerRect.top + scrollTop;
-    const containerCenter = container.clientHeight / 2;
-    const targetScrollTop = elOffsetTop - containerCenter;
-    
-    // Scroll smoothly within the container
-    container.scrollTo({
-      top: targetScrollTop,
-      behavior: 'smooth'
-    });
-    
-    // Close panel only if user-triggered jump and not preserving list view
+    // If container can scroll, prefer centering inside it
+    if (container && (container.scrollHeight > container.clientHeight)) {
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const currentTop = container.scrollTop;
+      const offsetTop = elRect.top - containerRect.top + currentTop;
+      const center = container.clientHeight / 2;
+      const targetTop = Math.max(0, offsetTop - center);
+      container.scrollTo({ top: targetTop, behavior: 'smooth' });
+    } else {
+      // Fallback to window scroll if container isn't scrollable
+      try {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      } catch {
+        const rect = el.getBoundingClientRect();
+        const absoluteTop = rect.top + window.scrollY - (window.innerHeight / 2);
+        window.scrollTo({ top: Math.max(0, absoluteTop), behavior: 'smooth' });
+      }
+    }
+
     if (!keepPanelOpen) setShowHighlightsPanel(false);
   };
+
+  // Fallback retry is added later after processedHTMLContent declaration to avoid TDZ
 
   const appliedFavorite = current?.isFavorite;
 
@@ -933,6 +1026,18 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     return applyHighlightsToHTML(displayContent);
   }, [isHTMLContent, displayContent, applyHighlightsToHTML]);
 
+  // Fallback: after highlights refresh or HTML processing, if focusedHighlightId is set but element not found yet, try again
+  useEffect(() => {
+    if (!focusedHighlightId) return;
+    const container = contentRef.current;
+    if (!container) return;
+    const el = document.querySelector(`[data-highlight-id="${focusedHighlightId}"]`);
+    if (!el) {
+      const t = setTimeout(() => scrollToHighlight(focusedHighlightId, { keepPanelOpen: true }), 120);
+      return () => clearTimeout(t);
+    }
+  }, [processedHTMLContent, paragraphs, focusedHighlightId]);
+
   return (
     <div className="min-h-screen bg-background pt-6 pb-6 pl-6 pr-16 relative">
       <div className="mx-auto" style={{ maxWidth: contentMaxWidth }}>
@@ -1174,6 +1279,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           <div 
             style={{ position: 'fixed', left: selection.rect.left + window.scrollX, top: selection.rect.top + window.scrollY - 48, zIndex: 60 }}
             onMouseDown={(e) => e.preventDefault()}
+            ref={selectionToolbarRef}
           >
             <div className="flex items-center gap-2 bg-card border border-border rounded shadow p-2">
               <input
@@ -1181,8 +1287,9 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 name="highlightColor"
                 value={selectedColor}
                 onChange={(e) => setSelectedColor(e.target.value)}
-                onMouseDown={(e) => e.preventDefault()}
-                onFocus={(e) => e.preventDefault()}
+                onMouseDown={(e) => { e.preventDefault(); restoreSelection(); }}
+                onFocus={() => restoreSelection()}
+                onClick={() => restoreSelection()}
                 aria-label="Pick highlight color"
                 className="w-8 h-8 p-0 border border-border rounded cursor-pointer"
               />
