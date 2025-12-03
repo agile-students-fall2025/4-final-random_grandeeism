@@ -244,7 +244,9 @@ export default function AddLinkModal({ isOpen, onClose, articles = [], onAddLink
               dateAdded: new Date(),
               source: ext.source || null,
               isRead: false,
-              hasAnnotations: false
+              hasAnnotations: false,
+              mediaType: ext.mediaType || undefined, // Include mediaType if extracted
+              videoId: ext.videoId || undefined // Include videoId if extracted
             };
           }
         } catch (error) {

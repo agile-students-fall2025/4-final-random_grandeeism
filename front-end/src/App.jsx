@@ -637,8 +637,13 @@ function VideoPlayerWrapper({ onNavigate }) {
   
   useEffect(() => {
     if (articleId) {
+      console.log('VideoPlayerWrapper - fetching article ID:', articleId);
       articlesAPI.getById(articleId).then(response => {
+        console.log('VideoPlayerWrapper - API response:', response);
         if (response.success) {
+          console.log('VideoPlayerWrapper - article data:', response.data);
+          console.log('VideoPlayerWrapper - mediaType:', response.data.mediaType);
+          console.log('VideoPlayerWrapper - videoId:', response.data.videoId);
           setArticle(response.data);
         }
       });
