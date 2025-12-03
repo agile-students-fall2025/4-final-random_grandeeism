@@ -303,7 +303,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           return;
         }
         const sel = window.getSelection();
-        if (!sel || sel.isCollapsed) { setSelection(null); return; }
+        if (!sel || sel.isCollapsed) { 
+          setSelection(null);
+          setTempHighlight(null);
+          return; 
+        }
         const range = sel.getRangeAt(0);
         const container = contentRef.current;
         if (!container) { setSelection(null); return; }
@@ -395,10 +399,13 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   // Update temp highlight color when selected color changes
   useEffect(() => {
-    if (tempHighlight && selection) {
-      setTempHighlight(prev => prev ? { ...prev, color: selectedColor } : null);
+    if (selection && tempHighlight) {
+      setTempHighlight(prev => {
+        if (!prev) return null;
+        return { ...prev, color: selectedColor };
+      });
     }
-  }, [selectedColor, selection, tempHighlight]);
+  }, [selectedColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // completion detection on scroll with reading progress tracking and auto-archive
   useEffect(() => {
