@@ -97,7 +97,7 @@ const highlightsDao = {
       userId: highlightData.userId,
       text: highlightData.text,
       annotations: highlightData.annotations || { title: '', note: '' },
-      color: (highlightData.color ? highlightData.color.trim() : null) || '#fef08a',
+      color: (highlightData.color ? highlightData.color.trim().toLowerCase() : null) || '#fef08a',
       position: highlightData.position || { start: 0, end: 0 },
       tags: highlightData.tags || [],
       isPublic: highlightData.isPublic || false,
