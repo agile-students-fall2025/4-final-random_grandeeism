@@ -77,10 +77,10 @@ router.get('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    console.log('GET /api/articles/:id - Returning article:', article.id);
-    console.log('  - mediaType:', article.mediaType);
-    console.log('  - videoId:', article.videoId);
-    console.log('  - url:', article.url);
+    // console.log('GET /api/articles/:id - Returning article:', article.id);
+    // console.log('  - mediaType:', article.mediaType);
+    // console.log('  - videoId:', article.videoId);
+    // console.log('  - url:', article.url);
 
     res.json({
       success: true,
