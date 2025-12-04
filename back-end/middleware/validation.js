@@ -78,6 +78,7 @@ const validateTag = [
     .escape(),
   body('color')
     .optional()
+    .trim()
     .matches(/^#[0-9A-Fa-f]{6}$/)
     .withMessage('Color must be a valid hex color (e.g., #FF5733)')
 ];
@@ -114,6 +115,7 @@ const validateHighlight = [
     }),
   body('color')
     .optional()
+    .trim()
     .matches(/^#[0-9A-Fa-f]{6}$/)
     .withMessage('Color must be a valid hex color (e.g., #FF5733)'),
   body('position')
@@ -258,6 +260,7 @@ module.exports = {
       }),
     body('color')
       .optional()
+      .trim()
       .matches(/^#[0-9A-Fa-f]{6}$/)
       .withMessage('Color must be a valid hex color (e.g., #FF5733)'),
     body('position')

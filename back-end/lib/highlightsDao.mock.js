@@ -81,7 +81,7 @@ const highlightsDao = {
       userId: highlightData.userId || 'user-1', // Default user for mock
       text: highlightData.text,
       annotations: highlightData.annotations || { title: '', note: '' },
-      color: highlightData.color || '#fef08a',
+      color: (highlightData.color ? highlightData.color.trim().toLowerCase() : null) || '#fef08a',
       position: {
         start: highlightData.position?.start || 0,
         end: highlightData.position?.end || 0
@@ -185,7 +185,7 @@ const highlightsDao = {
    * @returns {Promise<Object|null>} Updated highlight or null if not found
    */
   async updateColor(id, color) {
-    return this.update(id, { color });
+    return this.update(id, { color: color.trim().toLowerCase() });
   },
 
   /**

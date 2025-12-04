@@ -97,7 +97,7 @@ const highlightsDao = {
       userId: highlightData.userId,
       text: highlightData.text,
       annotations: highlightData.annotations || { title: '', note: '' },
-      color: highlightData.color || '#fef08a',
+      color: (highlightData.color ? highlightData.color.trim().toLowerCase() : null) || '#fef08a',
       position: highlightData.position || { start: 0, end: 0 },
       tags: highlightData.tags || [],
       isPublic: highlightData.isPublic || false,
@@ -205,7 +205,7 @@ const highlightsDao = {
    * @returns {Promise<Object|null>} Updated highlight or null if not found
    */
   async updateColor(id, color, userId = null) {
-    return this.update(id, { color: color.toLowerCase() }, userId);
+    return this.update(id, { color: color.trim().toLowerCase() }, userId);
   },
 
   /**
