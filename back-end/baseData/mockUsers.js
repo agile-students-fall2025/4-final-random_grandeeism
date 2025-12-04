@@ -45,6 +45,29 @@ const mockUsers = [
     },
     "createdAt": "2024-01-05T00:00:00.000Z",
     "lastLogin": "2024-01-14T00:00:00.000Z"
+  },
+  {
+    "id": 3,
+    "username": "demo",
+    "email": "demo@fieldnotes.app",
+    "password": "$2a$10$N9qo8uLOickgx2ZMRZoMye.IW7XgLGOlVDJBH0DXR0A/gvIIWqJ8u",
+    "displayName": "Demo User",
+    "bio": "Demo account for testing",
+    "avatar": null,
+    "preferences": {
+      "theme": "light",
+      "readingGoal": 10,
+      "emailNotifications": false,
+      "defaultView": "inbox"
+    },
+    "stats": {
+      "articlesRead": 0,
+      "totalReadingTime": 0,
+      "currentStreak": 0,
+      "longestStreak": 0
+    },
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "lastLogin": "2024-01-15T00:00:00.000Z"
   }
 ];
 
