@@ -2,7 +2,7 @@
  * Test Tag Deletion - Verify tags are removed from articles when deleted
  */
 
-const {tagsDao, articlesDao} = require('./lib/daoFactory');
+const {tagsDao, articlesDao} = require('../lib/daoFactory');
 
 (async () => {
   console.log('=== Testing Tag Deletion from Articles ===\n');
