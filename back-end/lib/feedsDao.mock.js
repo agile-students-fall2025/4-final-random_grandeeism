@@ -35,6 +35,11 @@ const feedsDao = {
   async getAll(filters = {}) {
     let filteredFeeds = [...feeds];
 
+    // User filter (CRITICAL: feeds must be scoped to authenticated user)
+    if (filters.userId) {
+      filteredFeeds = filteredFeeds.filter(feed => feed.userId === filters.userId);
+    }
+
     // Category filter
     if (filters.category) {
       filteredFeeds = filteredFeeds.filter(feed => feed.category === filters.category);

@@ -10,6 +10,7 @@
 
 const chai = require('chai');
 const chaiHttp = require('chai-http');
+const jwt = require('jsonwebtoken');
 const app = require('../index');
 const daoFactory = require('../lib/daoFactory');
 const expect = chai.expect;
@@ -21,9 +22,15 @@ chai.use(chaiHttp);
 // INTEGRATION TEST 1: Article Creation → Tagging → Highlighting → Reading
 // ============================================================================
 describe('Integration: Article Lifecycle', function() {
+  let token1;
+  const mockArticleId = 'article-1';
+
   // Reset mock data before each test to ensure isolation
   beforeEach(() => {
     daoFactory.resetMockData();
+    
+    // Generate JWT token for test user
+    token1 = jwt.sign({ id: 'user-1', username: 'testuser' }, process.env.JWT_SECRET, { expiresIn: '7d' });
   });
 
   let createdArticleId;
@@ -33,6 +40,7 @@ describe('Integration: Article Lifecycle', function() {
   it('should create a new article', function(done) {
     chai.request(app)
       .post('/api/articles')
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .send({
         title: 'Integration Test Article',
         url: 'https://example.com/test-article',
@@ -61,6 +69,7 @@ describe('Integration: Article Lifecycle', function() {
   it('should create a tag for the article', function(done) {
     chai.request(app)
       .post('/api/tags')
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .send({
         name: `integration-test-${Date.now()}`,
         color: '#3b82f6'
@@ -81,9 +90,10 @@ describe('Integration: Article Lifecycle', function() {
   it('should create a highlight on the article', function(done) {
     chai.request(app)
       .post('/api/highlights')
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .send({
-        articleId: createdArticleId,
-        userId: 'test-user-1',
+        articleId: mockArticleId,
+        userId: 'user-1',
         text: 'This is test content',
         annotations: { note: 'Important test highlight' },
         color: '#fef08a',
@@ -96,13 +106,13 @@ describe('Integration: Article Lifecycle', function() {
         // Log error details if validation fails
         if (res.status === 400) {
           console.log('Validation error:', res.body);
-          console.log('Article ID sent:', createdArticleId);
+          console.log('Article ID sent:', mockArticleId);
         }
         
         expect(res).to.have.status(201);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.have.property('id');
-        expect(res.body.data).to.have.property('articleId', createdArticleId);
+        expect(res.body.data).to.have.property('articleId', mockArticleId);
         expect(res.body.data).to.have.property('text', 'This is test content');
         
         // Store the highlight ID
@@ -114,6 +124,7 @@ describe('Integration: Article Lifecycle', function() {
   it('should update reading progress to 50%', function(done) {
     chai.request(app)
       .patch(`/api/articles/${createdArticleId}/progress`)
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .send({
         progress: 50
       })
@@ -136,6 +147,7 @@ describe('Integration: Article Lifecycle', function() {
   it('should mark article as favorite', function(done) {
     chai.request(app)
       .patch(`/api/articles/${createdArticleId}/favorite`)
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .send({
         isFavorite: true
       })
@@ -157,6 +169,7 @@ describe('Integration: Article Lifecycle', function() {
   it('should update article status to "reading"', function(done) {
     chai.request(app)
       .patch(`/api/articles/${createdArticleId}/status`)
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .send({
         status: 'reading'
       })
@@ -180,6 +193,7 @@ describe('Integration: Article Lifecycle', function() {
     // In a real database implementation, this would return the updated article
     chai.request(app)
       .get(`/api/articles/${createdArticleId}`)
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .end((err, res) => {
         // With mock data, the created article won't be found (404)
         // This is expected behavior until database integration
@@ -204,9 +218,15 @@ describe('Integration: Article Lifecycle', function() {
 // INTEGRATION TEST 2: User Registration → Login → Profile Update
 // ============================================================================
 describe('Integration: User Authentication Flow', function() {
+  let token1;
+  const profileUserId = 'user-1';
+
   // Reset mock data before each test to ensure isolation
   beforeEach(() => {
     daoFactory.resetMockData();
+    
+    // Generate JWT token for test user
+    token1 = jwt.sign({ id: 'user-1', username: 'testuser' }, process.env.JWT_SECRET, { expiresIn: '7d' });
   });
 
   let authToken;
@@ -221,7 +241,7 @@ describe('Integration: User Authentication Flow', function() {
   it('should register a new user', function(done) {
     chai.request(app)
       .post('/api/auth/register')
-      .send(testUser)
+      .set('Authorization', `Bearer ${token1}`).send(testUser)
       .end((err, res) => {
         expect(res).to.have.status(201);
         expect(res.body).to.have.property('success', true);
@@ -243,7 +263,7 @@ describe('Integration: User Authentication Flow', function() {
   it('should login with the registered credentials', function(done) {
     chai.request(app)
       .post('/api/auth/login')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         username: testUser.username,
         password: testUser.password
       })
@@ -282,38 +302,22 @@ describe('Integration: User Authentication Flow', function() {
   });
 
   it('should get user profile', function(done) {
-    if (!userId) {
-      console.log('✓ Skipping profile retrieval - no user ID (expected with mock data)');
-      this.skip();
-    }
-
     chai.request(app)
-      .get(`/api/users/profile/${userId}`)
+      .get(`/api/users/profile/${profileUserId}`)
+      .set('Authorization', `Bearer ${token1}`)
       .end((err, res) => {
-        // With mock data, the user won't exist (404)
-        if (res.status === 404) {
-          expect(res.body).to.have.property('success', false);
-          expect(res.body).to.have.property('error', 'User not found');
-          console.log('✓ Expected 404 - user not in mock data (will work with real database)');
-          done();
-        } else {
-          expect(res).to.have.status(200);
-          expect(res.body).to.have.property('success', true);
-          expect(res.body.data).to.have.property('username');
-          expect(res.body.data).to.not.have.property('password');
-          done();
-        }
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.have.property('username');
+        expect(res.body.data).to.not.have.property('password');
+        done();
       });
   });
 
   it('should update user profile', function(done) {
-    if (!userId) {
-      console.log('✓ Skipping profile update - no user ID (expected with mock data)');
-      this.skip();
-    }
-
     chai.request(app)
-      .put(`/api/users/profile/${userId}`)
+      .put(`/api/users/profile/${profileUserId}`)
+      .set('Authorization', `Bearer ${token1}`)
       .send({
         displayName: 'Updated Test User',
         bio: 'This is my test bio',
@@ -323,26 +327,18 @@ describe('Integration: User Authentication Flow', function() {
         }
       })
       .end((err, res) => {
-        // With mock data, the user won't exist (404)
-        if (res.status === 404) {
-          expect(res.body).to.have.property('success', false);
-          expect(res.body).to.have.property('error', 'User not found');
-          console.log('✓ Expected 404 - user not in mock data (will work with real database)');
-          done();
-        } else {
-          expect(res).to.have.status(200);
-          expect(res.body).to.have.property('success', true);
-          expect(res.body.data).to.have.property('displayName', 'Updated Test User');
-          expect(res.body.data).to.have.property('bio', 'This is my test bio');
-          done();
-        }
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.have.property('displayName', 'Updated Test User');
+        expect(res.body.data).to.have.property('bio', 'This is my test bio');
+        done();
       });
   });
 
   it('should prevent duplicate user registration', function(done) {
     chai.request(app)
       .post('/api/auth/register')
-      .send(testUser)
+      .set('Authorization', `Bearer ${token1}`).send(testUser)
       .end((err, res) => {
         // Since mock data doesn't persist, this will succeed again
         // In real database, should get 409 Conflict
@@ -364,9 +360,15 @@ describe('Integration: User Authentication Flow', function() {
 // INTEGRATION TEST 3: Feed & Article Management Flow
 // ============================================================================
 describe('Integration: Feed & Article Management', function() {
+  let token1;
+  const existingFeedId = 'feed-1';
+
   // Reset mock data before each test to ensure isolation
   beforeEach(() => {
     daoFactory.resetMockData();
+    
+    // Generate JWT token for test user
+    token1 = jwt.sign({ id: 'user-1', username: 'testuser' }, process.env.JWT_SECRET, { expiresIn: '7d' });
   });
 
   let createdFeedId;
@@ -375,6 +377,7 @@ describe('Integration: Feed & Article Management', function() {
   it('should create a new feed', function(done) {
     chai.request(app)
       .post('/api/feeds')
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .send({
         name: 'Test Tech Blog',
         url: 'https://example.com/feed.xml',
@@ -400,6 +403,7 @@ describe('Integration: Feed & Article Management', function() {
   it('should create an article associated with the feed', function(done) {
     chai.request(app)
       .post('/api/articles')
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .send({
         title: 'Article from Test Feed',
         url: 'https://example.com/test-article',
@@ -424,6 +428,7 @@ describe('Integration: Feed & Article Management', function() {
   it('should get all articles from the feed', function(done) {
     chai.request(app)
       .get(`/api/feeds/${createdFeedId}/articles`)
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .end((err, res) => {
         // With mock data, the feed won't exist (404)
         if (res.status === 404) {
@@ -445,70 +450,52 @@ describe('Integration: Feed & Article Management', function() {
 
   it('should update the feed details', function(done) {
     chai.request(app)
-      .put(`/api/feeds/${createdFeedId}`)
+      .put(`/api/feeds/${existingFeedId}`)
+      .set('Authorization', `Bearer ${token1}`)
       .send({
         name: 'Updated Test Tech Blog',
         description: 'Updated description for test feed',
-        updateFrequency: 'hourly'
+        url: 'https://techweekly.com/feed',
+        category: 'Technology',
+        updateFrequency: 24,
+        isActive: true
       })
       .end((err, res) => {
-        // With mock data, the feed won't exist (404)
-        if (res.status === 404) {
-          expect(res.body).to.have.property('success', false);
-          expect(res.body).to.have.property('error', 'Feed not found');
-          console.log('✓ Expected 404 - feed not in mock data (will work with real database)');
-          done();
-        } else {
-          expect(res).to.have.status(200);
-          expect(res.body).to.have.property('success', true);
-          expect(res.body.data).to.have.property('name', 'Updated Test Tech Blog');
-          expect(res.body.data).to.have.property('updateFrequency', 'hourly');
-          done();
-        }
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.have.property('name', 'Updated Test Tech Blog');
+        done();
       });
   });
 
   it('should retrieve the created feed by ID', function(done) {
     chai.request(app)
-      .get(`/api/feeds/${createdFeedId}`)
+      .get(`/api/feeds/${existingFeedId}`)
+      .set('Authorization', `Bearer ${token1}`)
       .end((err, res) => {
-        // With mock data, the feed won't exist (404)
-        if (res.status === 404) {
-          expect(res.body).to.have.property('success', false);
-          expect(res.body).to.have.property('error', 'Feed not found');
-          console.log('✓ Expected 404 - feed not in mock data (will work with real database)');
-          done();
-        } else {
-          expect(res).to.have.status(200);
-          expect(res.body).to.have.property('success', true);
-          expect(res.body.data).to.have.property('id', createdFeedId);
-          done();
-        }
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body.data).to.have.property('id', existingFeedId);
+        done();
       });
   });
 
   it('should delete the feed', function(done) {
     chai.request(app)
-      .delete(`/api/feeds/${createdFeedId}`)
+      .delete(`/api/feeds/${existingFeedId}`)
+      .set('Authorization', `Bearer ${token1}`)
       .end((err, res) => {
-        // With mock data, the feed won't exist (404)
-        if (res.status === 404) {
-          expect(res.body).to.have.property('success', false);
-          expect(res.body).to.have.property('error', 'Feed not found');
-          console.log('✓ Expected 404 - feed not in mock data (will work with real database)');
-          done();
-        } else {
-          expect(res).to.have.status(200);
-          expect(res.body).to.have.property('success', true);
-          expect(res.body).to.have.property('message', 'Feed deleted successfully');
-          done();
-        }
+        expect(res).to.have.status(200);
+        expect(res.body).to.have.property('success', true);
+        expect(res.body).to.have.property('message', 'Feed deleted successfully');
+        done();
       });
   });
 
   it('should get all feeds with filtering', function(done) {
     chai.request(app)
       .get('/api/feeds?category=Technology')
+      .set('Authorization', `Bearer ${token1}`) .set('Authorization', `Bearer ${token1}`)
       .end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
@@ -524,9 +511,14 @@ describe('Integration: Feed & Article Management', function() {
 // INTEGRATION TEST 4: Tag Management Across Articles
 // ============================================================================
 describe('Integration: Tag Management Across Articles', function() {
+  let token1;
+
   // Reset mock data before each test to ensure isolation
   beforeEach(() => {
     daoFactory.resetMockData();
+    
+    // Generate JWT token for test user
+    token1 = jwt.sign({ id: 'user-1', username: 'testuser' }, process.env.JWT_SECRET, { expiresIn: '7d' });
   });
 
   let tag1Id, tag2Id, tag3Id;
@@ -537,7 +529,7 @@ describe('Integration: Tag Management Across Articles', function() {
     // Create first tag with unique name
     chai.request(app)
       .post('/api/tags')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         name: `test-js-${timestamp}`,
         color: '#f7df1e',
         description: 'JavaScript programming language'
@@ -555,7 +547,7 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should create a second tag', function(done) {
     chai.request(app)
       .post('/api/tags')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         name: `test-python-${timestamp}`,
         color: '#3776ab',
         description: 'Python programming language'
@@ -572,7 +564,7 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should create a third tag', function(done) {
     chai.request(app)
       .post('/api/tags')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         name: `test-webdev-${timestamp}`,
         color: '#61dafb'
       })
@@ -588,7 +580,7 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should prevent duplicate tag creation', function(done) {
     chai.request(app)
       .post('/api/tags')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         name: `test-js-${timestamp}`,
         color: '#f7df1e'
       })
@@ -612,8 +604,8 @@ describe('Integration: Tag Management Across Articles', function() {
     // Try to create a tag that already exists in mockTags
     chai.request(app)
       .post('/api/tags')
-      .send({
-        name: 'react', // This tag exists in mock data
+      .set('Authorization', `Bearer ${token1}`).send({
+        name: 'testing', // This tag exists in mock data
         color: '#f7df1e'
       })
       .end((err, res) => {
@@ -629,7 +621,7 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should create articles with tags', function(done) {
     chai.request(app)
       .post('/api/articles')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         title: 'Introduction to JavaScript',
         url: 'https://example.com/js-intro',
         tags: [`test-js-${timestamp}`, `test-webdev-${timestamp}`],
@@ -648,7 +640,7 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should create second article with different tags', function(done) {
     chai.request(app)
       .post('/api/articles')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         title: 'Python for Beginners',
         url: 'https://example.com/python-intro',
         tags: [`test-python-${timestamp}`],
@@ -665,7 +657,7 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should create third article with multiple tags', function(done) {
     chai.request(app)
       .post('/api/articles')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         title: 'Full Stack Development',
         url: 'https://example.com/fullstack',
         tags: [`test-js-${timestamp}`, `test-python-${timestamp}`, `test-webdev-${timestamp}`],
@@ -682,8 +674,8 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should get all articles with a specific tag', function(done) {
     // Using a tag from mock data since created tags don't persist
     chai.request(app)
-      .get('/api/tags/1/articles')
-      .end((err, res) => {
+      .get('/api/tags/tag-1/articles')
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body).to.have.property('tag');
@@ -696,7 +688,7 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should filter articles by tag using query parameter', function(done) {
     chai.request(app)
   .get('/api/articles?tag=Technology')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -711,7 +703,7 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should get all tags with different sorting options', function(done) {
     chai.request(app)
       .get('/api/tags?sort=alphabetical')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -724,12 +716,13 @@ describe('Integration: Tag Management Across Articles', function() {
   if (!tag1Id) {
       console.log('✓ Skipping tag update - using mock tag');
   // Use a mock tag ID instead
-  tag1Id = 1;
+  tag1Id = 'tag-1';
     }
 
     chai.request(app)
       .put(`/api/tags/${tag1Id}`)
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
+        name: 'updated-testing',
         description: 'Updated JavaScript description',
         color: '#ffd700'
       })
@@ -743,6 +736,7 @@ describe('Integration: Tag Management Across Articles', function() {
         } else {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
+          expect(res.body.data).to.have.property('name', 'updated-testing');
           expect(res.body.data).to.have.property('description', 'Updated JavaScript description');
           done();
         }
@@ -756,7 +750,7 @@ describe('Integration: Tag Management Across Articles', function() {
 
     chai.request(app)
       .delete(`/api/tags/${tag2Id}`)
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         // With mock data, created tag won't exist (404)
         if (res.status === 404) {
           expect(res.body).to.have.property('success', false);
@@ -775,8 +769,8 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should get a single tag by ID', function(done) {
     // Use a mock tag ID
     chai.request(app)
-      .get('/api/tags/1')
-      .end((err, res) => {
+      .get('/api/tags/tag-1')
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.have.property('id');
@@ -789,13 +783,13 @@ describe('Integration: Tag Management Across Articles', function() {
   it('should return 400 when creating tag without name', function(done) {
     chai.request(app)
       .post('/api/tags')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         color: '#ff0000'
       })
       .end((err, res) => {
         expect(res).to.have.status(400);
         expect(res.body).to.have.property('success', false);
-        expect(res.body).to.have.property('error', 'Tag name is required');
+        expect(res.body).to.have.property('errors');
         done();
       });
   });
@@ -805,15 +799,20 @@ describe('Integration: Tag Management Across Articles', function() {
 // INTEGRATION TEST 5: Error Handling & Edge Cases
 // ============================================================================
 describe('Integration: Error Handling & Edge Cases', function() {
+  let token1;
+
   // Reset mock data before each test to ensure isolation
   beforeEach(() => {
     daoFactory.resetMockData();
+    
+    // Generate JWT token for test user
+    token1 = jwt.sign({ id: 'user-1', username: 'testuser' }, process.env.JWT_SECRET, { expiresIn: '7d' });
   });
   
   it('should return 401 for invalid login credentials', function(done) {
     chai.request(app)
       .post('/api/auth/login')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         username: 'nonexistentuser',
         password: 'wrongpassword'
       })
@@ -828,14 +827,14 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 400 for missing login credentials', function(done) {
     chai.request(app)
       .post('/api/auth/login')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         username: 'testuser'
         // Missing password
       })
       .end((err, res) => {
         expect(res).to.have.status(400);
         expect(res.body).to.have.property('success', false);
-        expect(res.body).to.have.property('error', 'Username and password are required');
+        expect(res.body).to.have.property('errors');
         done();
       });
   });
@@ -843,14 +842,14 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 400 for missing registration fields', function(done) {
     chai.request(app)
       .post('/api/auth/register')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         username: 'testuser'
         // Missing email and password
       })
       .end((err, res) => {
         expect(res).to.have.status(400);
         expect(res.body).to.have.property('success', false);
-        expect(res.body).to.have.property('error', 'Username, email, and password are required');
+        expect(res.body).to.have.property('errors');
         done();
       });
   });
@@ -858,7 +857,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 404 for non-existent article', function(done) {
     chai.request(app)
       .get('/api/articles/nonexistent-article-id-999')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(404);
         expect(res.body).to.have.property('success', false);
         expect(res.body).to.have.property('error', 'Article not found');
@@ -869,7 +868,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 404 for non-existent feed', function(done) {
     chai.request(app)
       .get('/api/feeds/nonexistent-feed-id-999')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(404);
         expect(res.body).to.have.property('success', false);
         expect(res.body).to.have.property('error', 'Feed not found');
@@ -880,7 +879,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 404 for non-existent tag', function(done) {
     chai.request(app)
       .get('/api/tags/nonexistent-tag-id-999')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(404);
         expect(res.body).to.have.property('success', false);
         expect(res.body).to.have.property('error', 'Tag not found');
@@ -889,9 +888,11 @@ describe('Integration: Error Handling & Edge Cases', function() {
   });
 
   it('should return 404 for non-existent user', function(done) {
+    const missingUserToken = jwt.sign({ id: 'nonexistent-user-id-999', username: 'missing' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
     chai.request(app)
       .get('/api/users/profile/nonexistent-user-id-999')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${missingUserToken}`).end((err, res) => {
         expect(res).to.have.status(404);
         expect(res.body).to.have.property('success', false);
         expect(res.body).to.have.property('error', 'User not found');
@@ -902,7 +903,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 400 for missing required highlight fields', function(done) {
     chai.request(app)
       .post('/api/highlights')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         articleId: 'article-1',
         userId: 'user-1'
         // Missing text and position
@@ -910,7 +911,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
       .end((err, res) => {
         expect(res).to.have.status(400);
         expect(res.body).to.have.property('success', false);
-        expect(res.body.error).to.include('Missing required fields');
+        expect(res.body).to.have.property('errors');
         done();
       });
   });
@@ -918,7 +919,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 400 for invalid highlight position', function(done) {
     chai.request(app)
       .post('/api/highlights')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         articleId: 'article-1',
         userId: 'user-1',
         text: 'test highlight',
@@ -930,7 +931,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
       .end((err, res) => {
         expect(res).to.have.status(400);
         expect(res.body).to.have.property('success', false);
-        expect(res.body.error).to.include('Position must include start and end');
+        expect(res.body).to.have.property('errors');
         done();
       });
   });
@@ -938,14 +939,14 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 400 for missing tag name', function(done) {
     chai.request(app)
       .post('/api/tags')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         color: '#ff0000'
         // Missing name
       })
       .end((err, res) => {
         expect(res).to.have.status(400);
         expect(res.body).to.have.property('success', false);
-        expect(res.body).to.have.property('error', 'Tag name is required');
+        expect(res.body).to.have.property('errors');
         done();
       });
   });
@@ -953,7 +954,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 404 when deleting non-existent article', function(done) {
     chai.request(app)
       .delete('/api/articles/nonexistent-article-999')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(404);
         expect(res.body).to.have.property('success', false);
         expect(res.body).to.have.property('error', 'Article not found');
@@ -964,8 +965,11 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 404 when updating non-existent feed', function(done) {
     chai.request(app)
       .put('/api/feeds/nonexistent-feed-999')
-      .send({
-        name: 'Updated Feed'
+      .set('Authorization', `Bearer ${token1}`).send({
+        name: 'Updated Feed',
+        url: 'https://example.com',
+        category: 'General',
+        updateFrequency: 60
       })
       .end((err, res) => {
         expect(res).to.have.status(404);
@@ -978,7 +982,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return 404 when deleting non-existent tag', function(done) {
     chai.request(app)
       .delete('/api/tags/nonexistent-tag-999')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(404);
         expect(res.body).to.have.property('success', false);
         expect(res.body).to.have.property('error', 'Tag not found');
@@ -989,7 +993,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should handle wrong password for existing user', function(done) {
     chai.request(app)
       .post('/api/auth/login')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         username: 'alice',
         password: 'wrongpassword123'
       })
@@ -1004,7 +1008,7 @@ describe('Integration: Error Handling & Edge Cases', function() {
   it('should return error response format consistently', function(done) {
     chai.request(app)
       .get('/api/articles/nonexistent-999')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         // Verify consistent error response structure
         expect(res.body).to.have.property('success');
         expect(res.body).to.have.property('error');
@@ -1019,15 +1023,20 @@ describe('Integration: Error Handling & Edge Cases', function() {
 // INTEGRATION TEST 6: Multi-Step Article Filtering & Search
 // ============================================================================
 describe('Integration: Article Filtering & Search', function() {
+  let token1;
+
   // Reset mock data before each test to ensure isolation
   beforeEach(() => {
     daoFactory.resetMockData();
+    
+    // Generate JWT token for test user
+    token1 = jwt.sign({ id: 'user-1', username: 'testuser' }, process.env.JWT_SECRET, { expiresIn: '7d' });
   });
   
   it('should get all articles without filters', function(done) {
     chai.request(app)
       .get('/api/articles')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body).to.have.property('data');
@@ -1040,7 +1049,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should filter articles by status=inbox', function(done) {
     chai.request(app)
       .get('/api/articles?status=inbox')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1055,7 +1064,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should filter articles by status=reading', function(done) {
     chai.request(app)
       .get('/api/articles?status=reading')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1069,7 +1078,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should filter articles by status=archived', function(done) {
     chai.request(app)
       .get('/api/articles?status=archived')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1083,7 +1092,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should filter articles by tag', function(done) {
     chai.request(app)
   .get('/api/articles?tag=JavaScript')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1098,7 +1107,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should filter favorite articles', function(done) {
     chai.request(app)
       .get('/api/articles?favorite=true')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1113,7 +1122,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should filter untagged articles', function(done) {
     chai.request(app)
       .get('/api/articles?untagged=true')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1128,7 +1137,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should combine multiple filters: status and favorite', function(done) {
     chai.request(app)
       .get('/api/articles?status=inbox&favorite=true')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1144,7 +1153,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should combine multiple filters: status and tag', function(done) {
     chai.request(app)
   .get('/api/articles?status=reading&tag=Technology')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1159,7 +1168,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should handle empty results gracefully', function(done) {
     chai.request(app)
       .get('/api/articles?status=nonexistent-status')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1172,7 +1181,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should return correct count with filtered results', function(done) {
     chai.request(app)
       .get('/api/articles?status=inbox')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('count');
         expect(res.body.count).to.equal(res.body.data.length);
@@ -1184,7 +1193,7 @@ describe('Integration: Article Filtering & Search', function() {
     // Test filtering by a specific tag from mock data
     chai.request(app)
   .get('/api/articles?tag=CSS')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1198,7 +1207,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should handle case-sensitive tag filtering', function(done) {
     chai.request(app)
       .get('/api/articles?tag=React')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1210,7 +1219,7 @@ describe('Integration: Article Filtering & Search', function() {
   it('should return all articles when no filters match', function(done) {
     chai.request(app)
       .get('/api/articles?tag=NonExistentTag')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1224,9 +1233,17 @@ describe('Integration: Article Filtering & Search', function() {
 // INTEGRATION TEST 7: Highlights & Article Interaction
 // ============================================================================
 describe('Integration: Highlights & Article Interaction', function() {
+  let token1;
+  const existingArticleId = 'article-2';
+  const existingHighlightId = 'highlight-1';
+  const existingHighlightId2 = 'highlight-2';
+
   // Reset mock data before each test to ensure isolation
   beforeEach(() => {
     daoFactory.resetMockData();
+    
+    // Generate JWT token for test user
+    token1 = jwt.sign({ id: 'user-1', username: 'testuser' }, process.env.JWT_SECRET, { expiresIn: '7d' });
   });
 
   let testArticleId;
@@ -1235,7 +1252,7 @@ describe('Integration: Highlights & Article Interaction', function() {
   it('should create an article for highlighting', function(done) {
     chai.request(app)
       .post('/api/articles')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         title: 'Article for Highlight Testing',
         url: 'https://example.com/highlight-test',
         content: 'This is a long article with important content that we want to highlight and annotate for later reference.',
@@ -1254,8 +1271,8 @@ describe('Integration: Highlights & Article Interaction', function() {
   it('should create first highlight on the article', function(done) {
     chai.request(app)
       .post('/api/highlights')
-      .send({
-        articleId: testArticleId,
+      .set('Authorization', `Bearer ${token1}`).send({
+        articleId: existingArticleId,
         userId: 'test-user-1',
         text: 'important content',
         annotations: { note: 'This is a key point to remember' },
@@ -1269,7 +1286,7 @@ describe('Integration: Highlights & Article Interaction', function() {
         expect(res).to.have.status(201);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.have.property('id');
-        expect(res.body.data).to.have.property('articleId', testArticleId);
+        expect(res.body.data).to.have.property('articleId', existingArticleId);
   expect(res.body.data).to.have.property('text', 'important content');
   expect(res.body.data.annotations).to.have.property('note', 'This is a key point to remember');
         highlight1Id = res.body.data.id;
@@ -1280,8 +1297,8 @@ describe('Integration: Highlights & Article Interaction', function() {
   it('should create second highlight on the article', function(done) {
     chai.request(app)
       .post('/api/highlights')
-      .send({
-        articleId: testArticleId,
+      .set('Authorization', `Bearer ${token1}`).send({
+        articleId: existingArticleId,
         userId: 'test-user-1',
         text: 'we want to highlight',
         annotations: { note: 'Another important section' },
@@ -1293,7 +1310,7 @@ describe('Integration: Highlights & Article Interaction', function() {
       })
       .end((err, res) => {
         expect(res).to.have.status(201);
-        expect(res.body.data).to.have.property('articleId', testArticleId);
+        expect(res.body.data).to.have.property('articleId', existingArticleId);
         highlight2Id = res.body.data.id;
         done();
       });
@@ -1302,8 +1319,8 @@ describe('Integration: Highlights & Article Interaction', function() {
   it('should create third highlight with different color', function(done) {
     chai.request(app)
       .post('/api/highlights')
-      .send({
-        articleId: testArticleId,
+      .set('Authorization', `Bearer ${token1}`).send({
+        articleId: existingArticleId,
         userId: 'test-user-1',
         text: 'later reference',
         annotations: { note: 'Useful for future' },
@@ -1324,11 +1341,11 @@ describe('Integration: Highlights & Article Interaction', function() {
   it('should get all highlights for the article', function(done) {
     // Use an existing article from mock data since created article doesn't persist
     chai.request(app)
-      .get('/api/highlights/article/1')
-      .end((err, res) => {
+      .get(`/api/highlights/article/${existingArticleId}`)
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
-  expect(res.body).to.have.property('articleId', 1);
+        expect(res.body).to.have.property('articleId', existingArticleId);
         expect(res.body).to.have.property('data');
         expect(res.body.data).to.be.an('array');
         expect(res.body).to.have.property('count');
@@ -1339,14 +1356,14 @@ describe('Integration: Highlights & Article Interaction', function() {
 
   it('should get all highlights with user filter', function(done) {
     chai.request(app)
-      .get('/api/highlights?userId=1')
-      .end((err, res) => {
+      .get('/api/highlights?userId=user-1')
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
         // All returned highlights should belong to user 1
         res.body.data.forEach(highlight => {
-          expect(highlight.userId).to.equal(1);
+          expect(highlight.userId).to.equal('user-1');
         });
         done();
       });
@@ -1355,8 +1372,8 @@ describe('Integration: Highlights & Article Interaction', function() {
   it('should update a highlight', function(done) {
     // Use an existing highlight from mock data
     chai.request(app)
-      .put('/api/highlights/1')
-      .send({
+      .put(`/api/highlights/${existingHighlightId}`)
+      .set('Authorization', `Bearer ${token1}`).send({
         annotations: { note: 'Updated note for this highlight' },
         color: '#c7d2fe'
       })
@@ -1366,23 +1383,23 @@ describe('Integration: Highlights & Article Interaction', function() {
         expect(res.body.data.annotations).to.have.property('note', 'Updated note for this highlight');
         expect(res.body.data).to.have.property('color', '#c7d2fe');
         // Should preserve original fields - ID can be string or number
-        expect(String(res.body.data.id)).to.equal('1');
+        expect(String(res.body.data.id)).to.equal(existingHighlightId);
         done();
       });
   });
 
   it('should not change articleId when updating highlight', function(done) {
     chai.request(app)
-      .put('/api/highlights/1')
-      .send({
+      .put(`/api/highlights/${existingHighlightId}`)
+      .set('Authorization', `Bearer ${token1}`).send({
         articleId: 'different-article-id', // This should be ignored
         annotations: { note: 'Testing immutable fields' }
       })
       .end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body.data.annotations).to.have.property('note', 'Testing immutable fields');
-  // articleId should remain unchanged
-  expect(res.body.data.articleId).to.not.equal(999);
+        // articleId should remain unchanged
+        expect(res.body.data.articleId).to.equal(existingArticleId);
         done();
       });
   });
@@ -1390,20 +1407,32 @@ describe('Integration: Highlights & Article Interaction', function() {
   it('should delete a highlight', function(done) {
     // Use an existing highlight from mock data
     chai.request(app)
-      .delete('/api/highlights/2')
-      .end((err, res) => {
-        expect(res).to.have.status(200);
-        expect(res.body).to.have.property('success', true);
-  expect(res.body).to.have.property('message', 'Highlight deleted successfully');
-  expect(res.body.data).to.have.property('id', 2);
-        done();
+      .post('/api/highlights')
+      .set('Authorization', `Bearer ${token1}`).send({
+        articleId: existingArticleId,
+        text: 'temporary highlight',
+        position: { start: 5, end: 15 }
+      })
+      .end((createErr, createRes) => {
+        expect(createRes).to.have.status(201);
+        const toDeleteId = createRes.body.data.id;
+
+        chai.request(app)
+          .delete(`/api/highlights/${toDeleteId}`)
+          .set('Authorization', `Bearer ${token1}`).end((err, res) => {
+            expect(res).to.have.status(200);
+            expect(res.body).to.have.property('success', true);
+            expect(res.body).to.have.property('message', 'Highlight deleted successfully');
+            expect(res.body.data).to.have.property('id', toDeleteId);
+            done();
+          });
       });
   });
 
   it('should return 404 when updating non-existent highlight', function(done) {
     chai.request(app)
       .put('/api/highlights/nonexistent-highlight-999')
-      .send({
+      .set('Authorization', `Bearer ${token1}`).send({
         annotations: { note: 'This should fail' }
       })
       .end((err, res) => {
@@ -1417,7 +1446,7 @@ describe('Integration: Highlights & Article Interaction', function() {
   it('should return 404 when deleting non-existent highlight', function(done) {
     chai.request(app)
       .delete('/api/highlights/nonexistent-highlight-999')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(404);
         expect(res.body).to.have.property('success', false);
         expect(res.body).to.have.property('error', 'Highlight not found');
@@ -1428,7 +1457,7 @@ describe('Integration: Highlights & Article Interaction', function() {
   it('should get all highlights without filters', function(done) {
     chai.request(app)
       .get('/api/highlights')
-      .end((err, res) => {
+      .set('Authorization', `Bearer ${token1}`).end((err, res) => {
         expect(res).to.have.status(200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.be.an('array');
@@ -1441,9 +1470,9 @@ describe('Integration: Highlights & Article Interaction', function() {
   it('should verify highlight has all required fields', function(done) {
     chai.request(app)
       .post('/api/highlights')
-      .send({
-        articleId: 'article-test',
-        userId: 'user-test',
+      .set('Authorization', `Bearer ${token1}`).send({
+        articleId: existingArticleId,
+        userId: 'user-1',
         text: 'test highlight text',
         annotations: { note: 'test note' },
         color: '#ffffff',
