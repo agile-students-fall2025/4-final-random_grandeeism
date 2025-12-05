@@ -9,6 +9,7 @@ import applyFiltersAndSort from "../utils/searchUtils.js";
 import { Button } from "../components/ui/button.jsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "../components/ui/dialog.jsx";
 import { useTagResolution } from "../hooks/useTagResolution.js";
 import { useStacks } from "../contexts/useStacks.js";
 
@@ -37,6 +38,10 @@ export default function TagArticlesPage({ onNavigate, tag }) {
   const [availableTags, setAvailableTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState(null);
 
   // Use shared tag resolution hook
   const { tags, resolveTagName, resolveArticleTags, resolveTagId, refreshTags, loading: tagsLoading } = useTagResolution();
@@ -185,8 +190,27 @@ export default function TagArticlesPage({ onNavigate, tag }) {
   };
 
   const handleDelete = (articleId) => {
-    if (confirm('Are you sure you want to delete this article?')) {
-      setArticles(prev => prev.filter(article => article.id !== articleId));
+    setArticleToDelete(articleId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!articleToDelete) return;
+    
+    try {
+      const response = await articlesAPI.delete(articleToDelete);
+      if (response.success) {
+        // Update both raw and resolved articles
+        setRawArticles(prev => prev.filter(article => article.id !== articleToDelete));
+        setArticles(prev => prev.filter(article => article.id !== articleToDelete));
+        setDeleteDialogOpen(false);
+        setArticleToDelete(null);
+      } else {
+        throw new Error(response.error || 'Failed to delete article');
+      }
+    } catch (error) {
+      console.error('Failed to delete article:', error);
+      alert(`Failed to delete article: ${error.message}`);
     }
   };
 
@@ -492,6 +516,26 @@ export default function TagArticlesPage({ onNavigate, tag }) {
         onRemoveTag={handleRemoveTag}
         onCreateTag={handleCreateTag}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Article</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this article? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
