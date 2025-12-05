@@ -1,6 +1,7 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const { expect } = chai;
+const jwt = require('jsonwebtoken');
 
 chai.use(chaiHttp);
 
@@ -8,15 +9,22 @@ const app = require('../index');
 const daoFactory = require('../lib/daoFactory');
 
 describe('Tags API', () => {
+  let token1, token2;
+
   // Reset mock data before each test to ensure isolation
   beforeEach(() => {
     daoFactory.resetMockData();
+    
+    // Generate JWT tokens for test users
+    token1 = jwt.sign({ id: 'user-1', username: 'testuser' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    token2 = jwt.sign({ id: 'user-2', username: 'testuser2' }, process.env.JWT_SECRET, { expiresIn: '7d' });
   });
 
   describe('GET /api/tags', () => {
     it('should return all tags', (done) => {
       chai.request(app)
         .get('/api/tags')
+        .set('Authorization', `Bearer ${token1}`)
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
@@ -43,6 +51,7 @@ describe('Tags API', () => {
     it('should support sorting by popular', (done) => {
       chai.request(app)
         .get('/api/tags?sort=popular')
+        .set('Authorization', `Bearer ${token1}`)
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
@@ -55,13 +64,14 @@ describe('Tags API', () => {
   describe('GET /api/tags/:id', () => {
     it('should return a single tag by ID', (done) => {
       chai.request(app)
-        .get('/api/tags/1')
+        .get('/api/tags/tag-1')
+        .set('Authorization', `Bearer ${token1}`)
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
           expect(res.body.data).to.be.an('object');
-          expect(res.body.data).to.have.property('id', 1);
-          expect(res.body.data).to.have.property('name', 'javascript');
+          expect(res.body.data).to.have.property('id', 'tag-1');
+          expect(res.body.data).to.have.property('name', 'testing');
           expect(res.body.data).to.have.property('articleCount');
           expect(res.body.data.articleCount).to.be.a('number');
           done();
@@ -71,6 +81,7 @@ describe('Tags API', () => {
     it('should return 404 for non-existent tag ID', (done) => {
       chai.request(app)
         .get('/api/tags/non-existent-id')
+        .set('Authorization', `Bearer ${token1}`)
         .end((err, res) => {
           expect(res).to.have.status(404);
           expect(res.body).to.have.property('success', false);
@@ -87,6 +98,7 @@ describe('Tags API', () => {
 
       chai.request(app)
         .post('/api/tags')
+        .set('Authorization', `Bearer ${token1}`)
         .send(newTag)
         .end((err, res) => {
           expect(res).to.have.status(201);
@@ -104,20 +116,23 @@ describe('Tags API', () => {
     it('should return 400 when name is missing', (done) => {
       chai.request(app)
         .post('/api/tags')
+        .set('Authorization', `Bearer ${token1}`)
         .send({ color: '#fff' })
         .end((err, res) => {
           expect(res).to.have.status(400);
           expect(res.body).to.have.property('success', false);
-          expect(res.body).to.have.property('error', 'Tag name is required');
+          expect(res.body).to.have.property('errors');
+          expect(res.body.errors).to.be.an('array');
           done();
         });
     });
 
     it('should return 409 when tag already exists', (done) => {
-      // 'javascript' is present in mockTags
+      // 'testing' is present in mockTags as tag-1
       chai.request(app)
         .post('/api/tags')
-        .send({ name: 'javascript' })
+        .set('Authorization', `Bearer ${token1}`)
+        .send({ name: 'testing' })
         .end((err, res) => {
           expect(res).to.have.status(409);
           expect(res.body).to.have.property('success', false);
@@ -132,6 +147,7 @@ describe('Tags API', () => {
       it('should normalize tag names to lowercase on creation', (done) => {
         chai.request(app)
           .post('/api/tags')
+          .set('Authorization', `Bearer ${token1}`)
           .send({ 
             name: 'Python Programming',
             description: 'Python language and frameworks'
@@ -148,6 +164,7 @@ describe('Tags API', () => {
         // First, create a tag
         chai.request(app)
           .post('/api/tags')
+          .set('Authorization', `Bearer ${token1}`)
           .send({ name: 'Ruby on Rails' })
           .end((err, res1) => {
             expect(res1).to.have.status(201);
@@ -156,6 +173,7 @@ describe('Tags API', () => {
             // Try to create the same tag with different casing
             chai.request(app)
               .post('/api/tags')
+              .set('Authorization', `Bearer ${token1}`)
               .send({ name: 'RUBY ON RAILS' })
               .end((err, res2) => {
                 expect(res2).to.have.status(409);
@@ -170,6 +188,7 @@ describe('Tags API', () => {
         // Create original tag
         chai.request(app)
           .post('/api/tags')
+          .set('Authorization', `Bearer ${token1}`)
           .send({ name: 'Artificial Intelligence' })
           .end((err, res1) => {
             expect(res1).to.have.status(201);
@@ -177,6 +196,7 @@ describe('Tags API', () => {
             // Try lowercase version
             chai.request(app)
               .post('/api/tags')
+              .set('Authorization', `Bearer ${token1}`)
               .send({ name: 'artificial intelligence' })
               .end((err, res2) => {
                 expect(res2).to.have.status(409);
@@ -185,6 +205,7 @@ describe('Tags API', () => {
                 // Try uppercase version
                 chai.request(app)
                   .post('/api/tags')
+                  .set('Authorization', `Bearer ${token1}`)
                   .send({ name: 'ARTIFICIAL INTELLIGENCE' })
                   .end((err, res3) => {
                     expect(res3).to.have.status(409);
@@ -193,6 +214,7 @@ describe('Tags API', () => {
                     // Try mixed case
                     chai.request(app)
                       .post('/api/tags')
+                      .set('Authorization', `Bearer ${token1}`)
                       .send({ name: 'ArTiFiCiAl InTeLLiGeNcE' })
                       .end((err, res4) => {
                         expect(res4).to.have.status(409);
@@ -208,6 +230,7 @@ describe('Tags API', () => {
         // Create first tag
         chai.request(app)
           .post('/api/tags')
+          .set('Authorization', `Bearer ${token1}`)
           .send({ name: 'Go Language' })
           .end((err, res1) => {
             expect(res1).to.have.status(201);
@@ -217,6 +240,7 @@ describe('Tags API', () => {
             // Create a different tag - should succeed
             chai.request(app)
               .post('/api/tags')
+              .set('Authorization', `Bearer ${token1}`)
               .send({ name: 'Golang Advanced' })
               .end((err, res2) => {
                 expect(res2).to.have.status(201);
@@ -226,6 +250,7 @@ describe('Tags API', () => {
                 // Verify both tags exist independently
                 chai.request(app)
                   .get('/api/tags')
+                  .set('Authorization', `Bearer ${token1}`)
                   .end((err, res3) => {
                     const tagNames = res3.body.data.map(t => t.name);
                     expect(tagNames).to.include('go language');
@@ -239,6 +264,7 @@ describe('Tags API', () => {
       it('should handle tags with special characters consistently', (done) => {
         chai.request(app)
           .post('/api/tags')
+          .set('Authorization', `Bearer ${token1}`)
           .send({ name: 'C++ Programming' })
           .end((err, res1) => {
             expect(res1).to.have.status(201);
@@ -247,6 +273,7 @@ describe('Tags API', () => {
             // Try to recreate with different casing
             chai.request(app)
               .post('/api/tags')
+              .set('Authorization', `Bearer ${token1}`)
               .send({ name: 'C++ PROGRAMMING' })
               .end((err, res2) => {
                 expect(res2).to.have.status(409);
@@ -259,27 +286,30 @@ describe('Tags API', () => {
       it('should verify existing mock tags are normalized', (done) => {
         // Check that existing tags from mock data are lowercase
         chai.request(app)
-          .get('/api/tags/1') // javascript tag
+          .get('/api/tags/tag-1') // testing tag
+          .set('Authorization', `Bearer ${token1}`)
           .end((err, res) => {
             expect(res).to.have.status(200);
-            expect(res.body.data.name).to.equal('javascript');
+            expect(res.body.data.name).to.equal('testing');
             expect(res.body.data.name).to.equal(res.body.data.name.toLowerCase());
             done();
           });
       });
 
       it('should reject duplicate of existing mock tag regardless of casing', (done) => {
-        // 'react' exists in mock data (id: 2)
+        // 'patterns' exists in mock data (id: tag-2)
         chai.request(app)
           .post('/api/tags')
-          .send({ name: 'React' })
+          .set('Authorization', `Bearer ${token1}`)
+          .send({ name: 'Patterns' })
           .end((err, res1) => {
             expect(res1).to.have.status(409);
             expect(res1.body.error).to.include('already exists');
 
             chai.request(app)
               .post('/api/tags')
-              .send({ name: 'REACT' })
+              .set('Authorization', `Bearer ${token1}`)
+              .send({ name: 'PATTERNS' })
               .end((err, res2) => {
                 expect(res2).to.have.status(409);
                 expect(res2.body.error).to.include('already exists');
@@ -292,10 +322,11 @@ describe('Tags API', () => {
 
   describe('PUT /api/tags/:id', () => {
     it('should update an existing tag', (done) => {
-      const update = { description: 'Updated description' };
+      const update = { name: 'patterns', description: 'Updated description' };
 
       chai.request(app)
-        .put('/api/tags/2')
+        .put('/api/tags/tag-2')
+        .set('Authorization', `Bearer ${token1}`)
         .send(update)
         .end((err, res) => {
           expect(res).to.have.status(200);
@@ -303,7 +334,7 @@ describe('Tags API', () => {
           expect(res.body).to.have.property('message', 'Tag updated successfully');
           expect(res.body.data).to.be.an('object');
           // ID can be string or number depending on DAO implementation
-          expect(String(res.body.data.id)).to.equal('2');
+          expect(String(res.body.data.id)).to.equal('tag-2');
           expect(res.body.data).to.have.property('description', update.description);
           done();
         });
@@ -312,6 +343,7 @@ describe('Tags API', () => {
     it('should return 404 when updating non-existent tag', (done) => {
       chai.request(app)
         .put('/api/tags/non-existent-id')
+        .set('Authorization', `Bearer ${token1}`)
         .send({ name: 'doesntmatter' })
         .end((err, res) => {
           expect(res).to.have.status(404);
@@ -325,7 +357,8 @@ describe('Tags API', () => {
   describe('DELETE /api/tags/:id', () => {
     it('should delete an existing tag (or return 404 if already removed in prior tests)', (done) => {
       chai.request(app)
-        .delete('/api/tags/4')
+        .delete('/api/tags/tag-4')
+        .set('Authorization', `Bearer ${token1}`)
         .end((err, res) => {
           if (res.status === 404) {
             expect(res.body).to.have.property('success', false);
@@ -336,7 +369,7 @@ describe('Tags API', () => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
           expect(res.body).to.have.property('message', 'Tag deleted successfully');
-          expect(String(res.body.data.id)).to.equal('4');
+          expect(String(res.body.data.id)).to.equal('tag-4');
           done();
         });
     });
@@ -344,6 +377,7 @@ describe('Tags API', () => {
     it('should return 404 when deleting non-existent tag', (done) => {
       chai.request(app)
         .delete('/api/tags/non-existent-id')
+        .set('Authorization', `Bearer ${token1}`)
         .end((err, res) => {
           expect(res).to.have.status(404);
           expect(res.body).to.have.property('success', false);
@@ -356,15 +390,16 @@ describe('Tags API', () => {
   describe('GET /api/tags/:id/articles', () => {
     it('should return articles tagged with the requested tag', (done) => {
       chai.request(app)
-        .get('/api/tags/1/articles')
+        .get('/api/tags/tag-1/articles')
+        .set('Authorization', `Bearer ${token1}`)
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
           expect(res.body).to.have.property('tag');
           expect(res.body).to.have.property('count');
           expect(res.body.data).to.be.an('array');
-          expect(res.body.tag).to.have.property('id', 1);
-          expect(res.body.tag).to.have.property('name', 'javascript');
+          expect(res.body.tag).to.have.property('id', 'tag-1');
+          expect(res.body.tag).to.have.property('name', 'testing');
           expect(res.body.tag).to.have.property('articleCount');
           // Count returned should match data length and articleCount
           expect(res.body.count).to.equal(res.body.data.length);
@@ -373,7 +408,7 @@ describe('Tags API', () => {
           // Check that all returned articles include the tag id
           res.body.data.forEach(article => {
             expect(article.tags).to.be.an('array');
-            expect(article.tags.includes(1)).to.equal(true);
+            expect(article.tags.includes('tag-1')).to.equal(true);
           });
 
           done();
@@ -383,6 +418,7 @@ describe('Tags API', () => {
     it('should return 404 for non-existent tag when fetching articles', (done) => {
       chai.request(app)
         .get('/api/tags/non-existent-id/articles')
+        .set('Authorization', `Bearer ${token1}`)
         .end((err, res) => {
           expect(res).to.have.status(404);
           expect(res.body).to.have.property('success', false);

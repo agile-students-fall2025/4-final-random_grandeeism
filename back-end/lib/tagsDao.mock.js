@@ -91,6 +91,11 @@ const tagsDao = {
   async getAll(filters = {}) {
     let filteredTags = [...tags];
 
+    // User filter (CRITICAL: tags must be scoped to authenticated user)
+    if (filters.userId) {
+      filteredTags = filteredTags.filter(tag => tag.userId === filters.userId);
+    }
+
     // Category filter
     if (filters.category) {
       filteredTags = filteredTags.filter(tag => tag.category === filters.category);

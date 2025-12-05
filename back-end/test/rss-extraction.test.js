@@ -1,57 +1,62 @@
 // test/rss-extraction.test.js
 const chai = require('chai');
 const chaiHttp = require('chai-http');
+const jwt = require('jsonwebtoken');
+const sinon = require('sinon');
 const app = require('../index');
+const daoFactory = require('../lib/daoFactory');
+const rssService = require('../services/rssService');
 const { expect } = chai;
 
+require('dotenv').config();
 chai.use(chaiHttp);
 
 describe('RSS Feed Extraction API', () => {
-  let testFeedId;
+  const testFeedId = 'feed-1';
+  const token = () => jwt.sign({ id: 'user-1', username: 'testuser' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  let sandbox;
 
-  before((done) => {
-    // Create a test feed first
-    chai.request(app)
-      .post('/api/feeds')
-      .send({
-        name: 'Test RSS Feed',
-        url: 'https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml',
-        category: 'Technology',
-        refreshInterval: 60,
-        isPaused: false
-      })
-      .end((err, res) => {
-        if (res.body.data && res.body.data.id) {
-          testFeedId = res.body.data.id;
-        }
-        done();
-      });
+  beforeEach(() => {
+    daoFactory.resetMockData();
+    sandbox = sinon.createSandbox();
+  });
+
+  afterEach(() => {
+    sandbox.restore();
   });
 
   describe('POST /api/feeds/:id/extract', () => {
     it('should extract articles from a single RSS feed', function(done) {
-      this.timeout(10000); // RSS parsing might take time
+      sandbox.stub(rssService, 'extractFromFeed').resolves({
+        success: true,
+        feedId: testFeedId,
+        feedName: 'Tech Weekly',
+        newArticles: 2,
+        totalArticles: 5
+      });
 
       chai.request(app)
         .post(`/api/feeds/${testFeedId}/extract`)
+        .set('Authorization', `Bearer ${token()}`)
         .end((err, res) => {
           expect(res).to.have.status(200);
-          expect(res.body).to.have.property('success');
-          
-          if (res.body.success) {
-            expect(res.body).to.have.property('feedId', testFeedId);
-            expect(res.body).to.have.property('newArticles');
-            expect(res.body).to.have.property('totalArticles');
-            expect(res.body.newArticles).to.be.a('number');
-          }
-          
+          expect(res.body).to.have.property('success', true);
+          expect(res.body).to.have.property('feedId', testFeedId);
+          expect(res.body).to.have.property('newArticles');
+          expect(res.body).to.have.property('totalArticles');
           done();
         });
     });
 
     it('should return error for non-existent feed', (done) => {
+      sandbox.stub(rssService, 'extractFromFeed').resolves({
+        success: false,
+        message: 'Feed not found'
+      });
+
       chai.request(app)
         .post('/api/feeds/nonexistent-feed-id/extract')
+        .set('Authorization', `Bearer ${token()}`)
         .end((err, res) => {
           expect(res).to.have.status(400);
           expect(res.body).to.have.property('success', false);
@@ -60,55 +65,55 @@ describe('RSS Feed Extraction API', () => {
     });
 
     it('should handle paused feed appropriately', function(done) {
-      this.timeout(10000);
+      sandbox.stub(rssService, 'extractFromFeed').resolves({
+        success: false,
+        paused: true,
+        message: 'Feed is paused'
+      });
 
-      // First pause the feed
       chai.request(app)
-        .post(`/api/feeds/${testFeedId}/pause`)
+        .post(`/api/feeds/${testFeedId}/extract`)
+        .set('Authorization', `Bearer ${token()}`)
         .end((err, res) => {
           expect(res).to.have.status(200);
-
-          // Then try to extract
-          chai.request(app)
-            .post(`/api/feeds/${testFeedId}/extract`)
-            .end((err, res) => {
-              expect(res).to.have.status(200);
-              expect(res.body).to.have.property('success', false);
-              expect(res.body).to.have.property('paused', true);
-              done();
-            });
+          expect(res.body).to.have.property('success', false);
+          expect(res.body).to.have.property('paused', true);
+          done();
         });
     });
   });
 
   describe('POST /api/feeds/extract/all', () => {
     it('should extract articles from all active feeds', function(done) {
-      this.timeout(15000); // Multiple feeds might take longer
+      sandbox.stub(rssService, 'extractFromAllFeeds').resolves({
+        success: true,
+        feedsProcessed: 1,
+        totalNewArticles: 3,
+        results: []
+      });
 
-      // First resume the test feed
       chai.request(app)
-        .post(`/api/feeds/${testFeedId}/resume`)
-        .end(() => {
-          // Then extract from all
-          chai.request(app)
-            .post('/api/feeds/extract/all')
-            .end((err, res) => {
-              expect(res).to.have.status(200);
-              expect(res.body).to.have.property('success', true);
-              expect(res.body).to.have.property('feedsProcessed');
-              expect(res.body).to.have.property('totalNewArticles');
-              expect(res.body).to.have.property('results');
-              expect(res.body.results).to.be.an('array');
-              done();
-            });
+        .post('/api/feeds/extract/all')
+        .set('Authorization', `Bearer ${token()}`)
+        .end((err, res) => {
+          expect(res).to.have.status(200);
+          expect(res.body).to.have.property('success', true);
+          expect(res.body).to.have.property('feedsProcessed');
+          expect(res.body).to.have.property('totalNewArticles');
+          expect(res.body).to.have.property('results');
+          expect(res.body.results).to.be.an('array');
+          done();
         });
     });
   });
 
   describe('POST /api/feeds/:id/pause', () => {
     it('should pause a feed successfully', (done) => {
+      sandbox.stub(rssService, 'pauseFeed').resolves({ success: true, message: 'Feed paused successfully' });
+
       chai.request(app)
         .post(`/api/feeds/${testFeedId}/pause`)
+        .set('Authorization', `Bearer ${token()}`)
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
@@ -120,8 +125,11 @@ describe('RSS Feed Extraction API', () => {
 
   describe('POST /api/feeds/:id/resume', () => {
     it('should resume a paused feed', (done) => {
+      sandbox.stub(rssService, 'resumeFeed').resolves({ success: true, message: 'Feed resumed successfully' });
+
       chai.request(app)
         .post(`/api/feeds/${testFeedId}/resume`)
+        .set('Authorization', `Bearer ${token()}`)
         .send({ intervalMinutes: 30 })
         .end((err, res) => {
           expect(res).to.have.status(200);
@@ -134,8 +142,11 @@ describe('RSS Feed Extraction API', () => {
 
   describe('POST /api/feeds/:id/auto-refresh/start', () => {
     it('should start auto-refresh for a feed', (done) => {
+      sandbox.stub(rssService, 'startAutoRefresh').callsFake(() => {});
+
       chai.request(app)
         .post(`/api/feeds/${testFeedId}/auto-refresh/start`)
+        .set('Authorization', `Bearer ${token()}`)
         .send({ intervalMinutes: 60 })
         .end((err, res) => {
           expect(res).to.have.status(200);
@@ -148,8 +159,13 @@ describe('RSS Feed Extraction API', () => {
 
   describe('GET /api/feeds/auto-refresh/status', () => {
     it('should return status of all auto-refresh jobs', (done) => {
+      sandbox.stub(rssService, 'getAutoRefreshStatus').returns([
+        { feedId: testFeedId, active: true, isRefreshing: false, intervalMinutes: 60 }
+      ]);
+
       chai.request(app)
         .get('/api/feeds/auto-refresh/status')
+        .set('Authorization', `Bearer ${token()}`)
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
@@ -162,26 +178,16 @@ describe('RSS Feed Extraction API', () => {
 
   describe('POST /api/feeds/:id/auto-refresh/stop', () => {
     it('should stop auto-refresh for a feed', (done) => {
+      sandbox.stub(rssService, 'stopAutoRefresh').callsFake(() => {});
+
       chai.request(app)
         .post(`/api/feeds/${testFeedId}/auto-refresh/stop`)
+        .set('Authorization', `Bearer ${token()}`)
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body).to.have.property('success', true);
           done();
         });
     });
-  });
-
-  after((done) => {
-    // Clean up: stop any running auto-refresh and delete test feed
-    chai.request(app)
-      .post(`/api/feeds/${testFeedId}/auto-refresh/stop`)
-      .end(() => {
-        chai.request(app)
-          .delete(`/api/feeds/${testFeedId}`)
-          .end(() => {
-            done();
-          });
-      });
   });
 });

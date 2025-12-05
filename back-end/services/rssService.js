@@ -10,7 +10,8 @@ class RSSService {
         item: ['content:encoded', 'description', 'summary']
       }
     });
-    this.refreshIntervals = new Map(); // Store interval IDs for each feed
+    // Store interval metadata for each feed: { intervalId, intervalMinutes, userId }
+    this.refreshIntervals = new Map();
     this.isRefreshing = new Map(); // Track if a feed is currently being refreshed
   }
 
@@ -202,7 +203,7 @@ class RSSService {
       await this.extractFromFeed(feedId, userId);
     }, intervalMs);
 
-    this.refreshIntervals.set(feedId, intervalId);
+    this.refreshIntervals.set(feedId, { intervalId, intervalMinutes, userId });
     
     console.log(`Started auto-refresh for feed ${feedId} every ${intervalMinutes} minutes`);
   }
@@ -212,9 +213,9 @@ class RSSService {
    * @param {string} feedId - The feed ID
    */
   stopAutoRefresh(feedId) {
-    const intervalId = this.refreshIntervals.get(feedId);
-    if (intervalId) {
-      clearInterval(intervalId);
+    const intervalMeta = this.refreshIntervals.get(feedId);
+    if (intervalMeta?.intervalId) {
+      clearInterval(intervalMeta.intervalId);
       this.refreshIntervals.delete(feedId);
       console.log(`Stopped auto-refresh for feed ${feedId}`);
     }
@@ -264,11 +265,12 @@ class RSSService {
    */
   getAutoRefreshStatus() {
     const status = [];
-    for (const [feedId, intervalId] of this.refreshIntervals.entries()) {
+    for (const [feedId, meta] of this.refreshIntervals.entries()) {
       status.push({
         feedId,
         active: true,
-        isRefreshing: this.isRefreshing.get(feedId) || false
+        isRefreshing: this.isRefreshing.get(feedId) || false,
+        intervalMinutes: meta.intervalMinutes
       });
     }
     return status;
@@ -343,8 +345,10 @@ class RSSService {
    * Stop all auto-refresh intervals (useful for cleanup in tests)
    */
   stopAllAutoRefresh() {
-    for (const [feedId, intervalId] of this.refreshIntervals) {
-      clearInterval(intervalId);
+    for (const [feedId, meta] of this.refreshIntervals) {
+      if (meta?.intervalId) {
+        clearInterval(meta.intervalId);
+      }
     }
     this.refreshIntervals.clear();
   }

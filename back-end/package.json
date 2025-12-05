@@ -6,7 +6,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "USE_MOCK_DB=true mocha",
-    "coverage": "c8 --include='routes/**' --include='utils/**' --include='index.js' --reporter=text --reporter=html mocha",
+    "coverage": "USE_MOCK_DB=true c8 --include='routes/**' --include='utils/**' --include='index.js' --reporter=text --reporter=html mocha",
     "verify:integrity": "node scripts/verifyIntegrity.js",
     "verify:parity": "node scripts/verifyDataParity.js"
   },
