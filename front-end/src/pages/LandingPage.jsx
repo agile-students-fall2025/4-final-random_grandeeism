@@ -35,7 +35,7 @@ export default function LandingPage({ onNavigate }) {
 							</h1>
 							{/* Get started button */}
 							<Button
-								className="mt-2 mb-0 h-[50px] px-8 rounded-full font-medium text-lg transition-all focus:outline-none bg-black text-white dark:bg-white dark:text-black hover:cursor-pointer"
+								className="mt-2 mb-0 h-[50px] px-8 rounded-full font-normal text-lg transition-all focus:outline-none bg-black text-white dark:bg-white dark:text-black hover:cursor-pointer"
 								style={{ 
 									animation: 'fadeInUp 0.6s ease-out 0.2s both',
 									boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1)'
@@ -100,7 +100,7 @@ export default function LandingPage({ onNavigate }) {
 								Log in
 							</button>
 							<button
-								className="h-[36px] md:h-[40px] px-3 md:px-4 rounded-full font-medium text-sm md:text-base transition-colors focus:outline-none bg-black text-white dark:bg-white dark:text-black hover:cursor-pointer hover:opacity-80 active:opacity-70"
+								className="h-[36px] md:h-[40px] px-3 md:px-4 rounded-full font-normal text-sm md:text-base transition-colors focus:outline-none bg-black text-white dark:bg-white dark:text-black hover:cursor-pointer hover:opacity-80 active:opacity-70"
 								style={{ minWidth: 'auto' }}
 								onClick={() => onNavigate?.("auth")}
 							>

@@ -39,16 +39,12 @@ router.post('/register', validateRegistration, handleValidationErrors, async (re
       });
     }
 
-    // Hash password using bcrypt with salt rounds of 10
-    // This ensures passwords are never stored in plain text
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     // Create new user via DAO
+    // Note: Password hashing is handled by the DAO (User model pre-save hook or mock DAO)
     const newUser = await usersDao.create({
       username,
       email,
-      password: hashedPassword,
+      password: password,
       displayName: displayName || username,
       bio: '',
       avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${username}`,
@@ -129,15 +125,12 @@ router.post('/signup', validateRegistration, handleValidationErrors, async (req,
       });
     }
 
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
     // Create user object
+    // Note: Password hashing is handled by the DAO (User model pre-save hook or mock DAO)
     const userData = {
       username,
       email,
-      password: hashedPassword,
+      password: password,
       displayName: displayName || username
     };
 

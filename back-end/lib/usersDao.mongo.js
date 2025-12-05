@@ -6,7 +6,7 @@
  * operations and complex query capabilities.
  */
 
-const { User } = require('./models');
+const { User, Article, Feed, Highlight, Tag } = require('./models');
 
 /**
  * Helper to convert MongoDB ObjectId to string format for consistency with mock DAO
@@ -162,6 +162,14 @@ const usersDao = {
    * @returns {Promise<boolean>} True if deleted, false if not found
    */
   async delete(id) {
+    // Delete all associated data
+    await Promise.all([
+      Article.deleteMany({ userId: id }),
+      Feed.deleteMany({ userId: id }),
+      Highlight.deleteMany({ userId: id }),
+      Tag.deleteMany({ userId: id })
+    ]);
+
     const result = await User.deleteOne({ _id: id });
     return result.deletedCount > 0;
   },

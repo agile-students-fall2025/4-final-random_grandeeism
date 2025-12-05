@@ -28,20 +28,22 @@ async function createDemoUser() {
       console.log('Demo user already exists:', existingUser.email);
       
       // Update password if needed
-      // Note: We pass plain text password because the User model pre-save hook will hash it
-      existingUser.password = 'password123';
+      const hashedPassword = await bcrypt.hash('password123', 10);
+      existingUser.password = hashedPassword;
       existingUser.email = 'demo@fieldnotes.app';
       existingUser.username = 'demo';
       existingUser.displayName = 'Demo User';
       await existingUser.save();
       console.log('Demo user updated successfully!');
     } else {
+      // Hash password
+      const hashedPassword = await bcrypt.hash('password123', 10);
+
       // Create new demo user
-      // Note: We pass plain text password because the User model pre-save hook will hash it
       const demoUser = new User({
         username: 'demo',
         email: 'demo@fieldnotes.app',
-        password: 'password123',
+        password: hashedPassword,
         displayName: 'Demo User',
         bio: 'Demo account for testing',
         avatar: null,
