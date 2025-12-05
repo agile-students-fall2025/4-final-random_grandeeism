@@ -459,23 +459,23 @@ export const usersAPI = {
   },
 
   /**
+   * Delete user account
+   * @param {string} id - User ID
+   * @returns {Promise} API response
+   */
+  deleteAccount: async (id) => {
+    return apiRequest(`/users/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
    * Get reading statistics
    * @param {string} id - User ID
    * @returns {Promise} API response with reading stats
    */
   getStats: async (id) => {
     return apiRequest(`/users/stats/${id}`);
-  },
-
-  /**
-   * Delete user account
-   * @param {string} id - User ID
-   * @returns {Promise} API response
-   */
-  delete: async (id) => {
-    return apiRequest(`/users/${id}`, {
-      method: 'DELETE',
-    });
   },
 };
 

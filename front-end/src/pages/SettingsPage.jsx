@@ -205,6 +205,29 @@ const SettingsPage = ({ onNavigate }) => {
     toast.success("Avatar reset to original");
   };
 
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    if (deleteEmail !== profileData.email || !deleteConfirm) return;
+    
+    try {
+      if (user?._id || user?.id) {
+        const userId = user._id || user.id;
+        const response = await usersAPI.deleteAccount(userId);
+        
+        if (response.success) {
+          toast.success('Account deleted successfully');
+          logout();
+          onNavigate('auth');
+        } else {
+          toast.error(response.error || 'Failed to delete account');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      toast.error('Failed to delete account');
+    }
+  };
+
   const themeOptions = [
     { value: "light", label: "Light", icon: Sun },
     { value: "dark", label: "Dark", icon: Moon },
@@ -620,7 +643,7 @@ const SettingsPage = ({ onNavigate }) => {
                         type="submit" 
                         variant="destructive" 
                         disabled={deleteEmail !== profileData.email || !deleteConfirm} 
-                        onClick={() => onNavigate('auth')}
+                        onClick={handleDeleteAccount}
                       >
                         Delete Account
                       </Button>

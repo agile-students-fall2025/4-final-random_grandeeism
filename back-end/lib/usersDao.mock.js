@@ -7,6 +7,7 @@
  */
 
 const { mockUsers } = require('../data/mockUsers');
+const bcrypt = require('bcryptjs');
 
 // In-memory storage - clone the mock data to avoid mutations
 let users = [...mockUsers.map(user => ({ ...user }))];
@@ -125,11 +126,15 @@ const usersDao = {
       }
     }
 
+    // Hash password to match MongoDB behavior
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(userData.password, salt);
+
     const newUser = {
       id: generateId(),
       username: userData.username || userData.email.split('@')[0],
       email: userData.email,
-      password: userData.password, // Should be hashed before calling this
+      password: hashedPassword,
       isActive: userData.isActive !== false, // Default to true
       profile: {
         firstName: userData.firstName || '',
