@@ -5,73 +5,100 @@
 
 const mockUsers = [
   {
-    "id": 1,
-    "username": "johndoe",
-    "email": "john@example.com",
+    "id": "000000000000000000000001",
+    "username": "testuser",
+    "email": "test@example.com",
     "password": "$2a$10$X5wFKc4VhfVj1c1J3N6WcO7yK4MvN4OQ7BqwQQm9X4WvB5GJxJ9qG",
-    "displayName": "John Doe",
-    "bio": "Avid reader and tech enthusiast",
-    "avatar": null,
-    "preferences": {
-      "theme": "dark",
-      "readingGoal": 30,
-      "emailNotifications": true,
-      "defaultView": "inbox"
-    },
-    "stats": {
-      "articlesRead": 45,
-      "totalReadingTime": 2340,
-      "currentStreak": 7,
-      "longestStreak": 21
-    },
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "lastLogin": "2024-01-15T00:00:00.000Z"
-  },
-  {
-    "id": 2,
-    "username": "janesmith",
-    "email": "jane@example.com",
-    "password": "$2a$10$Y6xGLd5WigWk2d2K4O7XdP8zL5NwO5PR8CsxRRn0Y5XwC6HKyK0rH",
-    "displayName": "Jane Smith",
-    "bio": "Frontend developer and design lover",
+    "displayName": "Test User",
+    "bio": "Test account",
     "avatar": null,
     "preferences": {
       "theme": "light",
-      "readingGoal": 20,
-      "emailNotifications": false,
-      "defaultView": "daily"
-    },
-    "stats": {
-      "articlesRead": 28,
-      "totalReadingTime": 1520,
-      "currentStreak": 3,
-      "longestStreak": 14
-    },
-    "createdAt": "2024-01-05T00:00:00.000Z",
-    "lastLogin": "2024-01-14T00:00:00.000Z"
-  },
-  {
-    "id": 3,
-    "username": "demo",
-    "email": "demo@fieldnotes.app",
-    "password": "$2a$10$N9qo8uLOickgx2ZMRZoMye.IW7XgLGOlVDJBH0DXR0A/gvIIWqJ8u",
-    "displayName": "Demo User",
-    "bio": "Demo account for testing",
-    "avatar": null,
-    "preferences": {
-      "theme": "light",
-      "readingGoal": 10,
+      "readingGoal": 5,
       "emailNotifications": false,
       "defaultView": "inbox"
     },
     "stats": {
-      "articlesRead": 0,
+      "totalArticles": 0,
       "totalReadingTime": 0,
-      "currentStreak": 0,
+      "favoriteCount": 0,
+      "tagsUsed": 0,
+      "joinedDate": "2024-01-01T00:00:00.000Z",
+      "lastLogin": "2024-01-01T00:00:00.000Z",
+      "streakDays": 0,
       "longestStreak": 0
     },
     "createdAt": "2024-01-01T00:00:00.000Z",
-    "lastLogin": "2024-01-15T00:00:00.000Z"
+    "lastLogin": "2024-01-01T00:00:00.000Z",
+    "isActive": true,
+    "profile": {
+      "firstName": "Test",
+      "lastName": "User",
+      "avatar": "/images/default-avatar.png",
+      "bio": "Test account",
+      "preferences": {
+        "theme": "light",
+        "notifications": false,
+        "autoArchive": false,
+        "readingGoal": 5,
+        "language": "en",
+        "timezone": "UTC"
+      }
+    },
+    "security": {
+      "lastPasswordChange": "2024-01-01T00:00:00.000Z",
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": false
+    },
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "000000000000000000000002",
+    "username": "demo",
+    "email": "demo@test.com",
+    "password": "$2a$10$N9qo8uLOickgx2ZMRZoMye.IW7XgLGOlVDJBH0DXR0A/gvIIWqJ8u",
+    "displayName": "Demo User",
+    "bio": "Demo account",
+    "avatar": null,
+    "preferences": {
+      "theme": "dark",
+      "readingGoal": 10,
+      "emailNotifications": true,
+      "defaultView": "daily"
+    },
+    "stats": {
+      "totalArticles": 2,
+      "totalReadingTime": 10,
+      "favoriteCount": 0,
+      "tagsUsed": 0,
+      "joinedDate": "2024-01-02T00:00:00.000Z",
+      "lastLogin": "2024-01-05T00:00:00.000Z",
+      "streakDays": 1,
+      "longestStreak": 2
+    },
+    "createdAt": "2024-01-02T00:00:00.000Z",
+    "lastLogin": "2024-01-05T00:00:00.000Z",
+    "isActive": true,
+    "profile": {
+      "firstName": "Demo",
+      "lastName": "User",
+      "avatar": "/images/default-avatar.png",
+      "bio": "Demo account",
+      "preferences": {
+        "theme": "dark",
+        "notifications": true,
+        "autoArchive": false,
+        "readingGoal": 10,
+        "language": "en",
+        "timezone": "UTC"
+      }
+    },
+    "security": {
+      "lastPasswordChange": "2024-01-02T00:00:00.000Z",
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": false
+    },
+    "updatedAt": "2024-01-05T00:00:00.000Z"
   }
 ];
 

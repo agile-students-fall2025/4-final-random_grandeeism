@@ -5,72 +5,56 @@
 
 const mockHighlights = [
   {
-    "id": 1,
-    "articleId": 3,
-    "userId": 1,
-    "text": "do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nostrud exercitation ullam",
+    "id": "000000000000000000000001",
+    "articleId": "000000000000000000000002",
+    "userId": "000000000000000000000001",
+    "quote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.",
+    "color": "yellow",
+    "annotation": "Important testing concept",
+    "dateCreated": "2024-01-02T12:00:00.000Z",
+    "tags": [],
+    "isPublic": false,
+    "metadata": {},
     "annotations": {
-      "title": "Intuitive & accessible UIs",
-      "note": "Important principle for UX design"
+      "title": "",
+      "note": ""
     },
-    "color": "#fef08a",
     "position": {
-      "start": 61,
-      "end": 181
+      "start": 0,
+      "end": 0,
+      "startContainer": "",
+      "endContainer": "",
+      "xpath": "",
+      "cssSelector": ""
     },
-    "createdAt": "2024-01-13T14:30:00.000Z",
-    "updatedAt": "2024-01-13T14:30:00.000Z"
+    "createdAt": "2025-12-05T02:32:34.228Z",
+    "updatedAt": "2025-12-05T02:32:34.228Z"
   },
   {
-    "id": 2,
-    "articleId": 3,
-    "userId": 1,
-    "text": " Duis aute irure dolor in reprehenderit in voluptate velit e",
+    "id": "000000000000000000000002",
+    "articleId": "000000000000000000000003",
+    "userId": "000000000000000000000002",
+    "quote": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod.",
+    "color": "green",
+    "annotation": "Best practice reference",
+    "dateCreated": "2024-01-03T15:30:00.000Z",
+    "tags": [],
+    "isPublic": false,
+    "metadata": {},
     "annotations": {
-      "title": "Design systems for consistency",
-      "note": "Consider implementing for our project"
+      "title": "",
+      "note": ""
     },
-    "color": "#bfdbfe",
     "position": {
-      "start": 232,
-      "end": 292
+      "start": 0,
+      "end": 0,
+      "startContainer": "",
+      "endContainer": "",
+      "xpath": "",
+      "cssSelector": ""
     },
-    "createdAt": "2024-01-13T15:00:00.000Z",
-    "updatedAt": "2024-01-13T15:00:00.000Z"
-  },
-  {
-    "id": 4,
-    "articleId": 6,
-    "userId": 1,
-    "text": "r adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nos",
-    "annotations": {
-      "title": "TypeScript generics for type safety",
-      "note": null
-    },
-    "color": "#fef08a",
-    "position": {
-      "start": 38,
-      "end": 158
-    },
-    "createdAt": "2024-01-10T16:45:00.000Z",
-    "updatedAt": "2024-01-10T16:45:00.000Z"
-  },
-  {
-    "id": 5,
-    "articleId": 10,
-    "userId": 1,
-    "text": "r adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\nUt enim ad minim veniam, quis nos",
-    "annotations": {
-      "title": "Database indexing boosts query performance",
-      "note": "Apply to our user lookup queries"
-    },
-    "color": "#fca5a5",
-    "position": {
-      "start": 38,
-      "end": 158
-    },
-    "createdAt": "2024-01-06T11:20:00.000Z",
-    "updatedAt": "2024-01-06T11:25:00.000Z"
+    "createdAt": "2025-12-05T02:32:34.228Z",
+    "updatedAt": "2025-12-05T02:32:34.228Z"
   }
 ];
 

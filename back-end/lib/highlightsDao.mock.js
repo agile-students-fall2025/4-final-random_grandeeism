@@ -11,13 +11,17 @@ const { mockHighlights } = require('../data/mockHighlights');
 // In-memory storage - clone the mock data to avoid mutations
 let highlights = [...mockHighlights.map(highlight => ({ ...highlight }))];
 
-// Next numeric ID helper
-let nextId = (highlights.length ? Math.max(...highlights.map(h => Number(h.id))) : 0) + 1;
+// ID tracking for string-based IDs (compatible with normalized hex format)
+let nextNumericId = 1000;
 
 /**
- * Generate a new ID for created highlights
+ * Generate a new ID for created highlights (returns hex string matching seed format)
  */
-const generateId = () => nextId++;
+const generateId = () => {
+  const hexId = nextNumericId.toString(16).padStart(24, '0');
+  nextNumericId++;
+  return hexId;
+};
 
 const highlightsDao = {
   /**
