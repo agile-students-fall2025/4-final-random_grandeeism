@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+require('dotenv').config();
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /**
  * Middleware to authenticate JWT tokens

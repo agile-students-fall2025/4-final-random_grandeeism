@@ -142,43 +142,7 @@ highlightSchema.virtual('user', {
   justOne: true
 });
 
-// Instance methods
-highlightSchema.methods.addNote = function(noteText) {
-  if (!this.annotations) {
-    this.annotations = { title: '', note: '' };
-  }
-  this.annotations.note = noteText.trim();
-  return this.save();
-};
-
-highlightSchema.methods.updateColor = function(newColor) {
-  // Accept hex colors or named colors
-  const isValidHex = /^#[0-9A-Fa-f]{6}$/.test(newColor);
-  const validColorNames = ['yellow', 'green', 'blue', 'purple', 'red', 'orange', 'pink'];
-  const isValidName = validColorNames.includes(newColor.toLowerCase());
-  
-  if (isValidHex || isValidName) {
-    this.color = newColor;
-    return this.save();
-  }
-  throw new Error('Invalid highlight color: use hex format (#RRGGBB) or color names');
-};
-
-highlightSchema.methods.addTag = function(tag) {
-  const normalizedTag = tag.toLowerCase().trim();
-  if (!this.tags.includes(normalizedTag)) {
-    this.tags.push(normalizedTag);
-    return this.save();
-  }
-  return Promise.resolve(this);
-};
-
-highlightSchema.methods.removeTag = function(tag) {
-  const normalizedTag = tag.toLowerCase().trim();
-  this.tags = this.tags.filter(t => t !== normalizedTag);
-  return this.save();
-};
-
+// Instance methods (keep only the one used by DAOs)
 highlightSchema.methods.togglePublic = function() {
   this.isPublic = !this.isPublic;
   return this.save();

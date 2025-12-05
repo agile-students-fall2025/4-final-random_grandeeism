@@ -1,6 +1,6 @@
 // Test script to verify tag article count calculation
-const { mockTags } = require('./data/mockTags');
-const { mockArticles } = require('./data/mockArticles');
+const { mockTags } = require('../data/mockTags');
+const { mockArticles } = require('../data/mockArticles');
 
 // Calculate the actual article count for a tag
 const calculateArticleCount = (tagId) => {

@@ -12,13 +12,17 @@ const bcrypt = require('bcryptjs');
 // In-memory storage - clone the mock data to avoid mutations
 let users = [...mockUsers.map(user => ({ ...user }))];
 
-// Next numeric ID helper
-let nextId = (users.length ? Math.max(...users.map(u => Number(u.id))) : 0) + 1;
+// ID tracking for string-based IDs (compatible with normalized hex format)
+let nextNumericId = 1000;
 
 /**
- * Generate a new ID for created users
+ * Generate a new ID for created users (returns hex string matching seed format)
  */
-const generateId = () => nextId++;
+const generateId = () => {
+  const hexId = nextNumericId.toString(16).padStart(24, '0');
+  nextNumericId++;
+  return hexId;
+};
 
 const usersDao = {
   /**

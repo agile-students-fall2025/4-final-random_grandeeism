@@ -3,7 +3,7 @@
  * Tests deleting a tag that already exists in mock data
  */
 
-const {tagsDao, articlesDao} = require('./lib/daoFactory');
+const {tagsDao, articlesDao} = require('../lib/daoFactory');
 
 (async () => {
   console.log('=== Testing Deletion of Existing Mock Tag ===\n');

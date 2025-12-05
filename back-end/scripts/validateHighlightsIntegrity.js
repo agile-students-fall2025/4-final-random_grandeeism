@@ -1,4 +1,4 @@
-const { mockHighlights } = require('../baseData/mockHighlights');
+const { mockHighlights } = require('../data/mockHighlights');
 const { mockArticles } = require('../baseData/mockArticles');
 
 function validateHighlightIntegrity() {

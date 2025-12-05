@@ -11,13 +11,17 @@ const { mockArticles } = require('../data/mockArticles');
 // In-memory storage - clone the mock data to avoid mutations
 let articles = [...mockArticles.map(article => ({ ...article }))];
 
-// Next numeric ID helper
-let nextId = (articles.length ? Math.max(...articles.map(a => Number(a.id))) : 0) + 1;
+// ID tracking for string-based IDs (compatible with normalized hex format)
+let nextNumericId = 1000;
 
 /**
- * Generate a new ID for created articles
+ * Generate a new ID for created articles (returns hex string matching seed format)
  */
-const generateId = () => nextId++;
+const generateId = () => {
+  const hexId = nextNumericId.toString(16).padStart(24, '0');
+  nextNumericId++;
+  return hexId;
+};
 
 const articlesDao = {
   /**

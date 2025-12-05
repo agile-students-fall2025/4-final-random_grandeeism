@@ -1,11 +1,21 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
-const app = require('../index');
+const express = require('express');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 const highlightsRouter = require('../routes/highlights');
 const daoFactory = require('../lib/daoFactory');
 
 const { expect } = chai;
 chai.use(chaiHttp);
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Create minimal Express app for testing
+const app = express();
+app.use(express.json());
+
+app.use('/api/highlights', highlightsRouter);
 
 describe('Highlights - helpers', () => {
 	// Reset mock data before each test to ensure isolation
@@ -130,9 +140,21 @@ describe('Highlights - helpers', () => {
 });
 
 describe('Highlights - routes (integration)', () => {
+	let testToken;
+
+	beforeEach(() => {
+		daoFactory.resetMockData();
+		testToken = jwt.sign(
+			{ id: 'user-1', username: 'testuser' },
+			JWT_SECRET,
+			{ expiresIn: '7d' }
+		);
+	});
+
 	it('POST /api/highlights - missing required fields returns 400', done => {
 		chai.request(app)
 			.post('/api/highlights')
+			.set('Authorization', `Bearer ${testToken}`)
 			.send({})
 			.end((err, res) => {
 				expect(res).to.have.status(400);
@@ -142,13 +164,14 @@ describe('Highlights - routes (integration)', () => {
 
 	it('POST /api/highlights - valid request returns 201 and includes annotations and text', done => {
 		const payload = {
-			articleId: '1',
+			articleId: 'article-1',
 			userId: 'user-1',
 			text: 'Some highlighted text to create',
 			position: { start: 10, end: 20 }
 		};
 		chai.request(app)
 			.post('/api/highlights')
+			.set('Authorization', `Bearer ${testToken}`)
 			.send(payload)
 			.end((err, res) => {
 				expect(res).to.have.status(201);
@@ -160,7 +183,7 @@ describe('Highlights - routes (integration)', () => {
 
 		it('POST /api/highlights - edge: annotations with empty title falls back to generated title', done => {
 			const payload = {
-				articleId: '1',
+				articleId: 'article-1',
 				userId: 'user-1',
 				text: 'Some highlighted text to create for edge',
 				position: { start: 10, end: 20 },
@@ -168,6 +191,7 @@ describe('Highlights - routes (integration)', () => {
 			};
 			chai.request(app)
 				.post('/api/highlights')
+				.set('Authorization', `Bearer ${testToken}`)
 				.send(payload)
 				.end((err, res) => {
 					expect(res).to.have.status(201);
@@ -178,7 +202,7 @@ describe('Highlights - routes (integration)', () => {
 
 		it('POST /api/highlights - invalid: annotations array returns 400', done => {
 			const payload = {
-				articleId: '1',
+				articleId: 'article-1',
 				userId: 'user-1',
 				text: 'text',
 				position: { start: 1, end: 2 },
@@ -186,6 +210,7 @@ describe('Highlights - routes (integration)', () => {
 			};
 			chai.request(app)
 				.post('/api/highlights')
+				.set('Authorization', `Bearer ${testToken}`)
 				.send(payload)
 				.end((err, res) => {
 					expect(res).to.have.status(400);
@@ -195,7 +220,8 @@ describe('Highlights - routes (integration)', () => {
 
 	it('PUT /api/highlights/:id - cannot change text (400)', done => {
 		chai.request(app)
-			.put('/api/highlights/1')
+			.put('/api/highlights/highlight-1')
+			.set('Authorization', `Bearer ${testToken}`)
 			.send({ text: 'I should not be allowed' })
 			.end((err, res) => {
 				expect(res).to.have.status(400);
@@ -205,7 +231,8 @@ describe('Highlights - routes (integration)', () => {
 
 	it('PUT /api/highlights/:id - annotations:null removes annotations', done => {
 		chai.request(app)
-			.put('/api/highlights/1')
+			.put('/api/highlights/highlight-1')
+			.set('Authorization', `Bearer ${testToken}`)
 			.send({ annotations: null })
 			.end((err, res) => {
 				expect(res).to.have.status(200);
@@ -216,7 +243,8 @@ describe('Highlights - routes (integration)', () => {
 
 		it('PUT /api/highlights/:id - valid: update title only', done => {
 			chai.request(app)
-				.put('/api/highlights/1')
+				.put('/api/highlights/highlight-1')
+				.set('Authorization', `Bearer ${testToken}`)
 				.send({ annotations: { title: 'Updated Title' } })
 				.end((err, res) => {
 					expect(res).to.have.status(200);
@@ -225,21 +253,23 @@ describe('Highlights - routes (integration)', () => {
 				});
 		});
 
-		it('PUT /api/highlights/:id - edge: empty title/note updates to empty strings (no delete)', done => {
+	it('PUT /api/highlights/:id - edge: empty title/note updates to empty strings (no delete)', done => {
+		chai.request(app)
+			.put('/api/highlights/highlight-1')
+			.set('Authorization', `Bearer ${testToken}`)
+			.send({ annotations: { title: '', note: '' } })
+			.end((err, res) => {
+				expect(res).to.have.status(200);
+				// When title is empty, API auto-generates from text (first 6 words)
+				expect(res.body.data.annotations.title).to.be.a('string').and.to.not.equal('');
+				expect(res.body.data.annotations.title).to.match(/^Lorem ipsum dolor sit amet/);
+				expect(res.body.data.annotations.note).to.equal('');
+				done();
+			});
+	});		it('PUT /api/highlights/:id - invalid: annotations array returns 400', done => {
 			chai.request(app)
-				.put('/api/highlights/1')
-				.send({ annotations: { title: '', note: '' } })
-				.end((err, res) => {
-					expect(res).to.have.status(200);
-					expect(res.body.data.annotations.title).to.equal('');
-					expect(res.body.data.annotations.note).to.equal('');
-					done();
-				});
-		});
-
-		it('PUT /api/highlights/:id - invalid: annotations array returns 400', done => {
-			chai.request(app)
-				.put('/api/highlights/1')
+				.put('/api/highlights/highlight-1')
+				.set('Authorization', `Bearer ${testToken}`)
 				.send({ annotations: [] })
 				.end((err, res) => {
 					expect(res).to.have.status(400);

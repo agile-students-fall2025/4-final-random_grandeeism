@@ -11,13 +11,17 @@ const { mockFeeds } = require('../data/mockFeeds');
 // In-memory storage - clone the mock data to avoid mutations
 let feeds = [...mockFeeds.map(feed => ({ ...feed }))];
 
-// Next numeric ID helper
-let nextId = (feeds.length ? Math.max(...feeds.map(f => Number(f.id))) : 0) + 1;
+// ID tracking for string-based IDs (compatible with normalized hex format)
+let nextNumericId = 1000;
 
 /**
- * Generate a new ID for created feeds
+ * Generate a new ID for created feeds (returns hex string matching seed format)
  */
-const generateId = () => nextId++;
+const generateId = () => {
+  const hexId = nextNumericId.toString(16).padStart(24, '0');
+  nextNumericId++;
+  return hexId;
+};
 
 const feedsDao = {
   /**

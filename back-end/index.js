@@ -11,8 +11,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB Atlas
-if (process.env.MONGODB_URI) {
+// Connect to MongoDB Atlas ONLY if not using mock DB
+// This prevents accidental database writes during testing
+const useMockDB = process.env.USE_MOCK_DB === 'true';
+if (!useMockDB && process.env.MONGODB_URI) {
   mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
       console.log('✅ Connected to MongoDB Atlas');
@@ -20,6 +22,8 @@ if (process.env.MONGODB_URI) {
     .catch((error) => {
       console.error('❌ MongoDB connection error:', error);
     });
+} else if (useMockDB) {
+  console.warn('⚠️  Mock DB enabled (USE_MOCK_DB=true) - MongoDB connection disabled');
 } else {
   console.warn('⚠️  No MONGODB_URI found in environment variables. Running without database connection.');
 }

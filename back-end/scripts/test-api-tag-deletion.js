@@ -10,7 +10,7 @@ const { expect } = chai;
 chai.use(chaiHttp);
 
 // Require app after chai setup
-const app = require('./index');
+const app = require('../index');
 
 (async () => {
   console.log('=== API Integration Test: Tag Deletion ===\n');

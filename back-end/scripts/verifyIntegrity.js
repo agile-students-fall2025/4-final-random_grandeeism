@@ -4,11 +4,11 @@
  * Purpose: Ensures uniqueness of IDs and referential integrity across mock data.
  */
 
-const { mockUsers } = require('../baseData/mockUsers');
-const { mockFeeds } = require('../baseData/mockFeeds');
-const { mockArticles } = require('../baseData/mockArticles');
-const { mockTags } = require('../baseData/mockTags');
-const { mockHighlights } = require('../baseData/mockHighlights');
+const { mockUsers } = require('../data/mockUsers');
+const { mockFeeds } = require('../data/mockFeeds');
+const { mockArticles } = require('../data/mockArticles');
+const { mockTags } = require('../data/mockTags');
+const { mockHighlights } = require('../data/mockHighlights');
 
 function auditUniqueness(label, items, idSelector = i => i.id) {
   const seen = new Map();

@@ -3,8 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 // Load the modified DAO
-const { mockTags } = require('./data/mockTags');
-const { mockArticles } = require('./data/mockArticles');
+const { mockTags } = require('../data/mockTags');
+const { mockArticles } = require('../data/mockArticles');
 
 // Numeric ID implementation consistency check
 const calculateArticleCount = (tagId) => mockArticles.filter(a => Array.isArray(a.tags) && a.tags.includes(tagId)).length;

@@ -29,7 +29,7 @@ tags = tags.map(t => ({
   articleCount: typeof t.articleCount === 'number' ? t.articleCount : 0
 }));
 
-// Next numeric ID helper
+// ID tracking for string-based IDs (compatible with normalized hex format)
 // Validate uniqueness of existing IDs (development safeguard)
 const seenIds = new Set();
 for (const t of tags) {
@@ -40,19 +40,21 @@ for (const t of tags) {
   seenIds.add(t.id);
 }
 
-let nextId = (tags.length ? Math.max(...tags.map(t => Number(t.id))) : 0) + 1;
+// For new tags, generate hex-like strings to match normalized format
+let nextNumericId = 1000; // Start well above seed data max
 
 /**
- * Generate a new ID for created tags
+ * Generate a new ID for created tags (returns hex string matching seed format)
  */
 const generateId = () => {
-  // Ensure we never collide with existing IDs
-  while (seenIds.has(String(nextId))) {
-    nextId++;
+  // Generate a hex string ID
+  let hexId = nextNumericId.toString(16).padStart(24, '0');
+  while (seenIds.has(hexId)) {
+    nextNumericId++;
+    hexId = nextNumericId.toString(16).padStart(24, '0');
   }
-  const id = nextId++;
-  seenIds.add(String(id));
-  return id;
+  seenIds.add(hexId);
+  return hexId;
 };
 
 /**
@@ -324,8 +326,8 @@ const tagsDao = {
   reset() {
     tags = [...mockTags.map(tag => ({ ...tag }))];
     seenIds.clear();
-    for (const t of tags) seenIds.add(String(t.id));
-    nextId = (tags.length ? Math.max(...tags.map(t => Number(t.id))) : 0) + 1;
+    for (const t of tags) seenIds.add(t.id);
+    nextNumericId = 1000; // Reset to start value
   },
 
   /**
