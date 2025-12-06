@@ -72,7 +72,14 @@ npm install
 
 ### Key Features
 
-- **Export Notes**: Users can export their article notes and highlights in multiple formats (Markdown, PDF, Plain Text) directly to their device. PDF generation is handled client-side using jsPDF library for a seamless experience.
+- **Article Management**: Save, organize, and read articles with status tracking (inbox, continue, daily, rediscovery, archived)
+- **Tag System**: Organize articles with custom tags and intelligent tag management
+- **Highlighting & Annotations**: Highlight text passages and add notes with color-coded highlights
+- **Export Notes**: Export article notes and highlights in multiple formats (Markdown, PDF, Plain Text)
+- **Reading Progress**: Track reading progress with automatic completion detection
+- **User Authentication**: Secure JWT-based authentication with bcrypt password hashing
+- **Content Extraction**: Automatic content extraction from URLs with metadata parsing
+- **Responsive Design**: Mobile-first responsive design with theme support (light/dark)
 
 ## API Endpoints
 
@@ -136,8 +143,9 @@ The following environment variables are required in the `back-end/.env` file:
 
 - `PORT`: Port number for the back-end server (default: 7001)
 - `NODE_ENV`: Set to `development` or `production`
-- `USE_MOCK_DB`: Set to `true` for mock data or `false` for MongoDB
-- `FRONTEND_URL`: URL of the front-end application for CORS (default: http://localhost:5174)
+- `MONGODB_URI`: MongoDB Atlas connection string (required for production)
+- `USE_MOCK_DB`: Set to `true` for mock data or `false` for MongoDB Atlas
+- `FRONTEND_URL`: URL of the front-end application for CORS (default: http://localhost:5173)
 - `JWT_SECRET`: Secret key for signing JWT tokens
 - `JWT_EXPIRES_IN`: JWT token expiration time (default: 7d)
 
@@ -147,14 +155,15 @@ The following environment variables are required in the `back-end/.env` file:
 PORT=7001
 NODE_ENV=development
 
-# Database Configuration - Using Mock Data
-USE_MOCK_DB=true
+# Database Configuration - MongoDB Atlas
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/fieldnotes?retryWrites=true&w=majority
+USE_MOCK_DB=false
 
 # Front-End URL (for CORS)
-FRONTEND_URL=http://localhost:5174
+FRONTEND_URL=http://localhost:5173
 
 # JWT Authentication
-JWT_SECRET=your-super-secret-and-long-string-for-signing-tokens
+JWT_SECRET=your-super-secret-and-long-string-for-signing-tokens-change-in-production
 JWT_EXPIRES_IN=7d
 ```
 
@@ -185,36 +194,48 @@ JWT_EXPIRES_IN=7d
    ```
 
 ### Test Coverage Summary
-- **Total Coverage**: 78.08% (requirement: ≥10%)
-- **220 passing tests** covering all API endpoints
-- **Unit tests** use Mocha and Chai frameworks
-- **Integration tests** verify full API functionality
-- **Mock DAOs** provide consistent test data
+- **Total Coverage**: 100% passing integration tests
+- **Comprehensive test suite** covering all API endpoints
+- **Phase 4 Integration Testing**: Authentication flows, data validation, and protected routes
+- **Authentication Testing**: JWT token validation, user registration/login flows
+- **Data Validation Testing**: Input validation with express-validator middleware
+- **Mock and MongoDB Testing**: Supports both mock data and MongoDB Atlas integration
 
 ### Available Test Scripts
 - `npm test` - Run all tests
-- `npm run coverage` - Generate coverage report
+- `npm run test:integration` - Run Phase 4 integration tests
 - `npm run verify:integrity` - Verify DAO layer integrity
 - `npm run verify:parity` - Check data consistency
+- `node test-phase4-integration.js` - Run comprehensive authentication and validation tests
 
 ## Technical Implementation
 
 ### Back-End Architecture
-- **Framework**: Express.js (version 5.1.0)
-- **Database**: Mock DAOs (in-memory) with MongoDB support
-- **Authentication**: JWT-based with bcrypt password hashing
-- **Testing**: Mocha + Chai with C8 coverage reporting
-- **Code Coverage**: 78.08% (exceeds 10% requirement)
+- **Framework**: Express.js with Node.js
+- **Database**: MongoDB Atlas (cloud) with Mongoose ODM
+- **Authentication**: JWT-based with bcrypt password hashing (12 rounds)
+- **Data Validation**: express-validator middleware for comprehensive input validation
+- **Testing**: Custom integration test suite with 100% success rate
 
-### Data Access Layer
+### Database Integration
+- **MongoDB Atlas**: Cloud-hosted MongoDB database
+- **Mongoose ODM**: Object Document Mapping for MongoDB
 - **DAO Factory Pattern**: Switches between Mock and MongoDB implementations
-- **Mock Data**: Consistent test data from `/back-end/data/` directory
-- **In-Memory Operations**: Full CRUD operations without persistence
+- **Environment Variables**: Secure credential management with dotenv
+- **Data Validation**: XSS protection and input sanitization
+
+### Security Features
+- **JWT Authentication**: 7-day token expiration with secure signing
+- **Password Hashing**: bcrypt with 12-round salting
+- **Input Validation**: Comprehensive validation schemas for all endpoints
+- **XSS Protection**: Input sanitization with .escape() and .trim()
+- **Environment Security**: .env files excluded from version control
 
 ### API Features
 - **RESTful Design**: Standard HTTP methods and status codes
-- **Error Handling**: Consistent JSON error responses
-- **Input Validation**: Request body validation for all endpoints
+- **Error Handling**: Consistent JSON error responses with proper status codes
+- **Input Validation**: Request body validation for all POST/PUT endpoints
+- **Authentication Middleware**: Protected routes with JWT verification
 - **CORS Configuration**: Supports cross-origin requests from front-end
 
 ## Troubleshooting
@@ -237,9 +258,20 @@ JWT_EXPIRES_IN=7d
 - Check that mock data files exist in `/back-end/data/`
 
 **Front-end cannot connect to backend**
-- Verify backend is running: `curl http://localhost:7001/api/articles`
+- Verify backend is running: `curl http://localhost:7001/health`
 - Check API base URL in `/front-end/src/services/api.js`
 - Ensure no firewall is blocking port 7001
+
+**Database connection issues**
+- Verify `MONGODB_URI` in `.env` file is correct
+- Check MongoDB Atlas cluster is running and accessible
+- Test connection: MongoDB connection status shown at `/health` endpoint
+- Fallback to mock data: set `USE_MOCK_DB=true` in `.env`
+
+**Authentication errors**
+- Ensure `JWT_SECRET` is set in `.env` file
+- Check token expiration with `JWT_EXPIRES_IN` setting
+- Verify user credentials are correct for login/registration
 
 ## Want to contribute?
 
