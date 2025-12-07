@@ -272,7 +272,13 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       const hasAnnotations = fetchedHighlights.length > 0;
       if (current.hasAnnotations !== hasAnnotations) {
         try {
-          await articlesAPI.update(current.id, { hasAnnotations });
+          // Always include required fields (title, content, etc.)
+          await articlesAPI.update(current.id, {
+            title: current.title,
+            content: current.content,
+            // include any other required fields here if needed
+            hasAnnotations
+          });
           setCurrent(prev => prev ? { ...prev, hasAnnotations } : prev);
         } catch (e) {
           console.error('Failed to update hasAnnotations', e);
