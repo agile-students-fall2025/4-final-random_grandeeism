@@ -25,6 +25,13 @@ const STATUS_ICON_MAP = {
   rediscovery: RotateCcw,
   archived: Archive,
 };
+const STATUS_LABEL_MAP = {
+  inbox: 'Inbox',
+  continue: 'Continue Reading',
+  daily: 'Daily',
+  rediscovery: 'Rediscovery',
+  archived: 'Archived',
+};
 
 // Removed STORAGE_OVERRIDES: no in-browser persistence
 
@@ -1188,7 +1195,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
               <div className="flex flex-col items-center mb-3 space-y-2">
                 <button onClick={() => toggleFavorite()} className="p-2 rounded reader-button" title="Favorite">
-                  <Star size={16} className={appliedFavorite ? 'text-yellow-400' : 'text-muted-foreground'} />
+                  <Star
+                    size={16}
+                    className={appliedFavorite ? 'text-foreground' : 'text-muted-foreground'}
+                    fill={appliedFavorite ? 'currentColor' : 'none'}
+                  />
                 </button>
                 {current && ARTICLE_STATUSES.map(status => {
                   const Icon = STATUS_ICON_MAP[status];
@@ -1292,29 +1303,43 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 </div>
               </div>
               {/* Bottom action group: Favorites, Rediscovery, Archive, Settings */}
-              <div className="p-4 border-t border-border flex items-center justify-between">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button onClick={() => toggleFavorite()} className="p-2 rounded reader-button" title="Favorite">
-                    <Star size={18} className={appliedFavorite ? 'text-yellow-400' : 'text-muted-foreground'} />
+              <div className="p-4 border-t border-border">
+                <div className="flex flex-col gap-2 w-full">
+                  <button
+                    onClick={() => toggleFavorite()}
+                    className="w-full flex items-center gap-3 p-2 rounded reader-button border border-border hover:bg-accent transition-colors"
+                    title="Favorite"
+                  >
+                    <Star
+                      size={18}
+                      className={appliedFavorite ? 'text-foreground' : 'text-muted-foreground'}
+                      fill={appliedFavorite ? 'currentColor' : 'none'}
+                    />
+                    <span className="text-sm">Favorite</span>
                   </button>
                   {current && ARTICLE_STATUSES.map(status => {
                     const Icon = STATUS_ICON_MAP[status];
                     const active = current.status === status;
+                    const label = STATUS_LABEL_MAP[status] || status;
                     return (
                       <button
                         key={status}
                         onClick={() => changeStatus(status)}
-                        className={`p-2 rounded reader-button transition-colors ${active ? 'bg-muted' : ''}`}
-                        title={status.charAt(0).toUpperCase() + status.slice(1)}
+                        className={`w-full flex items-center gap-3 p-2 rounded reader-button border border-border transition-colors ${active ? 'bg-muted' : 'hover:bg-accent'}`}
+                        title={label}
                       >
                         <Icon size={18} className={active ? 'text-foreground' : 'text-muted-foreground'} />
+                        <span className="text-sm">{label}</span>
                       </button>
                     );
                   })}
-                </div>
-                <div>
-                  <button onClick={() => setSettingsOpen(true)} className="p-2 rounded reader-button" title="Settings">
+                  <button
+                    onClick={() => setSettingsOpen(true)}
+                    className="w-full flex items-center gap-3 p-2 rounded reader-button border border-border hover:bg-accent transition-colors"
+                    title="Settings"
+                  >
                     <Settings size={18} className="text-muted-foreground" />
+                    <span className="text-sm">Reader Settings</span>
                   </button>
                 </div>
               </div>
