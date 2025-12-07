@@ -25,6 +25,13 @@ const STATUS_ICON_MAP = {
   rediscovery: RotateCcw,
   archived: Archive,
 };
+const STATUS_LABEL_MAP = {
+  inbox: 'Inbox',
+  continue: 'Continue Reading',
+  daily: 'Daily',
+  rediscovery: 'Rediscovery',
+  archived: 'Archived',
+};
 
 // Removed STORAGE_OVERRIDES: no in-browser persistence
 
@@ -249,23 +256,16 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   // Load highlights from backend for this article
   const refreshHighlights = useCallback(async () => {
     if (!current) return;
-    console.log('=== Loading Highlights ===');
-    console.log('Article ID:', current.id);
-    console.log('Article userId:', current.userId);
-    console.log('Current user ID:', user?.id);
-    console.log('Article belongs to user?', current.userId === user?.id || String(current.userId) === String(user?.id));
     try {
       const res = await highlightsAPI.getByArticle(current.id);
       const fetchedHighlights = res?.data || [];
-      console.log('\u2713 Loaded highlights:', fetchedHighlights);
-      console.log('\u2713 Highlight count:', fetchedHighlights.length);
       setHighlights(fetchedHighlights);
       
       // Update article's hasAnnotations property based on highlights presence
       const hasAnnotations = fetchedHighlights.length > 0;
       if (current.hasAnnotations !== hasAnnotations) {
         try {
-          await articlesAPI.update(current.id, { hasAnnotations });
+          await articlesAPI.updateAnnotations(current.id, hasAnnotations);
           setCurrent(prev => prev ? { ...prev, hasAnnotations } : prev);
         } catch (e) {
           console.error('Failed to update hasAnnotations', e);
@@ -276,7 +276,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       console.error('Error details:', e.response?.data);
       setHighlights([]);
     }
-  }, [current, user]);
+  }, [current]);
 
   // refresh highlights when current article is set
   useEffect(() => {
@@ -427,7 +427,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       if (progressUpdateTimeout) clearTimeout(progressUpdateTimeout);
       progressUpdateTimeout = setTimeout(async () => {
         try {
-          await articlesAPI.update(current.id, { readingProgress: progress });
+          await articlesAPI.updateProgress(current.id, progress);
         } catch (error) {
           console.error('Failed to update reading progress:', error);
         }
@@ -467,7 +467,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
             
             // Only update if status actually changes
             if (nextStatus !== current.status) {
-              await articlesAPI.update(current.id, { status: nextStatus, readingProgress: 100 });
+              await articlesAPI.updateStatus(current.id, nextStatus);
+              await articlesAPI.updateProgress(current.id, 100);
               setCurrent(prev => ({ ...prev, status: nextStatus, readingProgress: 100 }));
               
               // Show appropriate toast message
@@ -499,10 +500,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   
 
   const applyHighlight = async (colorHex) => {
-    if (!selection || !current) {
-      console.log('applyHighlight aborted: selection or current missing', { selection: !!selection, current: !!current });
-      return;
-    }
+    if (!selection || !current) return;
     // Validate selected text (avoid pure whitespace or zero-length)
     const trimmed = (selection.text || '').trim();
     if (trimmed.length === 0 || selection.absEnd <= selection.absStart) {
@@ -557,21 +555,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       annotations: { title: '', note: '' }
     };
     
-    console.log('=== Creating Highlight ===');
-    console.log('User ID:', user.id);
-    console.log('Article ID:', current.id);
-    console.log('Selected text:', selection.text);
-    console.log('Position:', { start: selection.absStart, end: selection.absEnd });
-    console.log('Color:', colorHex || DEFAULT_HIGHLIGHT_COLOR);
-    console.log('Full payload:', payload);
-    
     try {
       // Clear temp highlight before creating permanent one
       setTempHighlight(null);
       
       const res = await highlightsAPI.create(payload);
-      console.log('✓ API Response:', res);
-      console.log('✓ Created highlight ID:', res?.data?.id);
       
       await refreshHighlights();
       if (res?.data?.id) {
@@ -1188,7 +1176,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
               <div className="flex flex-col items-center mb-3 space-y-2">
                 <button onClick={() => toggleFavorite()} className="p-2 rounded reader-button" title="Favorite">
-                  <Star size={16} className={appliedFavorite ? 'text-yellow-400' : 'text-muted-foreground'} />
+                  <Star
+                    size={16}
+                    className={appliedFavorite ? 'text-foreground' : 'text-muted-foreground'}
+                    fill={appliedFavorite ? 'currentColor' : 'none'}
+                  />
                 </button>
                 {current && ARTICLE_STATUSES.map(status => {
                   const Icon = STATUS_ICON_MAP[status];
@@ -1292,29 +1284,43 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 </div>
               </div>
               {/* Bottom action group: Favorites, Rediscovery, Archive, Settings */}
-              <div className="p-4 border-t border-border flex items-center justify-between">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button onClick={() => toggleFavorite()} className="p-2 rounded reader-button" title="Favorite">
-                    <Star size={18} className={appliedFavorite ? 'text-yellow-400' : 'text-muted-foreground'} />
+              <div className="p-4 border-t border-border">
+                <div className="flex flex-col gap-2 w-full">
+                  <button
+                    onClick={() => toggleFavorite()}
+                    className="w-full flex items-center gap-3 p-2 rounded reader-button border border-border hover:bg-accent transition-colors"
+                    title="Favorite"
+                  >
+                    <Star
+                      size={18}
+                      className={appliedFavorite ? 'text-foreground' : 'text-muted-foreground'}
+                      fill={appliedFavorite ? 'currentColor' : 'none'}
+                    />
+                    <span className="text-sm">Favorite</span>
                   </button>
                   {current && ARTICLE_STATUSES.map(status => {
                     const Icon = STATUS_ICON_MAP[status];
                     const active = current.status === status;
+                    const label = STATUS_LABEL_MAP[status] || status;
                     return (
                       <button
                         key={status}
                         onClick={() => changeStatus(status)}
-                        className={`p-2 rounded reader-button transition-colors ${active ? 'bg-muted' : ''}`}
-                        title={status.charAt(0).toUpperCase() + status.slice(1)}
+                        className={`w-full flex items-center gap-3 p-2 rounded reader-button border border-border transition-colors ${active ? 'bg-muted' : 'hover:bg-accent'}`}
+                        title={label}
                       >
                         <Icon size={18} className={active ? 'text-foreground' : 'text-muted-foreground'} />
+                        <span className="text-sm">{label}</span>
                       </button>
                     );
                   })}
-                </div>
-                <div>
-                  <button onClick={() => setSettingsOpen(true)} className="p-2 rounded reader-button" title="Settings">
+                  <button
+                    onClick={() => setSettingsOpen(true)}
+                    className="w-full flex items-center gap-3 p-2 rounded reader-button border border-border hover:bg-accent transition-colors"
+                    title="Settings"
+                  >
                     <Settings size={18} className="text-muted-foreground" />
+                    <span className="text-sm">Reader Settings</span>
                   </button>
                 </div>
               </div>

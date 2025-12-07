@@ -37,6 +37,7 @@ import StatusChangeModal from './StatusChangeModal.jsx';
 import { tagsAPI } from '../services/api.js';
 import { ensureTagsLoaded, getTagName, getTagMapSnapshot } from '../utils/tagsCache.js';
 import { calculateReadingTime } from '../utils/readingTime.js';
+import { toast } from 'sonner';
 
 export default function ArticleCard({
   article,
@@ -295,7 +296,8 @@ export default function ArticleCard({
           </div>
         )}
 
-        {/* Progress Bar (Continue Reading Only) */}
+        {/* Progress bar disabled per request */}
+        {/*
   {article.status === STATUS.CONTINUE && article.readProgress !== undefined && (
           <div className="mt-3">
             <div className="flex items-center justify-between mb-1">
@@ -311,6 +313,7 @@ export default function ArticleCard({
             </div>
           </div>
         )}
+        */}
       </div>
 
       {/* Actions Section */}

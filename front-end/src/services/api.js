@@ -156,7 +156,19 @@ export const articlesAPI = {
   updateProgress: async (id, progress) => {
     return apiRequest(`/articles/${id}/progress`, {
       method: 'PATCH',
-      body: JSON.stringify({ readProgress: progress }),
+      body: JSON.stringify({ progress }),
+    });
+  },
+
+  /**
+   * Update annotation-related flags
+   * @param {string} id - Article ID
+   * @param {boolean} hasAnnotations - Whether article has annotations
+   */
+  updateAnnotations: async (id, hasAnnotations) => {
+    return apiRequest(`/articles/${id}/annotations`, {
+      method: 'PATCH',
+      body: JSON.stringify({ hasAnnotations }),
     });
   },
 

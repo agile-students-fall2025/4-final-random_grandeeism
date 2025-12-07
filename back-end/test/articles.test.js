@@ -1,3 +1,6 @@
+// Force mock DAO usage in tests to avoid touching MongoDB
+process.env.USE_MOCK_DB = 'true';
+
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const express = require('express');
@@ -223,6 +226,18 @@ describe('Articles API', () => {
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.body.data.isFavorite).to.equal(true);
+          done();
+        });
+    });
+
+    it('should update hasAnnotations via annotations endpoint', (done) => {
+      chai.request(app)
+        .patch('/api/articles/article-1/annotations')
+        .set('Authorization', `Bearer ${testToken}`)
+        .send({ hasAnnotations: true })
+        .end((err, res) => {
+          expect(res).to.have.status(200);
+          expect(res.body.data.hasAnnotations).to.equal(true);
           done();
         });
     });
