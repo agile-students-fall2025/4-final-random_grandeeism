@@ -256,16 +256,9 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   // Load highlights from backend for this article
   const refreshHighlights = useCallback(async () => {
     if (!current) return;
-    console.log('=== Loading Highlights ===');
-    console.log('Article ID:', current.id);
-    console.log('Article userId:', current.userId);
-    console.log('Current user ID:', user?.id);
-    console.log('Article belongs to user?', current.userId === user?.id || String(current.userId) === String(user?.id));
     try {
       const res = await highlightsAPI.getByArticle(current.id);
       const fetchedHighlights = res?.data || [];
-      console.log('\u2713 Loaded highlights:', fetchedHighlights);
-      console.log('\u2713 Highlight count:', fetchedHighlights.length);
       setHighlights(fetchedHighlights);
       
       // Update article's hasAnnotations property based on highlights presence
@@ -289,7 +282,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       console.error('Error details:', e.response?.data);
       setHighlights([]);
     }
-  }, [current, user]);
+  }, [current]);
 
   // refresh highlights when current article is set
   useEffect(() => {
@@ -512,10 +505,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   
 
   const applyHighlight = async (colorHex) => {
-    if (!selection || !current) {
-      console.log('applyHighlight aborted: selection or current missing', { selection: !!selection, current: !!current });
-      return;
-    }
+    if (!selection || !current) return;
     // Validate selected text (avoid pure whitespace or zero-length)
     const trimmed = (selection.text || '').trim();
     if (trimmed.length === 0 || selection.absEnd <= selection.absStart) {
@@ -570,21 +560,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       annotations: { title: '', note: '' }
     };
     
-    console.log('=== Creating Highlight ===');
-    console.log('User ID:', user.id);
-    console.log('Article ID:', current.id);
-    console.log('Selected text:', selection.text);
-    console.log('Position:', { start: selection.absStart, end: selection.absEnd });
-    console.log('Color:', colorHex || DEFAULT_HIGHLIGHT_COLOR);
-    console.log('Full payload:', payload);
-    
     try {
       // Clear temp highlight before creating permanent one
       setTempHighlight(null);
       
       const res = await highlightsAPI.create(payload);
-      console.log('✓ API Response:', res);
-      console.log('✓ Created highlight ID:', res?.data?.id);
       
       await refreshHighlights();
       if (res?.data?.id) {
