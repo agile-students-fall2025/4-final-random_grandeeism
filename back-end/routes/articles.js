@@ -483,6 +483,64 @@ router.patch('/:id/favorite', authenticateToken, async (req, res) => {
 });
 
 /**
+
+/**
+ * PATCH /api/articles/:id/annotations
+ * Update annotation flags (e.g., hasAnnotations)
+ */
+router.patch('/:id/annotations', authenticateToken, async (req, res) => {
+  try {
+    const { hasAnnotations } = req.body;
+    const articleId = req.params.id;
+
+    if (typeof hasAnnotations !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'hasAnnotations must be a boolean'
+      });
+    }
+
+    const article = await articlesDao.getById(articleId);
+
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found'
+      });
+    }
+
+    // Verify article belongs to authenticated user
+    if (article.userId !== req.user.id && article.userId !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only update your own articles'
+      });
+    }
+
+    const updatedArticle = await articlesDao.updateAnnotations(articleId, { hasAnnotations });
+
+    if (!updatedArticle) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: updatedArticle,
+      message: 'Annotations updated successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server Error',
+      message: error.message
+    });
+  }
+});
+
+/**
  * POST /api/articles/:id/tags
  * Add a tag to an article by tag ID
  */

@@ -265,13 +265,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       const hasAnnotations = fetchedHighlights.length > 0;
       if (current.hasAnnotations !== hasAnnotations) {
         try {
-          // Always include required fields (title, content, etc.)
-          await articlesAPI.update(current.id, {
-            title: current.title,
-            content: current.content,
-            // include any other required fields here if needed
-            hasAnnotations
-          });
+          await articlesAPI.updateAnnotations(current.id, hasAnnotations);
           setCurrent(prev => prev ? { ...prev, hasAnnotations } : prev);
         } catch (e) {
           console.error('Failed to update hasAnnotations', e);
@@ -433,7 +427,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       if (progressUpdateTimeout) clearTimeout(progressUpdateTimeout);
       progressUpdateTimeout = setTimeout(async () => {
         try {
-          await articlesAPI.update(current.id, { readingProgress: progress });
+          await articlesAPI.updateProgress(current.id, progress);
         } catch (error) {
           console.error('Failed to update reading progress:', error);
         }
@@ -473,7 +467,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
             
             // Only update if status actually changes
             if (nextStatus !== current.status) {
-              await articlesAPI.update(current.id, { status: nextStatus, readingProgress: 100 });
+              await articlesAPI.updateStatus(current.id, nextStatus);
+              await articlesAPI.updateProgress(current.id, 100);
               setCurrent(prev => ({ ...prev, status: nextStatus, readingProgress: 100 }));
               
               // Show appropriate toast message

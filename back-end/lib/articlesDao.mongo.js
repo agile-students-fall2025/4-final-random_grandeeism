@@ -238,6 +238,17 @@ const articlesDao = {
   },
 
   /**
+   * Update annotation-related fields
+   * @param {string} id - Article ID
+   * @param {Object} updateData - Annotation updates (e.g., { hasAnnotations })
+   * @param {string} userId - User ID (for security)
+   * @returns {Promise<Object|null>} Updated article or null if not found
+   */
+  async updateAnnotations(id, updateData, userId = null) {
+    return this.update(id, updateData, userId);
+  },
+
+  /**
    * Toggle favorite status
    * @param {string} id - Article ID
    * @param {boolean} isFavorite - Favorite status
