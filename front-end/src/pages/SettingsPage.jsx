@@ -5,16 +5,14 @@
  * Purpose: Allows users to configure app behavior, appearance, and account settings
  */
 
-import { LogOut, Sun, Moon, Monitor, Download, FileDown, ExternalLink, Pencil, Trash } from "lucide-react";
+import { LogOut, Sun, Moon, Monitor, Download, FileDown, ExternalLink, Trash } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import { Button } from "../components/ui/button.jsx";
 import { Switch } from "../components/ui/switch.jsx";
 import { useTheme } from "../hooks/useTheme.js";
-import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar.jsx";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select.jsx";
 import { Input } from "../components/ui/input.jsx";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../components/ui/dropdown-menu.jsx";
 import { toast } from "sonner";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog.jsx";
 import { Checkbox } from "../components/ui/checkbox.jsx";
@@ -26,7 +24,7 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 const SettingsPage = ({ onNavigate }) => {
   const mockArticles = [];
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const SETTINGS_KEY = 'reader_settings_v1';
   const USER_PREFS_KEY = 'user_preferences_v1';
   const [fontFamily, setFontFamily] = useState(() => {
@@ -108,7 +106,13 @@ const SettingsPage = ({ onNavigate }) => {
   // Handle export of all user data
   const handleExportAllData = async () => {
     try {
-      await exportAllUserData();
+      if (!user?._id) {
+        toast.error('Export failed', {
+          description: 'User not authenticated. Please log in again.'
+        });
+        return;
+      }
+      await exportAllUserData(user._id);
       toast.success('Data exported successfully!', {
         description: 'All your data has been exported as JSON'
       });
@@ -166,23 +170,30 @@ const SettingsPage = ({ onNavigate }) => {
     fieldValuesOnFocus.current[field] = profileData[field];
   };
 
-  // Show toast notification on blur if value actually changed
-  const handleProfileBlur = (field) => {
+  // Show toast notification on blur if value actually changed and save to backend
+  const handleProfileBlur = async (field) => {
     const fieldLabels = {
-      email: "Email",
-      name: "Name",
-      username: "Username"
+      name: "Name"
     };
     
     // Check if value changed from when user started editing
     const valueOnFocus = fieldValuesOnFocus.current[field];
     const currentValue = profileData[field];
     
-    // Only show toast if the value actually changed
-    if (valueOnFocus !== undefined && currentValue !== valueOnFocus) {
-      toast.success(`${fieldLabels[field]} updated`, {
-        // description: `Your ${fieldLabels[field].toLowerCase()} has been changed.`,
-      });
+    // Only save and show toast if the value actually changed
+    if (valueOnFocus !== undefined && currentValue !== valueOnFocus && field === 'name') {
+      try {
+        if (user?._id) {
+          await usersAPI.updateProfile(user._id, { name: currentValue });
+          updateUser({ name: currentValue });
+          toast.success(`${fieldLabels[field]} updated`);
+        }
+      } catch (error) {
+        console.error('Failed to update profile:', error);
+        toast.error('Failed to update profile');
+        // Revert to original value on error
+        setProfileData(prev => ({ ...prev, [field]: valueOnFocus }));
+      }
     }
   };
 
@@ -193,16 +204,34 @@ const SettingsPage = ({ onNavigate }) => {
   };
 
   // Handle avatar change - generate new random image
-  const handleChangeAvatar = () => {
+  const handleChangeAvatar = async () => {
     const newAvatar = `https://picsum.photos/200/200?random=${Date.now()}`;
     setProfileData(prev => ({ ...prev, avatar: newAvatar }));
-    toast.success("Avatar updated");
+    try {
+      if (user?._id) {
+        await usersAPI.updateProfile(user._id, { avatar: newAvatar });
+        updateUser({ avatar: newAvatar });
+        toast.success("Avatar updated");
+      }
+    } catch (error) {
+      console.error('Failed to update avatar:', error);
+      toast.error('Failed to update avatar');
+    }
   };
 
-  // Handle avatar deletion - reset to original
-  const handleDeleteAvatar = () => {
-    setProfileData(prev => ({ ...prev, avatar: initialProfileData.avatar }));
-    toast.success("Avatar reset to original");
+  // Handle avatar deletion - reset to empty
+  const handleDeleteAvatar = async () => {
+    setProfileData(prev => ({ ...prev, avatar: '' }));
+    try {
+      if (user?._id) {
+        await usersAPI.updateProfile(user._id, { avatar: '' });
+        updateUser({ avatar: '' });
+        toast.success("Avatar removed");
+      }
+    } catch (error) {
+      console.error('Failed to remove avatar:', error);
+      toast.error('Failed to remove avatar');
+    }
   };
 
   // Handle account deletion
@@ -477,14 +506,14 @@ const SettingsPage = ({ onNavigate }) => {
                     Export Notes & Highlights
                   </Button>
                   
-                  <Button 
+                  {/* <Button 
                     variant="outline" 
                     className="w-full sm:w-auto ml-0 sm:ml-2"
                     onClick={handleExportAllData}
                   >
                     <Download size={16} className="mr-2" />
                     Export All My Data
-                  </Button>
+                  </Button> */}
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
                   Exports include all articles, tags, notes, highlights, and reading progress in JSON format.
@@ -493,7 +522,7 @@ const SettingsPage = ({ onNavigate }) => {
             </div>
 
             {/* Account Settings */}
-            <h2 className="text-lg font-semibold mb-4 mt-12">Account</h2>
+            <h2 className="text-lg font-semibold mb-4 mt-12">Account Details</h2>
             <div className="bg-card border border-border rounded-lg px-6">
               {/* <div className="text-muted-foreground"> */}
                 {/* <p className="mb-2">Settings will include:</p> */}
@@ -507,75 +536,26 @@ const SettingsPage = ({ onNavigate }) => {
               {/* </div> */}
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label className="font-medium select-none">Profile Picture</label>
-                  {/* <p className="text-sm text-muted-foreground mt-1">Clean, distraction-free reading experience.</p> */}
+                  <label className="font-medium select-none">Email</label>
                 </div>
                 <div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Avatar className="size-8 cursor-pointer hover:opacity-80 transition-opacity">
-                        <AvatarImage src={profileData.avatar} alt={profileData.username || "@username"}/>
-                        <AvatarFallback>
-                          {profileData.name 
-                            ? profileData.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                            : profileData.username 
-                            ? profileData.username.slice(0, 2).toUpperCase()
-                            : 'CN'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleChangeAvatar}><Pencil size={16} className="mr-2" /> Change Avatar</DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleDeleteAvatar}><Trash size={16} className="mr-2" /> Delete Avatar</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  
+                  <p className="text-sm text-muted-foreground">{profileData.email}</p>
                 </div>
               </div>
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label htmlFor="email" className="font-medium select-none">Email</label>
-                  {/* <p className="text-sm text-muted-foreground mt-1">Clean, distraction-free reading experience.</p> */}
+                  <label className="font-medium select-none">Name</label>
                 </div>
                 <div>
-                  <Input 
-                    type="email" 
-                    id="email" 
-                    value={profileData.email}
-                    onChange={(e) => handleProfileInputChange('email', e.target.value)}
-                    onFocus={() => handleProfileFocus('email')}
-                    onBlur={() => handleProfileBlur('email')}
-                  />
+                  <p className="text-sm text-muted-foreground">{profileData.name}</p>
                 </div>
               </div>
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <label htmlFor="name" className="font-medium select-none">Name</label>
-                  {/* <p className="text-sm text-muted-foreground mt-1">Clean, distraction-free reading experience.</p> */}
+                  <label className="font-medium select-none">Username</label>
                 </div>
                 <div>
-                  <Input 
-                    id="name" 
-                    value={profileData.name}
-                    onChange={(e) => handleProfileInputChange('name', e.target.value)}
-                    onFocus={() => handleProfileFocus('name')}
-                    onBlur={() => handleProfileBlur('name')}
-                  />
-                </div>
-              </div>
-              <div className="py-4 border-b border-border flex items-center justify-between">
-                <div>
-                  <label htmlFor="username" className="font-medium select-none">Username</label>
-                  {/* <p className="text-sm text-muted-foreground mt-1">Clean, distraction-free reading experience.</p> */}
-                </div>
-                <div>
-                  <Input 
-                    id="username" 
-                    value={profileData.username}
-                    onChange={(e) => handleProfileInputChange('username', e.target.value)}
-                    onFocus={() => handleProfileFocus('username')}
-                    onBlur={() => handleProfileBlur('username')}
-                  />
+                  <p className="text-sm text-muted-foreground">@{profileData.username}</p>
                 </div>
               </div>
               

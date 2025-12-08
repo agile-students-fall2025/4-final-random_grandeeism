@@ -85,7 +85,7 @@ const DailyReadingPage = ({ onNavigate, setPageRefresh }) => {
     // Cleanup: remove refresh function when component unmounts
     return () => {
       if (setPageRefresh) {
-        console.log('DailyReadingPage: Cleaning up refresh function');
+        // console.log('DailyReadingPage: Cleaning up refresh function');
         setPageRefresh(null);
       }
     };

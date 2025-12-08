@@ -82,7 +82,7 @@ const RediscoveryPage = ({ onNavigate, setPageRefresh }) => {
     // Cleanup: remove refresh function when component unmounts
     return () => {
       if (setPageRefresh) {
-        console.log('RediscoveryPage: Cleaning up refresh function');
+        // console.log('RediscoveryPage: Cleaning up refresh function');
         setPageRefresh(null);
       }
     };

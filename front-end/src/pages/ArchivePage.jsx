@@ -95,7 +95,7 @@ const ArchivePage = ({ onNavigate, setPageRefresh }) => {
     // Cleanup: remove refresh function when component unmounts
     return () => {
       if (setPageRefresh) {
-        console.log('ArchivePage: Cleaning up refresh function');
+        // console.log('ArchivePage: Cleaning up refresh function');
         setPageRefresh(null);
       }
     };

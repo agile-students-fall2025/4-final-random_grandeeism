@@ -639,11 +639,13 @@ export async function exportAllNotesAsZip(format) {
  * Export all user data (articles, tags, highlights, reading progress) as JSON
  * @returns {Promise<void>}
  */
-export async function exportAllUserData() {
+export async function exportAllUserData(userId) {
   try {
     console.log('🔄 Starting full user data export');
     
-    const userId = 1; // TODO: replace with authenticated user id
+    if (!userId) {
+      throw new Error('User ID is required for export');
+    }
     
     // Fetch all data in parallel
     const [articlesResponse, tagsResponse, userResponse] = await Promise.all([

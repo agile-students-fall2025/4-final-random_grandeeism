@@ -40,6 +40,11 @@ import {
 } from "./ui/dropdown-menu.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 
+// UserAvatar component for displaying default user icon
+function UserAvatar() {
+  return <User size={18} />;
+}
+
 export default function TopBar({
   // Navigation
   onMenuClick,
@@ -156,10 +161,10 @@ export default function TopBar({
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="rounded-full w-8 h-8 p-0 shrink-0"
+                className="rounded-full w-8 h-8 p-0 shrink-0 bg-card"
                 aria-label="User menu"
               >
-                <User size={18} />
+                <UserAvatar />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
