@@ -705,9 +705,17 @@ function TextReaderWrapperRoute({ navigate: routeNavigate, returnToPage }) {
   const { articleId } = useParams();
   
   const handleBack = useCallback(() => {
-    const targetPage = returnToPage || 'home';
+    const target = returnToPage || 'home';
+    // Support structured returnTo with dynamic tagName
+    if (typeof target === 'object' && target.page === 'tag-articles' && target.tagName) {
+      const path = `/tags/${encodeURIComponent(target.tagName)}`;
+      console.log('[TextReaderWrapper] Going back to tag route:', path);
+      routeNavigate(path);
+      return;
+    }
+
+    const targetPage = typeof target === 'object' ? target.page : target;
     console.log('[TextReaderWrapper] Going back to:', targetPage);
-    
     const route = ROUTE_MAP[targetPage] || '/home';
     routeNavigate(route);
   }, [routeNavigate, returnToPage]);
