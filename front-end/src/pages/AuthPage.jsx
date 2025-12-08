@@ -168,101 +168,76 @@ const AuthPage = ({ onNavigate }) => {
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="text-center text-primary">
-                {/* Social auth buttons (disabled for now) */}
+              <div className="flex items-center my-5">
+                <div className="flex-grow h-px bg-muted-foreground"></div>
+                <p className="text-sm text-center text-muted-foreground px-3">or continue with</p>
+                <div className="flex-grow h-px bg-muted-foreground"></div>
+              </div>
+              <div className="text-left">
+                {mode === 'register' && (
+                  <>
+                    <label htmlFor="username" className="inline-block mb-2 text-sm">Username</label>
+                    <input
+                      type="text"
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="johndoe"
+                      className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card mb-1"
+                    />
+                    <p className="text-xs text-muted-foreground mb-4">3-30 characters</p>
+                  </>
+                )}
+                <label htmlFor="email" className="inline-block mb-2 text-sm">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="m@example.com"
+                  required
+                  className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
+                />
+                <label htmlFor="password" className="inline-block mb-2 text-sm block mt-4">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
+                />
+                {mode === 'register' && (
+                  <p className="text-xs text-muted-foreground mt-1">At least 8 characters</p>
+                )}
+                {mode === 'register' && (
+                  <>
+                    <label htmlFor="confirm-password" className="inline-block mb-2 text-sm mt-4">Confirm Password</label>
+                    <input
+                      type="password"
+                      id="confirm-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
+                    />
+                  </>
+                )}
                 <button 
-                  type="button"
-                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-1 bg-card cursor-not-allowed mb-3 border-gray-2 p-2 text-sm font-medium outline-none disabled:opacity-60 rounded-md"
-                  disabled
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 text-[14px] border border-border rounded-md py-2 px-4 block w-full hover:cursor-pointer mt-8 bg-primary text-primary-foreground font-medium disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
                 >
-                  <img
-                    src="https://www.svgrepo.com/show/475656/google-color.svg"
-                    alt="Google"
-                    className="h-[18px] w-[18px]"
-                  />
-                  Continue with Google
-                </button>
-                <button 
-                  type="button"
-                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-1 bg-card cursor-not-allowed border-gray-2 p-2 text-sm font-medium outline-none disabled:opacity-60 rounded-md"
-                  disabled
-                >
-                  <img
-                    src="https://www.svgrepo.com/show/512317/github-142.svg"
-                    alt="GitHub"
-                    className="h-[18px] w-[18px]"
-                  />
-                  Continue with GitHub
-                </button>
-                <div className="flex items-center my-5">
-                  <div className="flex-grow h-px bg-muted-foreground"></div>
-                  <p className="text-sm text-center text-muted-foreground px-3">or continue with</p>
-                  <div className="flex-grow h-px bg-muted-foreground"></div>
-                </div>
-                <div className="text-left">
-                  {mode === 'register' && (
+                  {isLoading ? (
                     <>
-                      <label htmlFor="username" className="inline-block mb-2 text-sm">Username</label>
-                      <input
-                        type="text"
-                        id="username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="johndoe"
-                        className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card mb-1"
-                      />
-                      <p className="text-xs text-muted-foreground mb-4">3-30 characters</p>
+                      <Loader className="mr-2" size={16} />
+                      Loading...
                     </>
-                  )}
-                  <label htmlFor="email" className="inline-block mb-2 text-sm">Email</label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="m@example.com"
-                    required
-                    className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
-                  />
-                  <label htmlFor="password" className="inline-block mb-2 text-sm block mt-4">Password</label>
-                  <input
-                    type="password"
-                    id="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
-                  />
-                  {mode === 'register' && (
-                    <p className="text-xs text-muted-foreground mt-1">At least 8 characters</p>
-                  )}
-                  {mode === 'register' && (
-                    <>
-                      <label htmlFor="confirm-password" className="inline-block mb-2 text-sm mt-4">Confirm Password</label>
-                      <input
-                        type="password"
-                        id="confirm-password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        minLength={8}
-                        className="flex-1 text-[14px] placeholder:text-muted-foreground border border-border rounded-md py-2 px-4 block w-full focus-within:outline-2 focus-within:outline-blue-500 bg-card"
-                      />
-                    </>
-                  )}
-                  <button 
-                    type="submit"
-                    disabled={isLoading}
-                    className="flex-1 text-[14px] border border-border rounded-md py-2 px-4 block w-full hover:cursor-pointer mt-8 bg-primary text-primary-foreground font-medium disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader className="mr-2" size={16} />
-                        Loading...
-                      </>
-                    ) : (mode === 'login' ? 'Log In' : 'Create Account')}
-                  </button>
-                </div>
+                  ) : (mode === 'login' ? 'Log In' : 'Create Account')}
+                </button>
+              </div>
               <div className="text-center w-full flex justify-center align-center mt-6">
                 <p className="text-center mr-2 text-sm text-muted-foreground">{mode === 'login' ? "Don't have an account?" : "Already have an account?"}</p>
                 <button
