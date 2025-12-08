@@ -23,52 +23,86 @@ Therefore for our
 
 ## Setup Instructions
 
-### Start at the Root Directory - run this to install all dependencies
+### Prerequisites
+
+- Node.js v18.x or higher
+- npm
+- MongoDB Atlas account (for production) or use mock data mode
+
+### Quick Start (Recommended)
+
+Both back-end and front-end can be started with `npm start`:
+
+**Back-End:**
 ```bash
+cd back-end
 npm install
+npm start    # Runs in development mode by default
 ```
 
-### Back-End Setup
+**Front-End:**
+```bash
+cd front-end
+npm install
+npm start    # Starts Vite dev server with HMR
+```
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/agile-students-fall2025/4-final-random_grandeeism.git
-   cd 4-final-random_grandeeism
-   ```
+This is the recommended setup for both **development** and **deployment**.
 
-2. Install back-end dependencies:
+### Detailed Setup
+
+#### Back-End Setup
+
+1. Navigate to the back-end directory:
    ```bash
    cd back-end
+   ```
+
+2. Install dependencies:
+   ```bash
    npm install
    ```
 
-3. Create a `.env` file in the back-end directory and configure the environment variables (see the "Environment Variables" section below).
+3. Configure environment variables:
+   - Copy `.env.example` to `.env`
+   - Update with your MongoDB URI and JWT secret
+   - See [back-end/README.md](back-end/README.md) for detailed configuration
 
-4. Start the back-end development server:
+4. Start the server:
    ```bash
-   npm start
-   ```
-   Or for development with auto-restart:
-   ```bash
-   npm run dev
+   npm start              # Standard start (development mode by default)
+   npm run dev            # Development with auto-restart
+   NODE_ENV=production npm start  # Production mode
    ```
 
-5. The back-end will run on `http://localhost:7001` by default.
+5. The back-end runs on `http://localhost:7001` by default.
 
-### Front-End Setup
+**Environment Modes:**
+- `development` (default) - Local development with detailed logging
+- `production` - Deployment mode (set via `NODE_ENV=production`)
+- `test` - Automatically used during test runs
 
-1. Install front-end dependencies:
+#### Front-End Setup
+
+1. Navigate to the front-end directory:
    ```bash
    cd front-end
+   ```
+
+2. Install dependencies:
+   ```bash
    npm install
    ```
 
-2. Start the front-end development server:
+3. Start the development server:
    ```bash
-   npm run dev
+   npm start         # Starts Vite dev server
+   npm run dev       # Same as npm start
+   npm run build     # Build for production
+   npm run preview   # Preview production build
    ```
 
-3. The front-end will run on `http://localhost:5173` by default.
+4. The front-end runs on `http://localhost:5173` by default.
 
 ### Key Features
 
@@ -183,7 +217,7 @@ JWT_EXPIRES_IN=7d
    npm test
    ```
 
-3. Check code coverage (currently **78.08%** - exceeds 10% requirement):
+3. Check code coverage (currently **64.35%** overall, **72.88%** routes - exceeds 10% requirement):
    ```bash
    npm run coverage
    ```
@@ -193,20 +227,33 @@ JWT_EXPIRES_IN=7d
    npm run verify:integrity
    ```
 
-### Test Coverage Summary
-- **Total Coverage**: 100% passing integration tests
-- **Comprehensive test suite** covering all API endpoints
-- **Phase 4 Integration Testing**: Authentication flows, data validation, and protected routes
-- **Authentication Testing**: JWT token validation, user registration/login flows
-- **Data Validation Testing**: Input validation with express-validator middleware
-- **Mock and MongoDB Testing**: Supports both mock data and MongoDB Atlas integration
+### Test Coverage Summary (Last Updated: December 7, 2025)
+
+**✅ All Tests Passing: 260 tests in ~1 second**
+
+- **Total Coverage**: 64.35% statements, 63.37% branches
+- **Routes Coverage**: 72.88% with 100% function coverage
+- **Test Suites**: 
+  - Articles API: 23 tests
+  - Auth API: 58 tests (registration, login, token verification, refresh, logout)
+  - Feeds API: 30 tests
+  - Highlights API: 22 tests
+  - Tags API: 28 tests (including normalization bug fixes)
+  - Users API: 25 tests
+  - Stacks API: 5 tests
+  - RSS Service: 21 tests
+  - Integration Tests: 48 tests
+
+**Detailed Coverage by Module:**
+- Routes (All API endpoints): 72.88% - All route functions tested
+- Utils (Helper functions): 26.11% - Core utilities tested
+- Overall: Significantly exceeds Sprint 2's 10% minimum requirement
 
 ### Available Test Scripts
-- `npm test` - Run all tests
-- `npm run test:integration` - Run Phase 4 integration tests
+- `npm test` - Run all tests with mock data
+- `npm run coverage` - Generate detailed coverage report (saved to `coverage/`)
 - `npm run verify:integrity` - Verify DAO layer integrity
 - `npm run verify:parity` - Check data consistency
-- `node test-phase4-integration.js` - Run comprehensive authentication and validation tests
 
 ## Technical Implementation
 
