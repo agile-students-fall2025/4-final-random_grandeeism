@@ -68,6 +68,7 @@ const ROUTE_MAP = {
   'archive': '/archive',
   'search': '/search',
   'tags': '/tags',
+  'tag-articles': '/tags/:tagName',
   'favorites': '/favorites',
   'feeds': '/feeds',
   'feed-articles': '/feed-articles',
@@ -100,6 +101,7 @@ function AppContent() {
     if (path.startsWith('/article/')) return 'text-reader';
     if (path.startsWith('/video/')) return 'video-player';
     if (path.startsWith('/audio/')) return 'audio-player';
+    if (path.startsWith('/tags/') && path !== '/tags') return 'tag-articles';
     // Map other paths to pages
     const pathMap = {
       '/home': 'home',
@@ -199,6 +201,7 @@ function AppContent() {
     else if (path === '/feeds') newPage = 'feeds';
     else if (path === '/feed-articles') newPage = 'feed-articles';
     else if (path === '/tags') newPage = 'tags';
+    else if (path.startsWith('/tags/') && path !== '/tags') newPage = 'tag-articles';
     else if (path === '/favorites') newPage = 'favorites';
     else if (path.startsWith('/article/')) newPage = 'text-reader';
     else if (path.startsWith('/video/')) newPage = 'video-player';
@@ -210,18 +213,20 @@ function AppContent() {
 
   // Sync currentPage with URL (only when currentPage changes, not when URL changes)
   useEffect(() => {
-    // Don't update URL for viewer pages as they have dynamic paths
-    if (currentPage !== 'text-reader' && currentPage !== 'video-player' && currentPage !== 'audio-player') {
+    // Don't update URL for viewer pages and tag-articles as they have dynamic paths
+    if (currentPage !== 'text-reader' && currentPage !== 'video-player' && currentPage !== 'audio-player' && currentPage !== 'tag-articles') {
       const newPath = ROUTE_MAP[currentPage];
       // Only navigate if the path is different from current location
-      if (newPath && newPath !== location.pathname) {
+      // Also check that we're not on a tag-specific route when currentPage is 'tags'
+      const isOnTagSpecificRoute = location.pathname.startsWith('/tags/') && location.pathname !== '/tags';
+      if (newPath && newPath !== location.pathname && !isOnTagSpecificRoute) {
         console.log('[State->URL Sync] Navigating from', location.pathname, 'to', newPath, 'because currentPage is', currentPage);
         // Update the ref to prevent the URL sync effect from treating this as a back button event
         prevPathnameRef.current = newPath;
         navigate(newPath, { replace: true });
       }
     }
-  }, [currentPage, navigate]);
+  }, [currentPage, navigate, location.pathname]);
 
   // Handle authentication redirects
   useEffect(() => {
@@ -434,6 +439,12 @@ function AppContent() {
             <AudioPlayerWrapperRoute 
               onNavigate={handleNavigate} 
               returnToPage={returnToPage}
+              navigate={navigate}
+            />
+          } />
+          <Route path="/tags/:tagName" element={
+            <TagArticlesWrapperRoute 
+              onNavigate={handleNavigate}
               navigate={navigate}
             />
           } />
@@ -791,6 +802,20 @@ function AudioPlayerWrapperRoute({ navigate: routeNavigate, returnToPage }) {
       onClose={handleClose}
     />
   );
+}
+
+function TagArticlesWrapperRoute({ navigate: routeNavigate, onNavigate }) {
+  const { tagName } = useParams();
+  
+  const handleNavigate = useCallback((page, params) => {
+    if (page === 'tags') {
+      routeNavigate('/tags');
+    } else if (onNavigate) {
+      onNavigate(page, params);
+    }
+  }, [routeNavigate, onNavigate]);
+  
+  return <TagArticlesPage onNavigate={handleNavigate} tag={tagName} />;
 }
 
 export default App;

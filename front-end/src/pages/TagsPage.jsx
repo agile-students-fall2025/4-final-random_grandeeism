@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Plus, Tag as TagIcon, ArrowUpDown, X } from "lucide-react";
 import TagCard from "../components/TagCard";
 import MainLayout from "../components/MainLayout";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 import { tagsAPI } from "../services/api.js";
 
 export default function TagsPage({ onNavigate }) {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("usage");
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -92,8 +94,8 @@ export default function TagsPage({ onNavigate }) {
   const maxCount = Math.max(...tagStats.map(t => t.articleCount), 1);
 
   const handleTagClick = (tag) => {
-    // Navigate to search results filtered by this tag
-    onNavigate('search', { tag: tag });
+    // Navigate to tag-specific route /tags/:tagName
+    navigate(`/tags/${encodeURIComponent(tag)}`);
   };
 
   const handleRename = async (oldTag, newTag) => {

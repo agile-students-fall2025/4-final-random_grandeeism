@@ -335,7 +335,7 @@ const SettingsPage = ({ onNavigate }) => {
                   <Switch defaultChecked id="reader-mode"/>
                 </div>
               </div>
-              <div className="py-4 border-b border-border flex items-center justify-between">
+              {/* <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
                   <label htmlFor="images-mode" className="font-medium select-none">Show Images</label>
                   <p className="text-sm text-muted-foreground mt-1">Display images in the reader.</p>
@@ -343,7 +343,7 @@ const SettingsPage = ({ onNavigate }) => {
                 <div>
                   <Switch checked={showImages} onCheckedChange={onShowImagesChange} id="images-mode" />
                 </div>
-              </div>
+              </div> */}
               <div className="py-4 border-b border-border flex items-center justify-between">
                 <div>
                   <label htmlFor="reading-time" className="font-medium select-none">Estimated Reading Time</label>
