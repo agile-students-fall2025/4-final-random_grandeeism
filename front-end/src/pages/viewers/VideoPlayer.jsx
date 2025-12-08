@@ -5,30 +5,11 @@
  * Purpose: Display YouTube videos with title and embedded player
  */
 
-import { useEffect } from "react";
 import { Video, ArrowLeft } from "lucide-react";
 import { Button } from "../../components/ui/button.jsx";
 import { Skeleton } from "../../components/ui/skeleton.jsx";
 
 const VideoPlayer = ({ article, onClose }) => {
-  // Disable browser back button while in video player
-  useEffect(() => {
-    // Push a new history state to prevent browser back navigation
-    window.history.pushState(null, '', window.location.href);
-
-    const handlePopState = () => {
-      // Push state again to prevent going back
-      window.history.pushState(null, '', window.location.href);
-      // User attempted back button, so navigate through the app instead
-      onClose();
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [onClose]);
   const articleTitle = article?.title || "Video Article";
   const videoId = article?.videoId;
   const url = article?.url;

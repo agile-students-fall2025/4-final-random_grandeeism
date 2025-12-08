@@ -286,25 +286,6 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   const goBack = useCallback(() => { if (onNavigate) onNavigate(); }, [onNavigate]);
 
-  // Disable browser back button while in reader
-  useEffect(() => {
-    // Push a new history state to prevent browser back navigation
-    window.history.pushState(null, '', window.location.href);
-
-    const handlePopState = () => {
-      // Push state again to prevent going back
-      window.history.pushState(null, '', window.location.href);
-      // User attempted back button, so navigate through the app instead
-      goBack();
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [goBack]);
-
   // Esc closes reader
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') goBack(); };
