@@ -42,8 +42,20 @@ This project uses several key dependencies for enhanced functionality:
 
 2. Start the development server:
    ```bash
+   npm start
+   # or
    npm run dev
    ```
+
+Both commands start the Vite development server with hot module replacement (HMR).
+
+**For deployment:**
+```bash
+npm run build    # Build for production
+npm run preview  # Preview production build locally
+```
+
+The development server will start on `http://localhost:5173` by default.
 
 ## Front-End Development Restrictions
 

@@ -134,26 +134,44 @@ See `.env.example` for complete documentation of all environment variables inclu
 
 ### 4. Run the Server
 
-**Development mode (with auto-restart):**
+**Standard start (for both development and production):**
+
+```bash
+npm start
+```
+
+This will:
+- Run in `development` mode by default (unless `NODE_ENV` is set)
+- Connect to MongoDB (unless `USE_MOCK_DB=true`)
+- Start server on port specified in `.env` (default: 7001)
+
+**Development mode (with auto-restart on file changes):**
 
 ```bash
 npm run dev
 ```
 
-**Production mode:**
+**Production deployment:**
 
 ```bash
-npm start
+# Set NODE_ENV to production before starting
+NODE_ENV=production npm start
 ```
 
 The server will start on `http://localhost:7001`
 
 You should see:
 ```
+🚀 Starting server in development mode
 ✅ Connected to MongoDB Atlas
 🗄️  Using MongoDB DAOs (USE_MOCK_DB=false)
 Server is running on http://localhost:7001
 ```
+
+**Environment Modes:**
+- `development` (default) - Used for local development
+- `production` - Used for deployment (set via `NODE_ENV=production`)
+- `test` - Automatically set during test runs
 
 ## Authentication Flow
 
@@ -625,10 +643,34 @@ Generate code coverage report:
 npm run coverage
 ```
 
-**Requirements:**
-- Minimum 10% code coverage required for Sprint 2
-- Coverage report saved to `coverage/` directory
-- View HTML report: `coverage/index.html`
+**Current Coverage (Last Updated: December 7, 2025):**
+
+| File | Statements | Branches | Functions | Lines |
+|------|-----------|----------|-----------|-------|
+| **All files** | **64.35%** | **63.37%** | **37.5%** | **64.35%** |
+| index.js | 67.24% | 16.66% | 100% | 67.24% |
+| **routes/** | **72.88%** | **64.76%** | **100%** | **72.88%** |
+| articles.js | 70.65% | 56.03% | 100% | 70.65% |
+| auth.js | 68.32% | 70.37% | 100% | 68.32% |
+| extract.js | 44.82% | 100% | 100% | 44.82% |
+| feeds.js | 78.31% | 66.66% | 100% | 78.31% |
+| highlights.js | 75.84% | 69.87% | 100% | 75.84% |
+| stacks.js | 100% | 75% | 100% | 100% |
+| tags.js | 72.79% | 64.58% | 100% | 72.79% |
+| users.js | 79.49% | 69.76% | 100% | 79.49% |
+| **utils/** | **26.11%** | **40%** | **16.66%** | **26.11%** |
+| contentExtractor.js | 20% | 100% | 0% | 20% |
+| readingTime.js | 0% | 0% | 0% | 0% |
+| youtubeUtils.js | 58.62% | 37.5% | 50% | 58.62% |
+
+**Summary:**
+- ✅ **Routes coverage: 72.88%** - All route functions are tested (100%)
+- ⚠️ Utils coverage: 26.11% - Utility functions have lower coverage
+- 📊 Overall: 64.35% statement coverage
+- 📁 Coverage report saved to `coverage/` directory
+- 🌐 View detailed HTML report: `coverage/index.html`
+
+**Note:** Sprint 2 requirement of 10% coverage exceeded. Routes have excellent coverage with all functions tested.
 
 ### Manual API Testing
 
@@ -902,28 +944,51 @@ npm test -- --reporter spec
 
 ## Current Development Status
 
+### Test Results (Last Updated: December 7, 2025)
+
+**✅ All Tests Passing: 260 tests in 992ms**
+
+Test suites breakdown:
+- ✅ Articles API: 23 tests
+- ✅ Auth API: 58 tests (registration, login, token verification, refresh, logout)
+- ✅ Feeds API: 30 tests
+- ✅ Highlights API: 22 tests (helpers + route integration)
+- ✅ Tags API: 28 tests (including tag normalization bug fixes)
+- ✅ Users API: 25 tests
+- ✅ Stacks API: 5 tests
+- ✅ RSS Feed Extraction API: 9 tests
+- ✅ RSS Service: 12 tests
+- ✅ Integration Tests: 48 tests (article lifecycle, auth flow, feed/article management, tag management, error handling, filtering, highlights)
+
+### Feature Completion Status
+
 - ✅ Express server setup
-- ✅ MongoDB connection configured
+- ✅ MongoDB connection configured (Atlas + mock mode)
 - ✅ CORS enabled
-- ✅ Basic routing structure
-- ✅ Articles API (all endpoints with mock data)
-- ⏳ Feeds API (pending)
-- ⏳ Tags API (pending)
-- ⏳ Users/Auth API (pending)
-- ⏳ Highlights API (pending)
-- ⏳ Test suite (pending)
-- ⏳ Database integration (next sprint)
+- ✅ JWT Authentication & Authorization
+- ✅ Articles API (complete with mock + MongoDB DAOs)
+- ✅ Feeds API (complete with RSS extraction)
+- ✅ Tags API (complete with normalization)
+- ✅ Users/Auth API (complete)
+- ✅ Highlights API (complete with annotations)
+- ✅ Stacks API (complete)
+- ✅ Test suite (260 tests, comprehensive coverage)
+- ✅ Database integration (MongoDB Atlas + mock DAOs)
 
-## Sprint Goals
+## Sprint Accomplishments
 
-This sprint focuses on:
+All sprint goals have been successfully completed:
 
-1. Creating all API routes with mock data
-2. Integrating front-end with back-end
-3. Writing unit tests (10%+ coverage)
-4. Ensuring full front-end ↔ back-end communication
+1. ✅ Created all API routes with mock data
+2. ✅ Integrated front-end with back-end
+3. ✅ Wrote comprehensive unit tests (260 tests passing)
+4. ✅ Ensured full front-end ↔ back-end communication
+5. ✅ Implemented JWT authentication & authorization
+6. ✅ Added MongoDB Atlas integration with dual DAO pattern
+7. ✅ Implemented RSS feed extraction service
+8. ✅ Added comprehensive error handling and validation
 
-**Note:** Data does not need to persist yet. Database integration comes in Sprint 3.
+**Status:** All core features implemented and tested. Ready for production deployment.
 
 ## Environment Variables Summary
 

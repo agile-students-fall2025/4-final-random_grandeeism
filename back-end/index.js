@@ -5,6 +5,10 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 7001;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Log environment on startup
+console.log(`🚀 Starting server in ${NODE_ENV} mode`);
 
 // Middleware
 app.use(cors());

@@ -7,12 +7,12 @@
 cd back-end
 npm start
 ```
-✅ Should see: "Connected to MongoDB Atlas" and "Server running on port 7001"
+✅ Should see: "🚀 Starting server in development mode", "Connected to MongoDB Atlas" and "Server running on http://localhost:7001"
 
 ### 2. Start Frontend
 ```bash
 cd front-end  
-npm run dev
+npm start
 ```
 ✅ Should see: "Local: http://localhost:5173/" (or similar)
 
