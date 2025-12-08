@@ -76,28 +76,12 @@ const StatisticsPage = ({ onNavigate }) => {
       return status === STATUS.ARCHIVED || progress === 100;
     }).length;
 
-    const currentStreak = stats?.streakDays ?? 0;
-    const longestStreak = stats?.longestStreak ?? 0;
-    const daysRead = stats?.daysRead ?? stats?.streakDays ?? 0;
-    const joinedDate = stats?.joinedDate ? new Date(stats.joinedDate) : null;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const daysSinceJoin = joinedDate
-      ? Math.max(1, Math.floor((today - joinedDate) / (1000 * 60 * 60 * 24)) + 1)
-      : null;
-    const percentDaysRead = daysSinceJoin
-      ? Math.min(100, Math.round((daysRead / daysSinceJoin) * 100))
-      : 0;
-
     return {
       savedCount,
       startedCount,
       completedCount,
-      currentStreak,
-      longestStreak,
-      percentDaysRead,
     };
-  }, [articles, stats]);
+  }, [articles]);
 
   return (
     <MainLayout
@@ -122,7 +106,7 @@ const StatisticsPage = ({ onNavigate }) => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-card border border-border rounded-lg p-6">
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Articles Saved</h3>
               <p className="text-3xl font-bold">{loading ? "--" : derived.savedCount}</p>
@@ -135,23 +119,6 @@ const StatisticsPage = ({ onNavigate }) => {
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Completed</h3>
               <p className="text-3xl font-bold">{loading ? "--" : derived.completedCount}</p>
             </div>
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Longest Streak</h3>
-              <p className="text-3xl font-bold">{loading ? "--" : `${derived.longestStreak} days`}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Current Streak</h3>
-              <p className="text-3xl font-bold">{loading ? "--" : `${derived.currentStreak} days`}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Days Read</h3>
-              <p className="text-3xl font-bold">{loading ? "--" : `${derived.percentDaysRead}%`}</p>
-              {/* <p className="text-xs text-muted-foreground mt-1">Based on join date and recorded reading days</p> */}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            
           </div>
 
           {/* <div className="bg-card border border-border rounded-lg p-8">

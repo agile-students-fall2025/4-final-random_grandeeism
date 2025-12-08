@@ -132,3 +132,27 @@ article p {
   opacity: 0.8;
   font-style: italic;
 }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground) / 0.3);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-color: hsl(var(--border)) hsl(var(--background));
+  scrollbar-width: thin;
+}
