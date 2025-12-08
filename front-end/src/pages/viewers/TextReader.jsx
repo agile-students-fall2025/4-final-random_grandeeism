@@ -11,7 +11,7 @@ import { Input } from '../../components/ui/input.jsx';
 import { Textarea } from '../../components/ui/textarea.jsx';
 import { Label } from '../../components/ui/label.jsx';
 import { ScrollArea } from '../../components/ui/scroll-area.jsx';
-import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon, ArrowLeft, X } from 'lucide-react';
+import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon, ArrowLeft } from 'lucide-react';
 import { ensureTagsLoaded, getTagName, getTagMapSnapshot, addSingleTag } from '../../utils/tagsCache.js';
 import { articlesAPI, tagsAPI, highlightsAPI, usersAPI } from '../../services/api.js';
 import { calculateReadingTime } from '../../utils/readingTime.js';
@@ -118,8 +118,32 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     };
   }, []);
 
+  const autoMoveToContinue = useCallback(async (articleData, { cancelled = false } = {}) => {
+    if (!articleData?.id) return;
+    const status = (articleData.status || '').toLowerCase();
+    const shouldMove = status === 'inbox' || status === 'daily' || status === 'rediscovery';
+    if (!shouldMove) return;
+    if (autoMovedArticles.current.has(articleData.id)) return;
+
+    autoMovedArticles.current.add(articleData.id);
+    try {
+      await articlesAPI.updateStatus(articleData.id, 'continue');
+      if (!cancelled) {
+        setCurrent(prev => prev ? { ...prev, status: 'continue' } : prev);
+        toast.success('Moved to Continue Reading');
+      }
+    } catch (error) {
+      autoMovedArticles.current.delete(articleData.id);
+      console.error('Failed to update article status to continue:', error);
+      if (!cancelled) {
+        toast.error('Failed to move article to Continue Reading');
+      }
+    }
+  }, []);
+
   const contentRef = useRef(null);
   const selectionToolbarRef = useRef(null);
+  const autoMovedArticles = useRef(new Set());
   const [allTags, setAllTags] = useState([]);
   // maintain a local snapshot of tagMap for possible future reactive displays; unused directly for resolution
   const [tagMap, setTagMap] = useState(getTagMapSnapshot()); // eslint-disable-line no-unused-vars
@@ -173,38 +197,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       try {
         if (article) {
           if (!cancelled) setCurrent(article);
-          // Auto-move to "continue reading" when article is opened
-          if (article.status === 'inbox' || article.status === 'daily' || article.status === 'rediscovery') {
-            try {
-              await articlesAPI.updateStatus(article.id, 'continue');
-              if (!cancelled) {
-                setCurrent(prev => prev ? { ...prev, status: 'continue' } : prev);
-                toast.success('Moved to Continue Reading');
-              }
-            } catch (error) {
-              console.error('Failed to update article status to continue:', error);
-            }
-          }
+          await autoMoveToContinue(article, { cancelled });
           return;
         }
         if (articleId) {
           const res = await articlesAPI.getById(articleId);
           if (!cancelled) {
             setCurrent(res?.data || null);
-            // Auto-move to "continue reading" when article is opened
-            const loadedArticle = res?.data;
-            if (loadedArticle && (loadedArticle.status === 'inbox' || loadedArticle.status === 'daily' || loadedArticle.status === 'rediscovery')) {
-              try {
-                await articlesAPI.updateStatus(loadedArticle.id, 'continue');
-                if (!cancelled) {
-                  setCurrent(prev => prev ? { ...prev, status: 'continue' } : prev);
-                  toast.success('Moved to Continue Reading');
-                }
-              } catch (error) {
-                console.error('Failed to update article status to continue:', error);
-              }
-            }
           }
+          await autoMoveToContinue(res?.data, { cancelled });
           return;
         }
         if (!cancelled) setCurrent(null);
@@ -215,7 +216,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     };
     load();
     return () => { cancelled = true; };
-  }, [article, articleId]);
+  }, [article, articleId, autoMoveToContinue]);
 
   // Load available tags using shared cache once article is known
   useEffect(() => {
@@ -714,6 +715,39 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     if (!keepPanelOpen) setShowHighlightsPanel(false);
   };
 
+  const handleHighlightCardSelect = useCallback((highlightId) => {
+    if (!highlightId) return;
+    setFocusedHighlightId(highlightId);
+    setShowHighlightsPanel(true);
+  }, []);
+
+  const handleHighlightCardKeyDown = useCallback((e, highlightId) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleHighlightCardSelect(highlightId);
+    }
+  }, [handleHighlightCardSelect]);
+
+  const handleJumpToHighlight = useCallback((e, highlightId) => {
+    if (e) e.stopPropagation();
+    scrollToHighlight(highlightId);
+  }, [scrollToHighlight]);
+
+  const handleEditHighlight = useCallback((e, highlight) => {
+    if (e) e.stopPropagation();
+    if (!highlight?.id) return;
+    setFocusedHighlightId(highlight.id);
+    setEditingNoteId(highlight.id);
+    setEditingTitle(highlight.annotations?.title || '');
+    setEditingNoteValue(highlight.annotations?.note || '');
+    setShowHighlightsPanel(true);
+  }, []);
+
+  const handleDeleteHighlight = useCallback((e, highlightId) => {
+    if (e) e.stopPropagation();
+    removeHighlight(highlightId);
+  }, [removeHighlight]);
+
   // Fallback retry is added later after processedHTMLContent declaration to avoid TDZ
 
   const appliedFavorite = current?.isFavorite;
@@ -733,8 +767,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   };
 
   const changeStatus = async (newStatus) => {
-    if (!current) return;
-    if (!ARTICLE_STATUSES.includes(newStatus)) return; // guard invalid
+    if (!current) return false;
+    if (!ARTICLE_STATUSES.includes(newStatus)) return false; // guard invalid
     try {
       await articlesAPI.updateStatus(current.id, newStatus);
       setCurrent(prev => prev ? { ...prev, status: newStatus } : prev);
@@ -746,22 +780,24 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         'archived': 'Article Archived'
       };
       toast.success(statusMessages[newStatus] || `Status changed to ${newStatus}`);
+      return true;
     } catch (e) {
       console.error('Status update failed', e);
       toast.error('Failed to update status');
+      return false;
     }
   };
 
   const moveToArchived = async () => {
     if (!current) return;
     try {
-      await articlesAPI.updateStatus(current.id, 'archived');
+      const statusChanged = await changeStatus('archived');
+      if (!statusChanged) return;
       await articlesAPI.updateProgress(current.id, 100);
-      setCurrent(prev => prev ? { ...prev, status: 'archived', readingProgress: 100 } : prev);
-      toast.success('Article Archived');
+      setCurrent(prev => prev ? { ...prev, readingProgress: 100 } : prev);
     } catch (e) {
-      console.error('Failed to archive article', e);
-      toast.error('Failed to archive article');
+      console.error('Failed to complete archiving', e);
+      toast.error('Failed to complete archiving');
     }
   };
 
@@ -1146,7 +1182,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         )}
       </div>
 
-      <div className="mx-auto pt-6 md:pt-6 pb-6 px-10 sm:px-6 md:pl-32 md:pr-16 sm:pr-12" style={{ maxWidth: `calc(${contentMaxWidth} + 8rem)` }}>
+      <div className="mx-auto pt-6 md:pt-6 pb-6 pl-8 pr-14 md:px-10 md:pl-32 md:pr-16" style={{ maxWidth: `calc(${contentMaxWidth} + 8rem)` }}>
         <div className="mx-auto mt-16 md:mt-0" style={{ maxWidth: contentMaxWidth }}>
           <div className="mb-6">
           {current ? (
@@ -1220,7 +1256,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 )}
                 
                 {/* Finished Reading Section */}
-                {current && current.status !== 'archived' && (
+                {current?.status !== 'archived' && (
                   <div className="mt-12 pt-8 border-t border-border">
                     <div className="flex flex-col items-center gap-4">
                       <p className="text-lg font-medium text-muted-foreground">Finished Reading?</p>
@@ -1305,14 +1341,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                     </div>
                   </div>
                 )}
-                {/* If we're editing the focused highlight, only show the editor pane (H_specific editing) */}
+                {/* If we're editing the focused highlight, only show the editor pane (highlight-specific editing) */}
                 {!(focusedHighlightId && editingNoteId === focusedHighlightId) && (
                   <div className="space-y-3">
                     {(focusedHighlightId ? highlights.filter(h => h.id === focusedHighlightId) : highlights).map(h => (
                       <div
                         key={h.id}
                         className="p-3 bg-muted rounded-lg hover:bg-muted/80 cursor-pointer transition-all"
-                        onClick={() => { setFocusedHighlightId(h.id); setShowHighlightsPanel(true); }}
+                        onClick={() => handleHighlightCardSelect(h.id)}
+                        onKeyDown={(e) => handleHighlightCardKeyDown(e, h.id)}
                         role="button"
                         tabIndex={0}
                       >
@@ -1321,9 +1358,9 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                         </div>
                         <p className="text-xs text-muted-foreground mb-3">{h.annotations?.note && h.annotations.note.length > 0 ? h.annotations.note : 'No annotation yet'}</p>
                         <div className="flex gap-1">
-                          <Button onClick={(e) => { e.stopPropagation(); scrollToHighlight(h.id); }} variant="ghost" size="sm" className="h-7 text-xs">Jump</Button>
-                          <Button onClick={(e) => { e.stopPropagation(); setFocusedHighlightId(h.id); setEditingNoteId(h.id); setEditingTitle(h.annotations?.title || ''); setEditingNoteValue(h.annotations?.note || ''); setShowHighlightsPanel(true); }} variant="ghost" size="sm" className="h-7 text-xs">Edit</Button>
-                          <Button onClick={(e) => { e.stopPropagation(); removeHighlight(h.id); }} variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive">Delete</Button>
+                          <Button onClick={(e) => handleJumpToHighlight(e, h.id)} variant="ghost" size="sm" className="h-7 text-xs">Jump</Button>
+                          <Button onClick={(e) => handleEditHighlight(e, h)} variant="ghost" size="sm" className="h-7 text-xs">Edit</Button>
+                          <Button onClick={(e) => handleDeleteHighlight(e, h.id)} variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive">Delete</Button>
                         </div>
                       </div>
                     ))}
