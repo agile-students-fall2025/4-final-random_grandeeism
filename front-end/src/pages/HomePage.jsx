@@ -140,7 +140,7 @@ const HomePage = ({ onNavigate, setPageRefresh }) => {
     console.log('handleArticleClick - videoId:', article.videoId);
     const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
     console.log('handleArticleClick - destination:', destination);
-    onNavigate && onNavigate(destination, { article });
+    onNavigate && onNavigate(destination, { article, returnTo: 'home' });
   };
 
   // The following handlers would need to call backend APIs for full integration

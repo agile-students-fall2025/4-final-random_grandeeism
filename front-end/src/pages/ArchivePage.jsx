@@ -435,7 +435,7 @@ const ArchivePage = ({ onNavigate, setPageRefresh }) => {
                     article={article}
                     onArticleClick={() => {
                       const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
-                      onNavigate && onNavigate(destination, { article });
+                      onNavigate && onNavigate(destination, { article, returnTo: 'archive' });
                     }}
                     onToggleFavorite={handleToggleFavorite}
                     onManageTags={handleManageTags}

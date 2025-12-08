@@ -166,7 +166,7 @@ const AudioPage = ({ onNavigate }) => {
                     article={article}
                     onArticleClick={() => {
                       const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
-                      onNavigate && onNavigate(destination, { article });
+                      onNavigate && onNavigate(destination, { article, returnTo: 'audio' });
                     }}
                     onToggleFavorite={handleToggleFavorite}
                     onStatusChange={handleStatusChange}
