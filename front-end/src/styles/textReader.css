@@ -156,3 +156,14 @@ article p {
   scrollbar-color: hsl(var(--border)) hsl(var(--background));
   scrollbar-width: thin;
 }
+
+input[type="color"] {
+	-webkit-appearance: none;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+	border: none;
+}
