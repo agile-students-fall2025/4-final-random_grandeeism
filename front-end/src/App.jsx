@@ -438,18 +438,7 @@ function AppContent() {
             />
           } />
           <Route path="*" element={
-            <>
-              {renderPage()}
-              
-              {/* Floating Add Button - Show on all pages except landing, auth, and viewer pages */}
-              {currentPage !== 'landing' && 
-               currentPage !== 'auth' && 
-               currentPage !== 'text-reader' && 
-               currentPage !== 'audio-player' && 
-               currentPage !== 'video-player' && (
-                <FloatingAddButton onClick={() => setIsAddLinkModalOpen(true)} />
-              )}
-            </>
+            renderPage()
           } />
         </Routes>
         

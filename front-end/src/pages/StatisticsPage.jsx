@@ -116,7 +116,7 @@ const StatisticsPage = ({ onNavigate }) => {
               <p className="text-3xl font-bold">{loading ? "--" : derived.startedCount}</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-6">
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Completed</h3>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Completed / Archived</h3>
               <p className="text-3xl font-bold">{loading ? "--" : derived.completedCount}</p>
             </div>
           </div>

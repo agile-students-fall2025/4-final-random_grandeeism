@@ -304,7 +304,7 @@ export default function SearchFilter({
   }, [searchQuery, selectedTags, timeFilter, /* mediaType, */ sortBy, statusFilter, favoritesFilter, annotationsFilter, feedFilter]);
 
   return (
-    <div className="border-b border-border px-4 py-3 md:px-6">
+    <div className="px-4 py-3 md:px-6">
       {/* Row 1: Search Bar & Action Buttons */}
       <div className="flex items-center gap-2 mb-3">
         {/* Search Input */}
