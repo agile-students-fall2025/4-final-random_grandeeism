@@ -123,10 +123,20 @@ function AppContent() {
   
   // const dragOffset = useRef({ x: 0, y: 0 });
 
+  // Track previous pathname to detect actual URL changes
+  const prevPathnameRef = useRef(location.pathname);
+
   // Sync URL to currentPage state when location changes
   useEffect(() => {
     const path = location.pathname;
-    let newPage = currentPage;
+    
+    // Only process if the pathname actually changed (not just our own navigate calls)
+    if (prevPathnameRef.current === path) {
+      return;
+    }
+    
+    prevPathnameRef.current = path;
+    let newPage = 'landing'; // Default fallback
     
     if (path === '/' || path === '/landing') newPage = 'landing';
     else if (path === '/auth') newPage = 'auth';
@@ -150,13 +160,11 @@ function AppContent() {
     else if (path.startsWith('/video/')) newPage = 'video-player';
     else if (path.startsWith('/audio/')) newPage = 'audio-player';
     
-    if (newPage !== currentPage) {
-      console.log('[URL Sync] Updating currentPage from', currentPage, 'to', newPage, 'based on path', path);
-      setCurrentPage(newPage);
-    }
-  }, [location.pathname]); // Intentionally not including currentPage to avoid loops
+    console.log('[URL Sync] Detected pathname change to', path, ', updating currentPage to', newPage);
+    setCurrentPage(newPage);
+  }, [location.pathname]);
 
-  // Sync currentPage with URL
+  // Sync currentPage with URL (only when state actually changes, not on every render)
   useEffect(() => {
     const pathMap = {
       'landing': '/',
@@ -183,6 +191,8 @@ function AppContent() {
     if (currentPage !== 'text-reader' && currentPage !== 'video-player' && currentPage !== 'audio-player') {
       const newPath = pathMap[currentPage];
       if (newPath && location.pathname !== newPath) {
+        // Update the ref to prevent the URL sync effect from treating this as a back button event
+        prevPathnameRef.current = newPath;
         navigate(newPath, { replace: true });
       }
     }
