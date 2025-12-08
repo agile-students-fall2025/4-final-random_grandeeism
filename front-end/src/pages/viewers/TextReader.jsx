@@ -284,7 +284,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     else setHighlights([]);
   }, [current, refreshHighlights]);
 
-  const goBack = useCallback(() => { if (onNavigate) onNavigate('home'); }, [onNavigate]);
+  const goBack = useCallback(() => { if (onNavigate) onNavigate(); }, [onNavigate]);
 
   // Esc closes reader
   useEffect(() => {

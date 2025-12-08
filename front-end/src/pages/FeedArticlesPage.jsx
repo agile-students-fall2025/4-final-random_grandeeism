@@ -302,7 +302,7 @@ export default function FeedArticlesPage({ onNavigate, feed }) {
   const handleArticleClick = (article) => {
     // Navigate to the appropriate viewer based on media type
     const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
-    onNavigate && onNavigate(destination, { article });
+    onNavigate && onNavigate(destination, { article, returnTo: 'feed-articles' });
   };
 
   // The following handlers would need to call backend APIs for full integration

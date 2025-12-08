@@ -282,7 +282,7 @@ const VideosPage = ({ onNavigate }) => {
                   <ArticleCard
                     key={article.id}
                     article={article}
-                    onArticleClick={() => onNavigate && onNavigate('video-player', { article })}
+                    onArticleClick={() => onNavigate && onNavigate('video-player', { article, returnTo: 'videos' })}
                     onToggleFavorite={handleToggleFavorite}
                     onStatusChange={handleStatusChange}
                     onDelete={handleDeleteArticle}

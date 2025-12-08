@@ -5,7 +5,7 @@
  * Purpose: Root component that manages page navigation and renders the appropriate page
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { StacksProvider } from './contexts/StacksContext.jsx';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
@@ -52,6 +52,28 @@ import { invalidateTagCache } from './utils/tagsCache.js';
 
 // Import data
 // import { mockArticles } from './data/mockArticles'; // Adjust path if needed
+
+// Route mapping constant - single source of truth for page to route mapping
+const ROUTE_MAP = {
+  'landing': '/',
+  'auth': '/auth',
+  'home': '/home',
+  'inbox': '/inbox',
+  'daily-reading': '/daily-reading',
+  'continue-reading': '/continue-reading',
+  'rediscovery': '/rediscovery',
+  'text': '/text',
+  'videos': '/videos',
+  'audio': '/audio',
+  'archive': '/archive',
+  'search': '/search',
+  'tags': '/tags',
+  'favorites': '/favorites',
+  'feeds': '/feeds',
+  'feed-articles': '/feed-articles',
+  'settings': '/settings',
+  'statistics': '/statistics',
+};
 
 function App() {
   return (
@@ -108,6 +130,7 @@ function AppContent() {
   const [currentTag, setCurrentTag] = useState(null);
   const [currentFeed, setCurrentFeed] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  const [returnToPage, setReturnToPage] = useState('home');
   
   // Tag resolution hook for refreshing tags when new ones are created
   const { refreshTags } = useTagResolution();
@@ -122,37 +145,83 @@ function AppContent() {
   
   // const dragOffset = useRef({ x: 0, y: 0 });
 
-  // Sync currentPage with URL
+  // Disable browser back/forward buttons
   useEffect(() => {
-    const pathMap = {
-      'landing': '/',
-      'auth': '/auth',
-      'home': '/home',
-      'search': '/search',
-      'inbox': '/inbox',
-      'daily-reading': '/daily-reading',
-      'continue-reading': '/continue-reading',
-      'rediscovery': '/rediscovery',
-      'text': '/text',
-      'videos': '/videos',
-      'audio': '/audio',
-      'archive': '/archive',
-      'statistics': '/statistics',
-      'settings': '/settings',
-      'feeds': '/feeds',
-      'feed-articles': '/feed-articles',
-      'tags': '/tags',
-      'favorites': '/favorites',
+    // Push a state on mount
+    window.history.pushState(null, '', window.location.href);
+    
+    const handlePopState = () => {
+      // Immediately push state back to block navigation
+      window.history.pushState(null, '', window.location.href);
     };
     
+    window.addEventListener('popstate', handlePopState, true);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState, true);
+    };
+  }, []);
+
+  // Re-push state whenever location changes to maintain block
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+  }, [location.pathname]);
+
+  // Track previous pathname to detect actual URL changes
+  const prevPathnameRef = useRef(location.pathname);
+
+  // Sync URL to currentPage state when location changes
+  useEffect(() => {
+    const path = location.pathname;
+    
+    // Only process if the pathname actually changed (not just our own navigate calls)
+    if (prevPathnameRef.current === path) {
+      return;
+    }
+    
+    prevPathnameRef.current = path;
+    let newPage = 'landing'; // Default fallback
+    
+    if (path === '/' || path === '/landing') newPage = 'landing';
+    else if (path === '/auth') newPage = 'auth';
+    else if (path === '/home') newPage = 'home';
+    else if (path === '/search') newPage = 'search';
+    else if (path === '/inbox') newPage = 'inbox';
+    else if (path === '/daily-reading') newPage = 'daily-reading';
+    else if (path === '/continue-reading') newPage = 'continue-reading';
+    else if (path === '/rediscovery') newPage = 'rediscovery';
+    else if (path === '/text') newPage = 'text';
+    else if (path === '/videos') newPage = 'videos';
+    else if (path === '/audio') newPage = 'audio';
+    else if (path === '/archive') newPage = 'archive';
+    else if (path === '/statistics') newPage = 'statistics';
+    else if (path === '/settings') newPage = 'settings';
+    else if (path === '/feeds') newPage = 'feeds';
+    else if (path === '/feed-articles') newPage = 'feed-articles';
+    else if (path === '/tags') newPage = 'tags';
+    else if (path === '/favorites') newPage = 'favorites';
+    else if (path.startsWith('/article/')) newPage = 'text-reader';
+    else if (path.startsWith('/video/')) newPage = 'video-player';
+    else if (path.startsWith('/audio/')) newPage = 'audio-player';
+    
+    console.log('[URL Sync] Detected pathname change to', path, ', updating currentPage to', newPage);
+    setCurrentPage(newPage);
+  }, [location.pathname]);
+
+  // Sync currentPage with URL (only when currentPage changes, not when URL changes)
+  useEffect(() => {
     // Don't update URL for viewer pages as they have dynamic paths
     if (currentPage !== 'text-reader' && currentPage !== 'video-player' && currentPage !== 'audio-player') {
-      const newPath = pathMap[currentPage];
-      if (newPath && location.pathname !== newPath) {
+      const newPath = ROUTE_MAP[currentPage];
+      // Only navigate if the path is different from current location
+      if (newPath && newPath !== location.pathname) {
+        console.log('[State->URL Sync] Navigating from', location.pathname, 'to', newPath, 'because currentPage is', currentPage);
+        // Update the ref to prevent the URL sync effect from treating this as a back button event
+        prevPathnameRef.current = newPath;
         navigate(newPath, { replace: true });
       }
     }
-  }, [currentPage, navigate, location.pathname]);
+  }, [currentPage, navigate]);
 
   // Handle authentication redirects
   useEffect(() => {
@@ -245,6 +314,11 @@ function AppContent() {
       if (view && view.article) {
         navigate(`/article/${view.article.id}`);
         setSelectedArticle(view.article);
+        // Store the current page to return to (or use provided returnTo)
+        // Make sure we never use a viewer page as returnTo
+        const safeReturnTo = view.returnTo || (currentPage !== 'text-reader' && currentPage !== 'video-player' && currentPage !== 'audio-player' ? currentPage : 'home');
+        console.log('[Navigation] Setting returnToPage for text-reader:', safeReturnTo, 'from currentPage:', currentPage, 'view.returnTo:', view.returnTo);
+        setReturnToPage(safeReturnTo);
       }
       setCurrentPage('text-reader');
     } else if (page === 'video-player') {
@@ -252,6 +326,11 @@ function AppContent() {
       if (view && view.article) {
         navigate(`/video/${view.article.id}`);
         setSelectedArticle(view.article);
+        // Store the current page to return to (or use provided returnTo)
+        // Make sure we never use a viewer page as returnTo
+        const safeReturnTo = view.returnTo || (currentPage !== 'text-reader' && currentPage !== 'video-player' && currentPage !== 'audio-player' ? currentPage : 'home');
+        console.log('[Navigation] Setting returnToPage for video-player:', safeReturnTo, 'from currentPage:', currentPage, 'view.returnTo:', view.returnTo);
+        setReturnToPage(safeReturnTo);
       }
       setCurrentPage('video-player');
     } else if (page === 'audio-player') {
@@ -259,6 +338,11 @@ function AppContent() {
       if (view && view.article) {
         navigate(`/audio/${view.article.id}`);
         setSelectedArticle(view.article);
+        // Store the current page to return to (or use provided returnTo)
+        // Make sure we never use a viewer page as returnTo
+        const safeReturnTo = view.returnTo || (currentPage !== 'text-reader' && currentPage !== 'video-player' && currentPage !== 'audio-player' ? currentPage : 'home');
+        console.log('[Navigation] Setting returnToPage for audio-player:', safeReturnTo, 'from currentPage:', currentPage, 'view.returnTo:', view.returnTo);
+        setReturnToPage(safeReturnTo);
       }
       setCurrentPage('audio-player');
     } else if (page === 'videos') {
@@ -322,12 +406,6 @@ function AppContent() {
         return <TagsPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
       case 'favorites':
         return <FavoritesPage onNavigate={handleNavigate} setPageRefresh={setPageRefresh} />;
-      case 'text-reader':
-        return <TextReaderWrapper onNavigate={handleNavigate} />;
-      case 'audio-player':
-        return <AudioPlayerWrapper onNavigate={handleNavigate} />;
-      case 'video-player':
-        return <VideoPlayerWrapper onNavigate={handleNavigate} />;
       default:
         return <HomePage onNavigate={handleNavigate} />;
     }
@@ -338,9 +416,27 @@ function AppContent() {
       <div className="relative min-h-screen bg-background">
         {/* Render current page */}
         <Routes>
-          <Route path="/article/:articleId" element={<TextReaderWrapper onNavigate={handleNavigate} />} />
-          <Route path="/video/:articleId" element={<VideoPlayerWrapper onNavigate={handleNavigate} />} />
-          <Route path="/audio/:articleId" element={<AudioPlayerWrapper onNavigate={handleNavigate} />} />
+          <Route path="/article/:articleId" element={
+            <TextReaderWrapperRoute 
+              onNavigate={handleNavigate} 
+              returnToPage={returnToPage}
+              navigate={navigate}
+            />
+          } />
+          <Route path="/video/:articleId" element={
+            <VideoPlayerWrapperRoute 
+              onNavigate={handleNavigate} 
+              returnToPage={returnToPage}
+              navigate={navigate}
+            />
+          } />
+          <Route path="/audio/:articleId" element={
+            <AudioPlayerWrapperRoute 
+              onNavigate={handleNavigate} 
+              returnToPage={returnToPage}
+              navigate={navigate}
+            />
+          } />
           <Route path="*" element={
             <>
               {renderPage()}
@@ -602,59 +698,108 @@ function AppContent() {
   );
 }
 
-// Wrapper components to handle URL params
-function TextReaderWrapper({ onNavigate }) {
+// Wrapper route components - defined outside AppContent to prevent recreation on every render
+// These components handle return navigation using the ROUTE_MAP
+function TextReaderWrapperRoute({ navigate: routeNavigate, returnToPage }) {
   const { articleId } = useParams();
-  return <TextReader onNavigate={onNavigate} articleId={articleId} />;
+  
+  const handleBack = useCallback(() => {
+    const targetPage = returnToPage || 'home';
+    console.log('[TextReaderWrapper] Going back to:', targetPage);
+    
+    const route = ROUTE_MAP[targetPage] || '/home';
+    routeNavigate(route);
+  }, [routeNavigate, returnToPage]);
+  
+  console.log('[TextReaderWrapper] Rendered with returnToPage:', returnToPage);
+  return <TextReader onNavigate={handleBack} articleId={articleId} />;
 }
 
-function AudioPlayerWrapper({ onNavigate }) {
-  const { articleId } = useParams();
-  const [article, setArticle] = useState(null);
-  
-  useEffect(() => {
-    if (articleId) {
-      articlesAPI.getById(articleId).then(response => {
-        if (response.success) {
-          setArticle(response.data);
-        }
-      });
-    }
-  }, [articleId]);
-  
-  return (
-    <AudioPlayer 
-      article={article}
-      onUpdateArticle={setArticle}
-      onClose={() => onNavigate('home')}
-    />
-  );
-}
-
-function VideoPlayerWrapper({ onNavigate }) {
+function VideoPlayerWrapperRoute({ navigate: routeNavigate, returnToPage }) {
   const { articleId } = useParams();
   const [article, setArticle] = useState(null);
   
   useEffect(() => {
     if (articleId) {
       console.log('VideoPlayerWrapper - fetching article ID:', articleId);
-      articlesAPI.getById(articleId).then(response => {
-        console.log('VideoPlayerWrapper - API response:', response);
-        if (response.success) {
-          console.log('VideoPlayerWrapper - article data:', response.data);
-          console.log('VideoPlayerWrapper - mediaType:', response.data.mediaType);
-          console.log('VideoPlayerWrapper - videoId:', response.data.videoId);
-          setArticle(response.data);
-        }
-      });
+      articlesAPI.getById(articleId)
+        .then(response => {
+          console.log('VideoPlayerWrapper - API response:', response);
+          if (response.success) {
+            console.log('VideoPlayerWrapper - article data:', response.data);
+            console.log('VideoPlayerWrapper - mediaType:', response.data.mediaType);
+            console.log('VideoPlayerWrapper - videoId:', response.data.videoId);
+            setArticle(response.data);
+          } else {
+            console.error('Failed to fetch article:', response.error);
+            // Navigate back to home on error
+            routeNavigate('/home');
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching article:', error);
+          // Navigate back to home on error
+          routeNavigate('/home');
+        });
     }
-  }, [articleId]);
+  }, [articleId, routeNavigate]);
   
+  const handleClose = useCallback(() => {
+    const targetPage = returnToPage || 'home';
+    console.log('[VideoPlayerWrapper] Going back to:', targetPage);
+    
+    const route = ROUTE_MAP[targetPage] || '/home';
+    routeNavigate(route);
+  }, [routeNavigate, returnToPage]);
+  
+  console.log('[VideoPlayerWrapper] Rendered with returnToPage:', returnToPage);
   return (
     <VideoPlayer 
       article={article}
       onUpdateArticle={setArticle}
-      onClose={() => onNavigate('home')}
+      onClose={handleClose}
+    />
+  );
+}
+
+function AudioPlayerWrapperRoute({ navigate: routeNavigate, returnToPage }) {
+  const { articleId } = useParams();
+  const [article, setArticle] = useState(null);
+  
+  useEffect(() => {
+    if (articleId) {
+      articlesAPI.getById(articleId)
+        .then(response => {
+          if (response.success) {
+            setArticle(response.data);
+          } else {
+            console.error('Failed to fetch article:', response.error);
+            // Navigate back to home on error
+            routeNavigate('/home');
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching article:', error);
+          // Navigate back to home on error
+          routeNavigate('/home');
+        });
+    }
+  }, [articleId, routeNavigate]);
+  
+  const handleClose = useCallback(() => {
+    const targetPage = returnToPage || 'home';
+    console.log('[AudioPlayerWrapper] Going back to:', targetPage);
+    
+    const route = ROUTE_MAP[targetPage] || '/home';
+    routeNavigate(route);
+  }, [routeNavigate, returnToPage]);
+  
+  console.log('[AudioPlayerWrapper] Rendered with returnToPage:', returnToPage);
+  return (
+    <AudioPlayer 
+      article={article}
+      onUpdateArticle={setArticle}
+      onClose={handleClose}
     />
   );
 }
