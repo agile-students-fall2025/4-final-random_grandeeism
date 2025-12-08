@@ -637,6 +637,7 @@ export async function exportAllNotesAsZip(format) {
 
 /**
  * Export all user data (articles, tags, highlights, reading progress) as JSON
+ * @param {string} userId - The ID of the user whose data should be exported
  * @returns {Promise<void>}
  */
 export async function exportAllUserData(userId) {

@@ -446,6 +446,7 @@ function AppContent() {
             <TagArticlesWrapperRoute 
               onNavigate={handleNavigate}
               navigate={navigate}
+              setPageRefresh={setPageRefresh}
             />
           } />
           <Route path="*" element={
@@ -804,7 +805,7 @@ function AudioPlayerWrapperRoute({ navigate: routeNavigate, returnToPage }) {
   );
 }
 
-function TagArticlesWrapperRoute({ navigate: routeNavigate, onNavigate }) {
+function TagArticlesWrapperRoute({ navigate: routeNavigate, onNavigate, setPageRefresh }) {
   const { tagName } = useParams();
   
   const handleNavigate = useCallback((page, params) => {
@@ -815,7 +816,7 @@ function TagArticlesWrapperRoute({ navigate: routeNavigate, onNavigate }) {
     }
   }, [routeNavigate, onNavigate]);
   
-  return <TagArticlesPage onNavigate={handleNavigate} tag={tagName} />;
+  return <TagArticlesPage onNavigate={handleNavigate} tag={tagName} setPageRefresh={setPageRefresh} />;
 }
 
 export default App;

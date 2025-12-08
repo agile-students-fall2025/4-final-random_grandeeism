@@ -5,7 +5,7 @@
  * Purpose: Allows users to configure app behavior, appearance, and account settings
  */
 
-import { LogOut, Sun, Moon, Monitor, Download, FileDown, ExternalLink, Trash } from "lucide-react";
+import { LogOut, Sun, Moon, Monitor, FileDown, Trash } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import MainLayout from "../components/MainLayout.jsx";
 import { Button } from "../components/ui/button.jsx";
@@ -201,37 +201,6 @@ const SettingsPage = ({ onNavigate }) => {
   const handleResetProfile = () => {
     setProfileData({ ...initialProfileData });
     toast.success("Profile reset to original values");
-  };
-
-  // Handle avatar change - generate new random image
-  const handleChangeAvatar = async () => {
-    const newAvatar = `https://picsum.photos/200/200?random=${Date.now()}`;
-    setProfileData(prev => ({ ...prev, avatar: newAvatar }));
-    try {
-      if (user?._id) {
-        await usersAPI.updateProfile(user._id, { avatar: newAvatar });
-        updateUser({ avatar: newAvatar });
-        toast.success("Avatar updated");
-      }
-    } catch (error) {
-      console.error('Failed to update avatar:', error);
-      toast.error('Failed to update avatar');
-    }
-  };
-
-  // Handle avatar deletion - reset to empty
-  const handleDeleteAvatar = async () => {
-    setProfileData(prev => ({ ...prev, avatar: '' }));
-    try {
-      if (user?._id) {
-        await usersAPI.updateProfile(user._id, { avatar: '' });
-        updateUser({ avatar: '' });
-        toast.success("Avatar removed");
-      }
-    } catch (error) {
-      console.error('Failed to remove avatar:', error);
-      toast.error('Failed to remove avatar');
-    }
   };
 
   // Handle account deletion
