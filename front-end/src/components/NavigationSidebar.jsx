@@ -60,7 +60,10 @@ export default function NavigationSidebar({
     if (currentPage === 'podcasts' && item.page === 'podcasts') return true;
     if (currentPage === 'text' && item.page === 'text') return true;
     
-    // Page + view matches (for articles page with different views)
+    // Search page match (SearchPage uses currentPage="search" instead of "articles")
+    if (currentPage === 'search' && item.view === 'Search') return true;
+    
+    // Page + view matches (for articles page with different views like Inbox, Daily Reading, etc.)
     if (currentPage === 'articles' && item.view === currentView) return true;
     
     return false;
@@ -82,7 +85,7 @@ export default function NavigationSidebar({
       >
         <div className="flex items-center gap-3">
           <item.icon size={20} className="shrink-0" />
-          <span className={`font-['Inter:${isActive ? 'Bold' : 'Regular'}',sans-serif] text-[15px]`}>
+          <span className="font-['Inter:Regular',sans-serif] text-[15px]">
             {item.name}
           </span>
         </div>
@@ -283,12 +286,16 @@ export default function NavigationSidebar({
       <div className="pt-4 mt-4 border-t border-border">
         <button
           onClick={() => onNavigate('settings')}
-          className={`flex items-center gap-3 hover:bg-white/50 dark:hover:bg-white/10 transition-colors w-full px-3 py-2.5 rounded-lg h-11 ${
-            currentPage === 'settings' ? 'bg-accent' : ''
+          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors h-11 ${
+            currentPage === 'settings' 
+              ? 'bg-accent text-foreground' 
+              : 'hover:bg-white/50 dark:hover:bg-white/10 text-foreground'
           }`}
         >
-          <Settings size={20} className="shrink-0 text-foreground" />
-          <p className="font-['Inter:Medium',sans-serif] text-[15px] text-foreground">Settings</p>
+          <Settings size={20} className="shrink-0" />
+          <span className="font-['Inter:Regular',sans-serif] text-[15px]">
+            Settings
+          </span>
         </button>
       </div>
       </div>

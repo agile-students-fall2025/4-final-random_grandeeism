@@ -123,6 +123,42 @@ function AppContent() {
   
   // const dragOffset = useRef({ x: 0, y: 0 });
 
+  // Disable browser back/forward buttons
+  useEffect(() => {
+    // Push a state on mount
+    window.history.pushState(null, '', window.location.href);
+    
+    const handlePopState = (event) => {
+      // Prevent default behavior
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Immediately push state back to block navigation
+      window.history.pushState(null, '', window.location.href);
+      
+      // Return false to ensure no navigation happens
+      return false;
+    };
+    
+    const handleBeforeUnload = (event) => {
+      // Additional check for navigation attempts
+      window.history.pushState(null, '', window.location.href);
+    };
+    
+    window.addEventListener('popstate', handlePopState, true);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState, true);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  // Re-push state whenever location changes to maintain block
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+  }, [location.pathname]);
+
   // Track previous pathname to detect actual URL changes
   const prevPathnameRef = useRef(location.pathname);
 
@@ -164,7 +200,7 @@ function AppContent() {
     setCurrentPage(newPage);
   }, [location.pathname]);
 
-  // Sync currentPage with URL (only when state actually changes, not on every render)
+  // Sync currentPage with URL (only when currentPage changes, not when URL changes)
   useEffect(() => {
     const pathMap = {
       'landing': '/',
@@ -190,13 +226,15 @@ function AppContent() {
     // Don't update URL for viewer pages as they have dynamic paths
     if (currentPage !== 'text-reader' && currentPage !== 'video-player' && currentPage !== 'audio-player') {
       const newPath = pathMap[currentPage];
-      if (newPath && location.pathname !== newPath) {
+      // Only navigate if the path is different from current location
+      if (newPath && newPath !== location.pathname) {
+        console.log('[State->URL Sync] Navigating from', location.pathname, 'to', newPath, 'because currentPage is', currentPage);
         // Update the ref to prevent the URL sync effect from treating this as a back button event
         prevPathnameRef.current = newPath;
         navigate(newPath, { replace: true });
       }
     }
-  }, [currentPage, navigate, location.pathname]);
+  }, [currentPage, navigate]);
 
   // Handle authentication redirects
   useEffect(() => {

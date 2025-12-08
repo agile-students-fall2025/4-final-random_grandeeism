@@ -255,7 +255,7 @@ export default function FeedsPage({ onNavigate }) {
 
   return (
     <MainLayout
-      currentPage="articles"
+      currentPage="feeds"
       currentView="Feeds"
       onNavigate={onNavigate}
       articles={articles}
