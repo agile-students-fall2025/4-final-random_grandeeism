@@ -6,6 +6,11 @@ import CompletionModal from '../../components/CompletionModal.jsx';
 import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
 import TagManagerModal from '../../components/TagManagerModal.jsx';
 import { Button } from '../../components/ui/button.jsx';
+import { Sheet, SheetContent, SheetHeader, SheetFooter, SheetTitle } from '../../components/ui/sheet.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Textarea } from '../../components/ui/textarea.jsx';
+import { Label } from '../../components/ui/label.jsx';
+import { ScrollArea } from '../../components/ui/scroll-area.jsx';
 import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon, ArrowLeft } from 'lucide-react';
 import { ensureTagsLoaded, getTagName, getTagMapSnapshot, addSingleTag } from '../../utils/tagsCache.js';
 import { articlesAPI, tagsAPI, highlightsAPI, usersAPI } from '../../services/api.js';
@@ -113,8 +118,32 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     };
   }, []);
 
+  const autoMoveToContinue = useCallback(async (articleData, { cancelled = false } = {}) => {
+    if (!articleData?.id) return;
+    const status = (articleData.status || '').toLowerCase();
+    const shouldMove = status === 'inbox' || status === 'daily' || status === 'rediscovery';
+    if (!shouldMove) return;
+    if (autoMovedArticles.current.has(articleData.id)) return;
+
+    autoMovedArticles.current.add(articleData.id);
+    try {
+      await articlesAPI.updateStatus(articleData.id, 'continue');
+      if (!cancelled) {
+        setCurrent(prev => prev ? { ...prev, status: 'continue' } : prev);
+        toast.success('Moved to Continue Reading');
+      }
+    } catch (error) {
+      autoMovedArticles.current.delete(articleData.id);
+      console.error('Failed to update article status to continue:', error);
+      if (!cancelled) {
+        toast.error('Failed to move article to Continue Reading');
+      }
+    }
+  }, []);
+
   const contentRef = useRef(null);
   const selectionToolbarRef = useRef(null);
+  const autoMovedArticles = useRef(new Set());
   const [allTags, setAllTags] = useState([]);
   // maintain a local snapshot of tagMap for possible future reactive displays; unused directly for resolution
   const [tagMap, setTagMap] = useState(getTagMapSnapshot()); // eslint-disable-line no-unused-vars
@@ -168,11 +197,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       try {
         if (article) {
           if (!cancelled) setCurrent(article);
+          await autoMoveToContinue(article, { cancelled });
           return;
         }
         if (articleId) {
           const res = await articlesAPI.getById(articleId);
-          if (!cancelled) setCurrent(res?.data || null);
+          if (!cancelled) {
+            setCurrent(res?.data || null);
+          }
+          await autoMoveToContinue(res?.data, { cancelled });
           return;
         }
         if (!cancelled) setCurrent(null);
@@ -183,7 +216,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     };
     load();
     return () => { cancelled = true; };
-  }, [article, articleId]);
+  }, [article, articleId, autoMoveToContinue]);
 
   // Load available tags using shared cache once article is known
   useEffect(() => {
@@ -682,6 +715,39 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     if (!keepPanelOpen) setShowHighlightsPanel(false);
   };
 
+  const handleHighlightCardSelect = useCallback((highlightId) => {
+    if (!highlightId) return;
+    setFocusedHighlightId(highlightId);
+    setShowHighlightsPanel(true);
+  }, []);
+
+  const handleHighlightCardKeyDown = useCallback((e, highlightId) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleHighlightCardSelect(highlightId);
+    }
+  }, [handleHighlightCardSelect]);
+
+  const handleJumpToHighlight = useCallback((e, highlightId) => {
+    if (e) e.stopPropagation();
+    scrollToHighlight(highlightId);
+  }, [scrollToHighlight]);
+
+  const handleEditHighlight = useCallback((e, highlight) => {
+    if (e) e.stopPropagation();
+    if (!highlight?.id) return;
+    setFocusedHighlightId(highlight.id);
+    setEditingNoteId(highlight.id);
+    setEditingTitle(highlight.annotations?.title || '');
+    setEditingNoteValue(highlight.annotations?.note || '');
+    setShowHighlightsPanel(true);
+  }, []);
+
+  const handleDeleteHighlight = useCallback((e, highlightId) => {
+    if (e) e.stopPropagation();
+    removeHighlight(highlightId);
+  }, [removeHighlight]);
+
   // Fallback retry is added later after processedHTMLContent declaration to avoid TDZ
 
   const appliedFavorite = current?.isFavorite;
@@ -701,13 +767,37 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   };
 
   const changeStatus = async (newStatus) => {
-    if (!current) return;
-    if (!ARTICLE_STATUSES.includes(newStatus)) return; // guard invalid
+    if (!current) return false;
+    if (!ARTICLE_STATUSES.includes(newStatus)) return false; // guard invalid
     try {
       await articlesAPI.updateStatus(current.id, newStatus);
       setCurrent(prev => prev ? { ...prev, status: newStatus } : prev);
+      const statusMessages = {
+        'inbox': 'Moved to Inbox',
+        'continue': 'Moved to Continue Reading',
+        'daily': 'Moved to Daily Reading',
+        'rediscovery': 'Moved to Rediscovery',
+        'archived': 'Article Archived'
+      };
+      toast.success(statusMessages[newStatus] || `Status changed to ${newStatus}`);
+      return true;
     } catch (e) {
       console.error('Status update failed', e);
+      toast.error('Failed to update status');
+      return false;
+    }
+  };
+
+  const moveToArchived = async () => {
+    if (!current) return;
+    try {
+      const statusChanged = await changeStatus('archived');
+      if (!statusChanged) return;
+      await articlesAPI.updateProgress(current.id, 100);
+      setCurrent(prev => prev ? { ...prev, readingProgress: 100 } : prev);
+    } catch (e) {
+      console.error('Failed to complete archiving', e);
+      toast.error('Failed to complete archiving');
     }
   };
 
@@ -1063,23 +1153,38 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   }, [processedHTMLContent, paragraphs, focusedHighlightId]);
 
   return (
-    <div className="min-h-screen bg-background pt-6 pb-6 pl-6 pr-16 relative">
-      <div className="mx-auto" style={{ maxWidth: contentMaxWidth }}>
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Button onClick={goBack} variant="ghost" size="sm" className="gap-1.5">
-              <ArrowLeft size={16} />
-              Back
-            </Button>
-            {!isOnline && (
-              <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
-                📖 Offline Mode - Text Only
-              </span>
-            )}
-          </div>
+    <div className="h-screen overflow-y-auto bg-background relative scrollbar-thin scrollbar-thumb-border scrollbar-track-background">
+      {/* Fixed Mobile Navbar - visible only on mobile */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="flex items-center justify-between px-4 py-3">
+          <Button onClick={goBack} variant="ghost" size="sm" className="gap-1.5">
+            <ArrowLeft size={16} />
+            Back
+          </Button>
+          {!isOnline && (
+            <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
+              📖 Offline
+            </span>
+          )}
         </div>
+      </div>
 
-        <div className="mb-6">
+      {/* Fixed Desktop Back Button - visible only on desktop */}
+      <div className="hidden md:block fixed left-6 top-6 z-40">
+        <Button onClick={goBack} variant="ghost" size="sm" className="gap-1.5 bg-background/95 backdrop-blur-sm border border-border shadow-sm hover:shadow-md transition-shadow">
+          <ArrowLeft size={16} />
+          Back
+        </Button>
+        {!isOnline && (
+          <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-1 rounded mt-2">
+            📖 Offline Mode
+          </span>
+        )}
+      </div>
+
+      <div className="mx-auto pt-6 md:pt-6 pb-6 pl-8 pr-14 md:px-10 md:pl-32 md:pr-16" style={{ maxWidth: `calc(${contentMaxWidth} + 8rem)` }}>
+        <div className="mx-auto mt-16 md:mt-0" style={{ maxWidth: contentMaxWidth }}>
+          <div className="mb-6">
           {current ? (
             <>
               <h1 className="text-3xl font-bold mb-2">{current.title}</h1>
@@ -1149,182 +1254,202 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 ) : (
                   <p className="text-muted-foreground">No readable content available for this article.</p>
                 )}
+                
+                {/* Finished Reading Section */}
+                {current?.status !== 'archived' && (
+                  <div className="mt-12 pt-8 border-t border-border">
+                    <div className="flex flex-col items-center gap-4">
+                      <p className="text-lg font-medium text-muted-foreground">Finished Reading?</p>
+                      <Button
+                        onClick={moveToArchived}
+                        variant="default"
+                        size="lg"
+                        className="gap-2"
+                      >
+                        <Archive size={18} />
+                        Move Article to Archived
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </article>
             ) : (
               <div className="text-center py-12"><p className="text-muted-foreground">No article data. Select an article from a list to read it.</p></div>
             )}
           </div>
         </div>
-        {/* Highlights sidebar for desktop and mobile */}
-        {/* Overlay for mobile when highlights panel is open */}
-        {showHighlightsPanel && (
-          <div
-            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-opacity"
-            onClick={() => setShowHighlightsPanel(false)}
-            aria-label="Close highlights panel"
-          />
-        )}
-        <div className="fixed top-0 right-0 h-full z-50 flex flex-col">
-          {/* Minimized bar (desktop only) */}
+        {/* Highlights sidebar using shadcn Sheet */}
+        <Sheet open={showHighlightsPanel} onOpenChange={setShowHighlightsPanel}>
+          <SheetContent side="right" className="w-full sm:max-w-[400px] flex flex-col p-0 h-screen">
+            <SheetHeader className="px-6 py-4 border-b shrink-0">
+              <div className="flex items-center gap-3">
+                <StickyNote size={20} />
+                <div className="flex flex-col flex-1">
+                  <SheetTitle>
+                    {focusedHighlightId ? 'Highlight Details' : 'All Highlights'}
+                  </SheetTitle>
+                  {focusedHighlightId && highlights.length > 0 && (
+                    <Button
+                      variant="link"
+                      onClick={() => {
+                        setFocusedHighlightId(null);
+                        setEditingNoteId(null);
+                        setEditingNoteValue('');
+                        setEditingTitle('');
+                      }}
+                      className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground justify-start"
+                    >
+                      ← Back to all highlights
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </SheetHeader>
+
+            <ScrollArea className="flex-1 overflow-hidden">
+              <div className="px-6 py-4 space-y-4">
+                {highlights.length === 0 && <p className="text-sm text-muted-foreground">No highlights yet</p>}
+                {/* Inline annotation editor */}
+                {editingNoteId && (
+                  <div className="mb-3 p-4 bg-muted rounded-lg space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="highlight-title">Title</Label>
+                      <Input
+                        id="highlight-title"
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        placeholder="Enter a title for this highlight"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="highlight-note">Note</Label>
+                      <Textarea
+                        id="highlight-note"
+                        value={editingNoteValue}
+                        onChange={(e) => setEditingNoteValue(e.target.value)}
+                        rows={4}
+                        placeholder="Add your thoughts..."
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={saveEditingNote} size="sm">
+                        Save
+                      </Button>
+                      <Button onClick={cancelEditingNote} variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {/* If we're editing the focused highlight, only show the editor pane (highlight-specific editing) */}
+                {!(focusedHighlightId && editingNoteId === focusedHighlightId) && (
+                  <div className="space-y-3">
+                    {(focusedHighlightId ? highlights.filter(h => h.id === focusedHighlightId) : highlights).map(h => (
+                      <div
+                        key={h.id}
+                        className="p-3 bg-muted rounded-lg hover:bg-muted/80 cursor-pointer transition-all"
+                        onClick={() => handleHighlightCardSelect(h.id)}
+                        onKeyDown={(e) => handleHighlightCardKeyDown(e, h.id)}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <strong className="text-sm font-medium flex-1">{h.annotations?.title && h.annotations.title.length > 0 ? (h.annotations.title.length > 80 ? h.annotations.title.slice(0,80) + '…' : h.annotations.title) : 'No title yet'}</strong>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-3">{h.annotations?.note && h.annotations.note.length > 0 ? h.annotations.note : 'No annotation yet'}</p>
+                        <div className="flex gap-1">
+                          <Button onClick={(e) => handleJumpToHighlight(e, h.id)} variant="ghost" size="sm" className="h-7 text-xs">Jump</Button>
+                          <Button onClick={(e) => handleEditHighlight(e, h)} variant="ghost" size="sm" className="h-7 text-xs">Edit</Button>
+                          <Button onClick={(e) => handleDeleteHighlight(e, h.id)} variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive">Delete</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+
+            <SheetFooter className="border-t px-6 py-4 shrink-0">
+              <div className="flex flex-col gap-2 w-full">
+                <Button
+                  onClick={() => toggleFavorite()}
+                  variant="outline"
+                  className="w-full justify-start gap-3"
+                >
+                  <Star
+                    size={18}
+                    className={appliedFavorite ? 'text-foreground' : 'text-muted-foreground'}
+                    fill={appliedFavorite ? 'currentColor' : 'none'}
+                  />
+                  <span>Favorite</span>
+                </Button>
+                {current && ARTICLE_STATUSES.map(status => {
+                  const Icon = STATUS_ICON_MAP[status];
+                  const active = current.status === status;
+                  const label = STATUS_LABEL_MAP[status] || status;
+                  return (
+                    <Button
+                      key={status}
+                      onClick={() => changeStatus(status)}
+                      variant={active ? 'secondary' : 'outline'}
+                      className="w-full justify-start gap-3"
+                    >
+                      <Icon size={18} />
+                      <span>{label}</span>
+                    </Button>
+                  );
+                })}
+                <Button
+                  onClick={() => setSettingsOpen(true)}
+                  variant="outline"
+                  className="w-full justify-start gap-3"
+                >
+                  <Settings size={18} />
+                  <span>Reader Settings</span>
+                </Button>
+              </div>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+
+        {/* Minimized highlights bar (desktop only) */}
+        <div className="fixed top-0 right-0 h-full z-40 flex flex-col">
           {!showHighlightsPanel && (
-            <div className="w-10 h-full bg-card border-l border-border flex flex-col items-center pt-3 justify-between">
+            <div className="w-10 h-full bg-card border-l border-border flex flex-col items-center pt-16 md:pt-3 justify-between">
               <div className="flex flex-col items-center">
-                <button onClick={() => { setFocusedHighlightId(null); setShowHighlightsPanel(true); }} className="p-2 rounded bg-accent reader-button mb-2 hover:bg-accent/80" title="Show Highlights">
-                  <StickyNote size={18} className="text-foreground" />
-                </button>
+                <Button onClick={() => { setFocusedHighlightId(null); setShowHighlightsPanel(true); }} variant="ghost" size="icon" title="Show Highlights">
+                  <StickyNote size={18} />
+                </Button>
               </div>
 
               <div className="flex flex-col items-center mb-3 space-y-2">
-                <button onClick={() => toggleFavorite()} className="p-2 rounded reader-button" title="Favorite">
+                <Button onClick={() => toggleFavorite()} variant="ghost" size="icon" title="Favorite">
                   <Star
                     size={16}
                     className={appliedFavorite ? 'text-foreground' : 'text-muted-foreground'}
                     fill={appliedFavorite ? 'currentColor' : 'none'}
                   />
-                </button>
+                </Button>
                 {current && ARTICLE_STATUSES.map(status => {
                   const Icon = STATUS_ICON_MAP[status];
                   const active = current.status === status;
                   return (
-                    <button
+                    <Button
                       key={status}
                       onClick={() => changeStatus(status)}
-                      className={`p-2 rounded reader-button transition-colors ${active ? 'bg-muted' : ''}`}
+                      variant={active ? 'secondary' : 'ghost'}
+                      size="icon"
                       title={status.charAt(0).toUpperCase() + status.slice(1)}
                     >
-                      <Icon size={16} className={active ? 'text-foreground' : 'text-muted-foreground'} />
-                    </button>
+                      <Icon size={16} />
+                    </Button>
                   );
                 })}
-                <button onClick={() => setSettingsOpen(true)} className="p-2 rounded reader-button" title="Settings">
-                  <Settings size={16} className="text-muted-foreground" />
-                </button>
+                <Button onClick={() => setSettingsOpen(true)} variant="ghost" size="icon" title="Settings">
+                  <Settings size={16} />
+                </Button>
               </div>
             </div>
-          )}
-          {/* Expanded highlights sidebar */}
-          {showHighlightsPanel && (
-            <aside className="fixed right-0 top-0 bottom-0 w-full max-w-[400px] bg-card border-l border-border z-50 overflow-y-auto shadow-xl flex flex-col justify-between">
-              <div>
-                <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <StickyNote size={20} className="text-foreground" />
-                    <div className="flex flex-col">
-                      <h3 className="font-semibold text-lg">
-                        {focusedHighlightId ? 'Highlight Details' : 'All Highlights'}
-                      </h3>
-                      {focusedHighlightId && highlights.length > 0 && (
-                        <button 
-                          onClick={() => {
-                            setFocusedHighlightId(null);
-                            setEditingNoteId(null);
-                            setEditingNoteValue('');
-                            setEditingTitle('');
-                          }}
-                          className="text-xs text-muted-foreground hover:text-foreground mt-0.5 text-left"
-                        >
-                          ← Back to all highlights
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <button onClick={() => setShowHighlightsPanel(false)} className="p-2 hover:bg-accent rounded-lg transition-all reader-button" title="Close">
-                    <span aria-hidden="true">✕</span>
-                  </button>
-                </div>
-                <div className="p-4 space-y-4">
-                  {highlights.length === 0 && <p className="text-sm text-muted-foreground">No highlights yet</p>}
-                  {/* Inline annotation editor */}
-                  {editingNoteId && (
-                    <div className="mb-3 p-2 bg-muted rounded">
-                      <label className="text-sm font-medium mb-1 block">Title</label>
-                      <input value={editingTitle} onChange={(e) => setEditingTitle(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" placeholder="Enter a title for this highlight" />
-                      <label className="text-sm font-medium mb-1 block">Edit note</label>
-                      <textarea value={editingNoteValue} onChange={(e) => setEditingNoteValue(e.target.value)} className="w-full p-2 text-sm rounded border border-border mb-2" rows={4} />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={saveEditingNote}
-                          className="px-3 py-1 rounded text-sm bg-primary text-primary-foreground reader-button hover:bg-primary/90 transition-all"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={cancelEditingNote}
-                          className="px-3 py-1 bg-card border border-border rounded text-sm reader-button hover:bg-accent transition-all"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {/* If we're editing the focused highlight, only show the editor pane (H_specific editing) */}
-                  {!(focusedHighlightId && editingNoteId === focusedHighlightId) && (
-                    <div className="space-y-3">
-                      {(focusedHighlightId ? highlights.filter(h => h.id === focusedHighlightId) : highlights).map(h => (
-                        <div
-                          key={h.id}
-                          className="p-2 bg-muted rounded hover:bg-muted/80 cursor-pointer transition-all hover:-translate-y-0.5"
-                          onClick={() => { setFocusedHighlightId(h.id); setShowHighlightsPanel(true); }}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                              <strong className="text-sm">{h.annotations?.title && h.annotations.title.length > 0 ? (h.annotations.title.length > 80 ? h.annotations.title.slice(0,80) + '…' : h.annotations.title) : 'No title yet'}</strong>
-                            <div className="flex gap-2">
-                              <button onClick={(e) => { e.stopPropagation(); scrollToHighlight(h.id); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Jump</button>
-                              <button onClick={(e) => { e.stopPropagation(); setFocusedHighlightId(h.id); setEditingNoteId(h.id); setEditingTitle(h.annotations?.title || ''); setEditingNoteValue(h.annotations?.note || ''); setShowHighlightsPanel(true); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-accent hover:text-foreground transition-colors">Edit</button>
-                              <button onClick={(e) => { e.stopPropagation(); removeHighlight(h.id); }} className="text-xs px-1.5 py-0.5 rounded reader-button hover:bg-destructive/10 text-destructive hover:text-destructive/90 transition-colors">Delete</button>
-                            </div>
-                          </div>
-                          <div className="text-[13px] text-muted-foreground">{h.annotations?.note && h.annotations.note.length > 0 ? h.annotations.note : 'No annotation yet'}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {/* Bottom action group: Favorites, Rediscovery, Archive, Settings */}
-              <div className="p-4 border-t border-border">
-                <div className="flex flex-col gap-2 w-full">
-                  <button
-                    onClick={() => toggleFavorite()}
-                    className="w-full flex items-center gap-3 p-2 rounded reader-button border border-border hover:bg-accent transition-colors"
-                    title="Favorite"
-                  >
-                    <Star
-                      size={18}
-                      className={appliedFavorite ? 'text-foreground' : 'text-muted-foreground'}
-                      fill={appliedFavorite ? 'currentColor' : 'none'}
-                    />
-                    <span className="text-sm">Favorite</span>
-                  </button>
-                  {current && ARTICLE_STATUSES.map(status => {
-                    const Icon = STATUS_ICON_MAP[status];
-                    const active = current.status === status;
-                    const label = STATUS_LABEL_MAP[status] || status;
-                    return (
-                      <button
-                        key={status}
-                        onClick={() => changeStatus(status)}
-                        className={`w-full flex items-center gap-3 p-2 rounded reader-button border border-border transition-colors ${active ? 'bg-muted' : 'hover:bg-accent'}`}
-                        title={label}
-                      >
-                        <Icon size={18} className={active ? 'text-foreground' : 'text-muted-foreground'} />
-                        <span className="text-sm">{label}</span>
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => setSettingsOpen(true)}
-                    className="w-full flex items-center gap-3 p-2 rounded reader-button border border-border hover:bg-accent transition-colors"
-                    title="Settings"
-                  >
-                    <Settings size={18} className="text-muted-foreground" />
-                    <span className="text-sm">Reader Settings</span>
-                  </button>
-                </div>
-              </div>
-            </aside>
           )}
         </div>
 
@@ -1395,6 +1520,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
             onCreateTag={handleCreateTag}
           />
         )}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,9 @@
-import { X, Type, Image, Moon, Sun, Maximize2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-// Ensure `motion` is referenced for linters that don't detect JSX usage
-void motion;
+import { Type, Image, Moon, Sun, Maximize2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog.jsx";
+import { Button } from "./ui/button.jsx";
+import { Switch } from "./ui/switch.jsx";
+import { Label } from "./ui/label.jsx";
+import { ScrollArea } from "./ui/scroll-area.jsx";
 
 const FONT_FAMILIES = [
   { value: 'serif', label: 'Serif', description: 'Traditional, easy to read' },
@@ -36,75 +38,43 @@ export default function ReaderSettingsModal({
   contentWidth,
   onContentWidthChange,
 }) {
-  if (!isOpen) return null;
-
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-        {/* Backdrop */}
-        <motion.div 
-          className="absolute inset-0 bg-black/50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px] max-h-[85vh] p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
+          <DialogTitle>Reader Settings</DialogTitle>
+        </DialogHeader>
 
-        {/* Modal */}
-        <motion.div 
-          className="relative w-full sm:w-[500px] max-h-[85vh] bg-background border border-border sm:rounded-lg rounded-t-lg overflow-hidden flex flex-col"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.2 }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-border">
-            <h2 className="text-foreground">Reader Settings</h2>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-accent rounded-lg transition-colors"
-            >
-              <X size={20} className="text-foreground" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        <ScrollArea className="max-h-[calc(85vh-8rem)] px-6 pb-6">
+          <div className="space-y-8">
             {/* Font Family */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Type size={18} className="text-foreground" />
-                <h3 className="text-foreground">Font Family</h3>
+                <Type size={18} />
+                <h3 className="font-medium">Font Family</h3>
               </div>
               <div className="space-y-2">
                 {FONT_FAMILIES.map((font) => (
-                  <button
+                  <Button
                     key={font.value}
                     onClick={() => onFontFamilyChange(font.value)}
-                    className={`w-full p-4 border rounded-lg text-left transition-all ${
-                      fontFamily === font.value
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50 hover:bg-accent'
-                    }`}
+                    variant={fontFamily === font.value ? "secondary" : "outline"}
+                    className="w-full h-auto p-4 justify-between"
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-foreground mb-1">{font.label}</div>
-                        <div className="text-muted-foreground text-[12px]">{font.description}</div>
-                      </div>
-                      <div 
-                        className={`text-foreground ${
-                          font.value === 'serif' ? "font-['Literata:Regular',_serif]" :
-                          font.value === 'sans-serif' ? "font-['Inter:Regular',_sans-serif]" :
-                          "font-['Courier_New',_monospace]"
-                        }`}
-                        style={{ fontSize: '24px' }}
-                      >
-                        Aa
-                      </div>
+                    <div className="text-left">
+                      <div className="font-medium mb-1">{font.label}</div>
+                      <div className="text-muted-foreground text-xs">{font.description}</div>
                     </div>
-                  </button>
+                    <div 
+                      className={`text-2xl ${
+                        font.value === 'serif' ? "font-['Literata:Regular',_serif]" :
+                        font.value === 'sans-serif' ? "font-['Inter:Regular',_sans-serif]" :
+                        "font-['Courier_New',_monospace]"
+                      }`}
+                    >
+                      Aa
+                    </div>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -112,22 +82,19 @@ export default function ReaderSettingsModal({
             {/* Font Size */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Type size={18} className="text-foreground" />
-                <h3 className="text-foreground">Font Size</h3>
+                <Type size={18} />
+                <h3 className="font-medium">Font Size</h3>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {FONT_SIZES.map((size) => (
-                  <button
+                  <Button
                     key={size.value}
                     onClick={() => onFontSizeChange(size.value)}
-                    className={`p-4 border rounded-lg transition-all ${
-                      fontSize === size.value
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50 hover:bg-accent'
-                    }`}
+                    variant={fontSize === size.value ? "secondary" : "outline"}
+                    className="h-auto p-4 flex-col"
                   >
                     <div 
-                      className="text-foreground mb-2"
+                      className="mb-2"
                       style={{ 
                         fontSize: size.value === 'small' ? '18px' : 
                                  size.value === 'medium' ? '24px' : '32px' 
@@ -135,8 +102,8 @@ export default function ReaderSettingsModal({
                     >
                       {size.preview}
                     </div>
-                    <div className="text-muted-foreground text-[12px]">{size.label}</div>
-                  </button>
+                    <div className="text-xs">{size.label}</div>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -144,27 +111,22 @@ export default function ReaderSettingsModal({
             {/* Content Width */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Maximize2 size={18} className="text-foreground" />
-                <h3 className="text-foreground">Content Width</h3>
+                <Maximize2 size={18} />
+                <h3 className="font-medium">Content Width</h3>
               </div>
               <div className="space-y-2">
                 {CONTENT_WIDTHS.map((width) => (
-                  <button
+                  <Button
                     key={width.value}
                     onClick={() => onContentWidthChange(width.value)}
-                    className={`w-full p-4 border rounded-lg text-left transition-all ${
-                      contentWidth === width.value
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50 hover:bg-accent'
-                    }`}
+                    variant={contentWidth === width.value ? "secondary" : "outline"}
+                    className="w-full h-auto p-4 justify-start"
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-foreground mb-1">{width.label}</div>
-                        <div className="text-muted-foreground text-[12px]">{width.description}</div>
-                      </div>
+                    <div className="text-left">
+                      <div className="font-medium mb-1">{width.label}</div>
+                      <div className="text-muted-foreground text-xs">{width.description}</div>
                     </div>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -172,71 +134,58 @@ export default function ReaderSettingsModal({
             {/* Show Images Toggle */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Image size={18} className="text-foreground" />
-                <h3 className="text-foreground">Images</h3>
+                <Image size={18} />
+                <h3 className="font-medium">Images</h3>
               </div>
-              <button
-                onClick={() => onShowImagesChange(!showImages)}
-                className="w-full p-4 border border-border rounded-lg hover:border-primary/50 hover:bg-accent transition-all flex items-center justify-between"
-              >
-                <div className="text-left">
-                  <div className="text-foreground mb-1">Show images in articles</div>
-                  <div className="text-muted-foreground text-[12px]">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex-1">
+                  <Label htmlFor="show-images" className="font-medium cursor-pointer">
+                    Show images in articles
+                  </Label>
+                  <p className="text-muted-foreground text-xs mt-1">
                     {showImages ? 'Images visible when online' : 'Text-only mode for faster reading'}
-                  </div>
+                  </p>
                 </div>
-                <div 
-                  className={`w-12 h-6 rounded-full transition-colors relative ${
-                    showImages ? 'bg-primary' : 'bg-muted'
-                  }`}
-                >
-                  <div 
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                      showImages ? 'translate-x-7' : 'translate-x-1'
-                    }`}
-                  />
-                </div>
-              </button>
+                <Switch
+                  id="show-images"
+                  checked={showImages}
+                  onCheckedChange={onShowImagesChange}
+                />
+              </div>
             </div>
 
             {/* Reader Theme */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 {readerTheme === 'dark' ? (
-                  <Moon size={18} className="text-foreground" />
+                  <Moon size={18} />
                 ) : (
-                  <Sun size={18} className="text-foreground" />
+                  <Sun size={18} />
                 )}
-                <h3 className="text-foreground">Reader Theme</h3>
+                <h3 className="font-medium">Reader Theme</h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <button
+                <Button
                   onClick={() => onReaderThemeChange('light')}
-                  className={`p-4 border rounded-lg transition-all ${
-                    readerTheme === 'light'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-accent'
-                  }`}
+                  variant={readerTheme === 'light' ? "secondary" : "outline"}
+                  className="h-auto p-4 flex-col"
                 >
-                  <Sun size={24} className="text-foreground mb-2 mx-auto" />
-                  <div className="text-foreground text-center">Light</div>
-                </button>
-                <button
+                  <Sun size={24} className="mb-2" />
+                  <div>Light</div>
+                </Button>
+                <Button
                   onClick={() => onReaderThemeChange('dark')}
-                  className={`p-4 border rounded-lg transition-all ${
-                    readerTheme === 'dark'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-accent'
-                  }`}
+                  variant={readerTheme === 'dark' ? "secondary" : "outline"}
+                  className="h-auto p-4 flex-col"
                 >
-                  <Moon size={24} className="text-foreground mb-2 mx-auto" />
-                  <div className="text-foreground text-center">Dark</div>
-                </button>
+                  <Moon size={24} className="mb-2" />
+                  <div>Dark</div>
+                </Button>
               </div>
             </div>
           </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
   );
 }
