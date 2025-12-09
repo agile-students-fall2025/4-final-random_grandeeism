@@ -321,6 +321,60 @@ JWT_EXPIRES_IN=7d
 - Check token expiration with `JWT_EXPIRES_IN` setting
 - Verify user credentials are correct for login/registration
 
+## Docker Deployment (Extra Credit)
+
+This project includes full Docker containerization with Continuous Deployment support.
+
+### Quick Start with Docker
+
+1. **Build and run all services**:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+2. **Access the application**:
+   - Frontend: http://localhost
+   - Backend API: http://localhost:7001
+   - Health Check: http://localhost:7001/health
+
+3. **View logs**:
+   ```bash
+   docker-compose logs -f
+   ```
+
+4. **Stop services**:
+   ```bash
+   docker-compose down
+   ```
+
+**Note**: The project includes two Docker Compose files:
+- `docker-compose.yml` - For local development (builds images from source)
+- `docker-compose.prod.yml` - For production deployment (uses pre-built images from Docker Hub)
+
+### What's Included
+
+- ✅ **Docker Containerization**: Separate containers for frontend and backend
+- ✅ **Multi-stage Builds**: Optimized frontend build with Nginx
+- ✅ **Docker Compose**: Orchestration of all services
+- ✅ **Production Ready**: Health checks, restart policies, and optimized images
+- ✅ **Continuous Deployment**: GitHub Actions workflow for automated deployment
+
+### Documentation
+
+- **[Docker Deployment Guide](DOCKER_DEPLOYMENT.md)** - Complete containerization setup and local deployment
+- **[Continuous Deployment Guide](CONTINUOUS_DEPLOYMENT.md)** - Automated deployment with GitHub Actions
+- **[.env.example](.env.example)** - Environment variable template
+
+### Deployment to Digital Ocean
+
+The application can be deployed to Digital Ocean Droplets with automated continuous deployment:
+
+1. Configure GitHub Secrets (see [CONTINUOUS_DEPLOYMENT.md](CONTINUOUS_DEPLOYMENT.md))
+2. Push to main branch
+3. GitHub Actions automatically builds and deploys
+
+**Live Application**: [Add your deployment URL here]
+
 ## Want to contribute?
 
  Read our rules about [contributing](CONTRIBUTING.md#contributing-rules) as well as instructions on [setting up the local development environment](CONTRIBUTING.md#instructions-for-setting-up-the-local-environment) and [building and testing](CONTRIBUTING.md#build-and-test-instructions)
