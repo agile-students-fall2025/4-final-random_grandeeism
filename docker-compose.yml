@@ -1,0 +1,72 @@
+services:
+  # MongoDB service (optional - can use existing cloud MongoDB)
+  # Uncomment if you want to use a local MongoDB container
+  # mongodb:
+  #   image: mongo:7
+  #   container_name: fieldnotes-mongodb
+  #   restart: unless-stopped
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: admin
+  #     MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-changeme}
+  #     MONGO_INITDB_DATABASE: fieldnotes
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongodb_data:/data/db
+  #   networks:
+  #     - fieldnotes-network
+
+  # Backend API service
+  backend:
+    build:
+      context: ./back-end
+      dockerfile: Dockerfile
+    container_name: fieldnotes-backend
+    restart: unless-stopped
+    ports:
+      - "7001:7001"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=7001
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - USE_MOCK_DB=${USE_MOCK_DB:-false}
+    # depends_on:
+    #   - mongodb
+    networks:
+      - fieldnotes-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    container_name: fieldnotes-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - fieldnotes-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  fieldnotes-network:
+    driver: bridge
+
+# Uncomment if using local MongoDB
+# volumes:
+#   mongodb_data:
+#     driver: local

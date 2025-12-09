@@ -4,10 +4,8 @@
  */
 
 // Use relative URL in development to leverage Vite's proxy
-// In production, this should be set to the actual backend URL
-const API_BASE_URL = import.meta.env.MODE === 'production' 
-  ? 'http://localhost:7001/api'  // Production URL
-  : '/api';  // Development - uses Vite proxy
+// In production (Docker), nginx proxies /api to the backend service
+const API_BASE_URL = '/api';  // Works in both dev and production with proxy
 
 export const setAuthToken = (token) => {
   localStorage.setItem('authToken', token);
