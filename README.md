@@ -385,7 +385,7 @@ The application can be deployed to Digital Ocean Droplets with automated continu
 2. Push to main branch
 3. GitHub Actions automatically builds and deploys
 
-**Live Application**: [Add your deployment URL here]
+**Live Application**: http://138.197.27.122
 
 ## Want to contribute?
 
