@@ -166,28 +166,6 @@ function AppContent() {
   
   // const dragOffset = useRef({ x: 0, y: 0 });
 
-  // Disable browser back/forward buttons
-  useEffect(() => {
-    // Push a state on mount
-    window.history.pushState(null, '', window.location.href);
-    
-    const handlePopState = () => {
-      // Immediately push state back to block navigation
-      window.history.pushState(null, '', window.location.href);
-    };
-    
-    window.addEventListener('popstate', handlePopState, true);
-    
-    return () => {
-      window.removeEventListener('popstate', handlePopState, true);
-    };
-  }, []);
-
-  // Re-push state whenever location changes to maintain block
-  useEffect(() => {
-    window.history.pushState(null, '', window.location.href);
-  }, [location.pathname]);
-
   // Track previous pathname to detect actual URL changes
   const prevPathnameRef = useRef(location.pathname);
 
@@ -242,7 +220,7 @@ function AppContent() {
         console.log('[State->URL Sync] Navigating from', location.pathname, 'to', newPath, 'because currentPage is', currentPage);
         // Update the ref to prevent the URL sync effect from treating this as a back button event
         prevPathnameRef.current = newPath;
-        navigate(newPath, { replace: true });
+        navigate(newPath);
       }
     }
   }, [currentPage, navigate, location.pathname]);
