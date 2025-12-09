@@ -36,6 +36,9 @@ const SettingsPage = ({ onNavigate }) => {
   const [autoArchive, setAutoArchive] = useState(() => {
     try { const v = JSON.parse(localStorage.getItem(USER_PREFS_KEY))?.autoArchive; return typeof v === 'boolean' ? v : false; } catch { return false; }
   });
+  const [showReadingTime, setShowReadingTime] = useState(() => {
+    try { const v = JSON.parse(localStorage.getItem(USER_PREFS_KEY))?.showReadingTime; return typeof v === 'boolean' ? v : true; } catch { return true; }
+  });
   const [showBulkExportModal, setShowBulkExportModal] = useState(false);
   
   // Profile state - initialized from authenticated user
@@ -75,20 +78,39 @@ const SettingsPage = ({ onNavigate }) => {
     }
   };
   const onAutoArchiveChange = async (checked) => {
+    console.log('🔄 Auto-archive setting changed to:', checked);
     setAutoArchive(checked);
     try {
       // Save to localStorage
       const prev = JSON.parse(localStorage.getItem(USER_PREFS_KEY)) || {};
       const updated = { ...prev, autoArchive: checked };
       localStorage.setItem(USER_PREFS_KEY, JSON.stringify(updated));
+      console.log('💾 Auto-archive preference saved to localStorage:', updated);
       
       // Save to backend
       if (user?._id) {
         await usersAPI.updateProfile(user._id, { preferences: { autoArchive: checked } });
       }
-      toast.success(`Auto-archive ${checked ? 'enabled' : 'disabled'}`);
     } catch (error) {
-      console.error('Failed to update auto-archive preference:', error);
+      console.error('Failed to save auto-archive preference:', error);
+    }
+  };
+
+  const onShowReadingTimeChange = async (checked) => {
+    setShowReadingTime(checked);
+    try {
+      // Save to localStorage
+      const prev = JSON.parse(localStorage.getItem(USER_PREFS_KEY)) || {};
+      const updated = { ...prev, showReadingTime: checked };
+      localStorage.setItem(USER_PREFS_KEY, JSON.stringify(updated));
+      
+      // Save to backend
+      if (user?._id) {
+        await usersAPI.updateProfile(user._id, { preferences: { showReadingTime: checked } });
+      }
+      toast.success(`Reading time ${checked ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('Failed to update reading time preference:', error);
       toast.error('Failed to update preference');
     }
   };
@@ -348,7 +370,7 @@ const SettingsPage = ({ onNavigate }) => {
                   <p className="text-sm text-muted-foreground mt-1">Show reading time estimate on cards.</p>
                 </div>
                 <div>
-                  <Switch defaultChecked id="reading-time" />
+                  <Switch checked={showReadingTime} onCheckedChange={onShowReadingTimeChange} id="reading-time" />
                 </div>
               </div>
               <div className="py-4 border-border flex items-center justify-between">

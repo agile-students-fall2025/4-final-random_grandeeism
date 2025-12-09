@@ -47,8 +47,9 @@ const STATUS_LABEL_MAP = {
  *  - onNavigate(page, view) : function to navigate back to pages
  *  - article: optional article object passed from parent navigation
  *  - articleId: optional id string to look up article from mockArticles
+ *  - onStatusChange: optional callback when article status changes
  */
-const TextReader = ({ onNavigate, article, articleId }) => {
+const TextReader = ({ onNavigate, article, articleId, onStatusChange }) => {
   const [current, setCurrent] = useState(article || null);
   const [highlights, setHighlights] = useState([]);
   const [selection, setSelection] = useState(null);
@@ -66,6 +67,15 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [completionShown, setCompletionShown] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tagModalOpen, setTagModalOpen] = useState(false);
+  
+  // Ref to store onScroll function for debugging
+  const onScrollRef = useRef(null);
+  
+  // Timer for non-scrollable content completion detection
+  const [nonScrollableReadTimer, setNonScrollableReadTimer] = useState(null);
+  
+  // Ref for the main scroll container
+  const scrollContainerRef = useRef(null);
 
   // Get authenticated user
   const { user } = useAuth();
@@ -442,21 +452,56 @@ const TextReader = ({ onNavigate, article, articleId }) => {
     }
   }, [selectedColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // completion detection on scroll with reading progress tracking and auto-archive
+  // Timer-based completion for non-scrollable content
+  const startNonScrollableReadTimer = useCallback(() => {
+    // Don't start if timer already running
+    if (nonScrollableReadTimer) {
+      console.log('⏱️ Timer already running, not starting new one');
+      return;
+    }
+    
+    // Don't start timer if completion already shown
+    if (completionShown) {
+      console.log('⏱️ Completion already shown, skipping timer');
+      return;
+    }
+    
+    console.log('⏱️ Starting non-scrollable content read timer (5 seconds)');
+    
+    const timerId = setTimeout(() => {
+      console.log('🎯 Non-scrollable content timer completed - triggering auto-archive');
+      setIsCompletionOpen(true);
+      setCompletionShown(true);
+      setNonScrollableReadTimer(null);
+    }, 5000); // 5 second timer for non-scrollable content
+    
+    setNonScrollableReadTimer(timerId);
+  }, [nonScrollableReadTimer, completionShown]);
+
+  // completion detection using scroll with reading progress tracking and auto-archive
   useEffect(() => {
     const USER_PREFS_KEY = 'user_preferences_v1';
     let progressUpdateTimeout = null;
+    let completionTriggered = false;
     
     const onScroll = async () => {
-      const el = contentRef.current;
-      if (!el || !current) return;
+      const scrollContainer = scrollContainerRef.current;
+      if (!current) {
+        return;
+      }
       
-      // Calculate reading progress percentage
-      const scrollTop = el.scrollTop;
-      const scrollHeight = el.scrollHeight;
-      const clientHeight = el.clientHeight;
+      if (!scrollContainer) {
+        return;
+      }
+      
+      // Use the scroll container dimensions (the div with overflow-y-auto)
+      const scrollTop = scrollContainer.scrollTop;
+      const scrollHeight = scrollContainer.scrollHeight;
+      const clientHeight = scrollContainer.clientHeight;
       const scrollableHeight = scrollHeight - clientHeight;
       const progress = scrollableHeight > 0 ? Math.round((scrollTop / scrollableHeight) * 100) : 100;
+      
+
       
       // Debounced progress update to backend
       if (progressUpdateTimeout) clearTimeout(progressUpdateTimeout);
@@ -468,37 +513,44 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         }
       }, 2000); // Update every 2 seconds of inactivity
       
-      // Check if user reached the end
+      // Check if user reached the end - handle both scrollable and non-scrollable content
       const remaining = scrollHeight - scrollTop - clientHeight;
-      if (remaining <= 100 && !completionShown) {
+      const isScrollableContent = scrollableHeight > 0;
+      const isAtEnd = isScrollableContent ? remaining <= 10 : false; // For non-scrollable, never consider "at end" via scroll
+      
+
+      
+
+      
+      if (isAtEnd && !completionShown && !completionTriggered) {
+        // Check if auto-archive is enabled before triggering completion
+        const userPrefs = JSON.parse(localStorage.getItem(USER_PREFS_KEY)) || {};
+        const isAutoArchiveEnabled = userPrefs.autoArchive;
+        
+        if (!isAutoArchiveEnabled) {
+          return;
+        }
+        
+        completionTriggered = true; // Prevent multiple triggers
         setIsCompletionOpen(true);
         setCompletionShown(true);
         
-        // Auto-progression logic (happens regardless of toggle, but destination differs)
+        // Auto-progression logic
         try {
-          const userPrefs = JSON.parse(localStorage.getItem(USER_PREFS_KEY)) || {};
-          const isAutoArchiveEnabled = userPrefs.autoArchive;
           
           if (current.status !== 'archived') {
             let nextStatus;
             
-            // Reading workflow progression
-            if (current.status === 'inbox') {
-              nextStatus = 'continue';
-            } else if (current.status === 'continue') {
-              // Stay in continue if reading is incomplete (progress < 100%)
-              // Move to daily when complete
-              nextStatus = progress >= 100 ? 'daily' : 'continue';
-            } else if (current.status === 'daily') {
-              // Auto-archive toggle only affects this transition:
-              // If enabled: daily -> archived (skip rediscovery)
-              // If disabled: daily -> rediscovery (normal flow)
-              nextStatus = isAutoArchiveEnabled ? 'archived' : 'rediscovery';
-            } else if (current.status === 'rediscovery') {
+            // Simplified auto-archive workflow
+            if (progress >= 100) {
+              // Article is finished - always go to archived when completed
               nextStatus = 'archived';
             } else {
-              nextStatus = 'archived';
+              // Article not finished - always go to continue reading
+              nextStatus = 'continue';
             }
+            
+
             
             // Only update if status actually changes
             if (nextStatus !== current.status) {
@@ -514,6 +566,11 @@ const TextReader = ({ onNavigate, article, articleId }) => {
                 'archived': 'Article archived'
               };
               toast.success(statusMessages[nextStatus] || 'Status updated');
+              
+              // Notify parent of status change so other pages can refresh
+              if (onStatusChange) {
+                onStatusChange(current.id, nextStatus);
+              }
             }
           }
         } catch (error) {
@@ -522,13 +579,33 @@ const TextReader = ({ onNavigate, article, articleId }) => {
       }
     };
     
-    const el = contentRef.current;
-    if (el) el.addEventListener('scroll', onScroll);
-    return () => { 
-      if (el) el.removeEventListener('scroll', onScroll);
-      if (progressUpdateTimeout) clearTimeout(progressUpdateTimeout);
+    // Store onScroll function in ref for debugging
+    onScrollRef.current = onScroll;
+    
+
+    
+
+    
+    // Use the actual scroll container (main div with overflow-y-auto)
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) {
+      return;
+    }
+    
+    const onScrollHandler = () => {
+      onScroll();
     };
-  }, [current, completionShown]);
+    
+    scrollContainer.addEventListener('scroll', onScrollHandler, { passive: true });
+    
+    return () => { 
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('scroll', onScrollHandler);
+      }
+      if (progressUpdateTimeout) clearTimeout(progressUpdateTimeout);
+      if (nonScrollableReadTimer) clearTimeout(nonScrollableReadTimer);
+    };
+  }, [current, completionShown, startNonScrollableReadTimer]);
 
   // autofocus was removed by request — do not auto-focus the textarea
 
@@ -782,6 +859,12 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         'archived': 'Article Archived'
       };
       toast.success(statusMessages[newStatus] || `Status changed to ${newStatus}`);
+      
+      // Notify parent of status change so other pages can refresh
+      if (onStatusChange) {
+        onStatusChange(current.id, newStatus);
+      }
+      
       return true;
     } catch (e) {
       console.error('Status update failed', e);
@@ -984,7 +1067,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
 
   const handleCompletion = () => {
     if (!current) return;
-    changeStatus('rediscovery');
+    changeStatus('archived');
     setIsCompletionOpen(false);
   };
 
@@ -1155,7 +1238,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   }, [processedHTMLContent, paragraphs, focusedHighlightId]);
 
   return (
-    <div className="h-screen overflow-y-auto bg-background relative scrollbar-thin scrollbar-thumb-border scrollbar-track-background">
+    <div ref={scrollContainerRef} className="h-screen overflow-y-auto bg-background relative scrollbar-thin scrollbar-thumb-border scrollbar-track-background">
       {/* Fixed Mobile Navbar - visible only on mobile */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
@@ -1183,6 +1266,8 @@ const TextReader = ({ onNavigate, article, articleId }) => {
           </span>
         )}
       </div>
+
+
 
       <div className="mx-auto pt-6 md:pt-6 pb-6 pl-8 pr-14 md:px-10 md:pl-32 md:pr-16" style={{ maxWidth: `calc(${contentMaxWidth} + 8rem)` }}>
         <div className="mx-auto mt-16 md:mt-0" style={{ maxWidth: contentMaxWidth }}>

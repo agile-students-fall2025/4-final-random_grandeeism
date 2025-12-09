@@ -144,6 +144,25 @@ function AppContent() {
   const setPageRefresh = (refreshFunction) => {
     currentPageRefreshRef.current = refreshFunction;
   };
+
+  // Function to handle article status changes and refresh current page
+  const handleStatusChange = useCallback(async (articleId, newStatus) => {
+    console.log(`🔄 Article ${articleId} status changed to ${newStatus}`);
+    console.log('Current page info:', { 
+      currentPage, 
+      hasRefreshRef: !!currentPageRefreshRef.current,
+      refreshRefType: typeof currentPageRefreshRef.current 
+    });
+    
+    // Refresh the current page's data to reflect the status change
+    if (currentPageRefreshRef.current) {
+      console.log('🔃 Refreshing current page due to status change...');
+      await currentPageRefreshRef.current();
+      console.log('✅ Page refresh completed');
+    } else {
+      console.warn('⚠️ No current page refresh function available - user needs to manually refresh pages to see changes');
+    }
+  }, [currentPage]);
   
   // const dragOffset = useRef({ x: 0, y: 0 });
 
@@ -426,6 +445,7 @@ function AppContent() {
               onNavigate={handleNavigate} 
               returnToPage={returnToPage}
               navigate={navigate}
+              onStatusChange={handleStatusChange}
             />
           } />
           <Route path="/video/:articleId" element={
@@ -701,7 +721,7 @@ function AppContent() {
 
 // Wrapper route components - defined outside AppContent to prevent recreation on every render
 // These components handle return navigation using the ROUTE_MAP
-function TextReaderWrapperRoute({ navigate: routeNavigate, returnToPage }) {
+function TextReaderWrapperRoute({ navigate: routeNavigate, returnToPage, onStatusChange }) {
   const { articleId } = useParams();
   
   const handleBack = useCallback(() => {
@@ -721,7 +741,7 @@ function TextReaderWrapperRoute({ navigate: routeNavigate, returnToPage }) {
   }, [routeNavigate, returnToPage]);
   
   console.log('[TextReaderWrapper] Rendered with returnToPage:', returnToPage);
-  return <TextReader onNavigate={handleBack} articleId={articleId} />;
+  return <TextReader onNavigate={handleBack} articleId={articleId} onStatusChange={onStatusChange} />;
 }
 
 function VideoPlayerWrapperRoute({ navigate: routeNavigate, returnToPage }) {

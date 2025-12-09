@@ -1,5 +1,7 @@
 # Fieldnotes: The Read Later App
 
+[![CI Pipeline](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/ci.yml/badge.svg)](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/ci.yml)
+[![Deploy to Digital Ocean](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/deploy.yml/badge.svg)](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/deploy.yml)
 [![log github events](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/event-logger.yml/badge.svg)](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/event-logger.yml)
 
 ## Product Vision Statement
@@ -319,6 +321,72 @@ JWT_EXPIRES_IN=7d
 - Ensure `JWT_SECRET` is set in `.env` file
 - Check token expiration with `JWT_EXPIRES_IN` setting
 - Verify user credentials are correct for login/registration
+
+## Docker Deployment (Extra Credit)
+
+This project includes full Docker containerization with Continuous Deployment support.
+
+### Quick Start with Docker
+
+1. **Build and run all services**:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+2. **Access the application**:
+   - Frontend: http://localhost
+   - Backend API: http://localhost:7001
+   - Health Check: http://localhost:7001/health
+
+3. **View logs**:
+   ```bash
+   docker-compose logs -f
+   ```
+
+4. **Stop services**:
+   ```bash
+   docker-compose down
+   ```
+
+**Note**: The project includes two Docker Compose files:
+- `docker-compose.yml` - For local development (builds images from source)
+- `docker-compose.prod.yml` - For production deployment (uses pre-built images from Docker Hub)
+
+### Environment Variables
+
+**For Docker deployment:**
+- Create `.env` in the **root directory** (where docker-compose.yml is located)
+- Docker Compose reads this file to pass environment variables to containers
+- See `.env.example` in the root for the template
+
+**For non-Docker local development:**
+- Create `.env` in the **back-end directory** (`back-end/.env`)
+- Node.js loads this when running `npm start` in the back-end folder
+- The front-end doesn't need a separate `.env` (uses Vite proxy in development)
+
+### What's Included
+
+- ✅ **Docker Containerization**: Separate containers for frontend and backend
+- ✅ **Multi-stage Builds**: Optimized frontend build with Nginx
+- ✅ **Docker Compose**: Orchestration of all services
+- ✅ **Production Ready**: Health checks, restart policies, and optimized images
+- ✅ **Continuous Deployment**: GitHub Actions workflow for automated deployment
+
+### Documentation
+
+- **[Docker Deployment Guide](DOCKER_DEPLOYMENT.md)** - Complete containerization setup and local deployment
+- **[Continuous Deployment Guide](CONTINUOUS_DEPLOYMENT.md)** - Automated deployment with GitHub Actions
+- **[.env.example](.env.example)** - Environment variable template
+
+### Deployment to Digital Ocean
+
+The application can be deployed to Digital Ocean Droplets with automated continuous deployment:
+
+1. Configure GitHub Secrets (see [CONTINUOUS_DEPLOYMENT.md](CONTINUOUS_DEPLOYMENT.md))
+2. Push to main branch
+3. GitHub Actions automatically builds and deploys
+
+**Live Application**: http://138.197.27.122
 
 ## Want to contribute?
 

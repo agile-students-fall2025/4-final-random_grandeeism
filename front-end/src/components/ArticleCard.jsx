@@ -54,6 +54,7 @@ export default function ArticleCard({
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [tagMap, setTagMap] = useState(getTagMapSnapshot());
+  const [showReadingTime, setShowReadingTime] = useState(true); // Default to true
   const loadingRef = useRef(false);
   const lastArticleTagsRef = useRef(null);
 
@@ -80,6 +81,33 @@ export default function ArticleCard({
     maybeLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [article?.tags]); // tagMap intentionally omitted to prevent infinite loop
+
+  // Load reading time preference from localStorage
+  useEffect(() => {
+    const loadReadingTimePreference = () => {
+      try {
+        const userPrefs = JSON.parse(localStorage.getItem('user_preferences_v1')) || {};
+        const showReadingTimePref = userPrefs.showReadingTime;
+        setShowReadingTime(typeof showReadingTimePref === 'boolean' ? showReadingTimePref : true);
+      } catch (error) {
+        console.error('Error loading reading time preference:', error);
+        setShowReadingTime(true); // Default to true on error
+      }
+    };
+
+    // Load initial preference
+    loadReadingTimePreference();
+
+    // Listen for localStorage changes
+    const handleStorageChange = (e) => {
+      if (e.key === 'user_preferences_v1') {
+        loadReadingTimePreference();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const resolveTagDisplay = (t) => getTagName(t);
 
@@ -275,8 +303,12 @@ export default function ArticleCard({
               <span>{article.author}</span>
             </>
           )}
-          <span>|</span>
-          <span>{article.content ? calculateReadingTime(article.content) : (article.readingTime || '2 min read')}</span>
+          {showReadingTime && (
+            <>
+              <span>|</span>
+              <span>{article.content ? calculateReadingTime(article.content) : (article.readingTime || '2 min read')}</span>
+            </>
+          )}
         </div>
 
         {/* Tags */}

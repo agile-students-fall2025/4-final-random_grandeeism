@@ -1,0 +1,4 @@
+MONGODB_URI=mongodb+srv://fieldnotes-user:je3syphf97GQhZ6W@fieldnotes-cluster.9utffaw.mongodb.net/fieldnotes?appName=fieldnotes-cluster
+JWT_SECRET=your-super-secret-jwt-key-change-in-production-minimum-32-characters-long
+PORT=7001
+USE_MOCK_DB=false
