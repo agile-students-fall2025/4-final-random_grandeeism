@@ -11,9 +11,8 @@ const { validateArticle, validateTagAssignment, handleValidationErrors } = requi
  */
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { status, tag, favorite, untagged } = req.query;
+    const { status, tag, favorite, untagged, tags, sort } = req.query;
     const userId = req.user.id; // Get from authenticated user
-    
     
     const filters = { userId };
 
@@ -30,6 +29,10 @@ router.get('/', authenticateToken, async (req, res) => {
       filters.tag = match ? String(match.id) : String(tag);
     }
 
+    if (tags) {
+      filters.tags = { $in: tags.split(',') };
+    }
+
     if (untagged === 'true') {
       filters.untagged = true;
     }
@@ -38,7 +41,14 @@ router.get('/', authenticateToken, async (req, res) => {
       filters.isFavorite = true;
     }
 
-  const articles = await articlesDao.getAll(filters);
+    const sortOptions = {};
+    if (sort === 'Date Added (Newest)') {
+      sortOptions.createdAt = -1;
+    } else if (sort === 'Date Added (Oldest)') {
+      sortOptions.createdAt = 1;
+    }
+
+    const articles = await articlesDao.getAll(filters, sortOptions);
 
     res.json({
       success: true,
@@ -76,11 +86,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
         error: 'Access denied: You can only view your own articles'
       });
     }
-
-    // console.log('GET /api/articles/:id - Returning article:', article.id);
-    // console.log('  - mediaType:', article.mediaType);
-    // console.log('  - videoId:', article.videoId);
-    // console.log('  - url:', article.url);
 
     res.json({
       success: true,
@@ -149,7 +154,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, validateArticle, handleValidationErrors, async (req, res) => {
   try {
     let { title, url } = req.body;
-
 
     // Require both title and url for this error case (for test compatibility)
     if (!url && !title) {
@@ -483,8 +487,6 @@ router.patch('/:id/favorite', authenticateToken, async (req, res) => {
 });
 
 /**
-
-/**
  * PATCH /api/articles/:id/annotations
  * Update annotation flags (e.g., hasAnnotations)
  */
@@ -628,7 +630,7 @@ router.delete('/:id/tags/:tagId', authenticateToken, async (req, res) => {
     }
 
     // Use DAO to update the article with tag removed
-  const updatedTags = (article.tags || []).filter(t => String(t).toLowerCase() !== String(tagId).toLowerCase());
+    const updatedTags = (article.tags || []).filter(t => String(t).toLowerCase() !== String(tagId).toLowerCase());
     const updatedArticle = await articlesDao.update(req.params.id, { tags: updatedTags });
 
     if (!updatedArticle) {
@@ -638,6 +640,15 @@ router.delete('/:id/tags/:tagId', authenticateToken, async (req, res) => {
     res.json({ success: true, data: updatedArticle, message: 'Tag removed from article successfully' });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Server Error', message: error.message });
+  }
+});
+
+router.get('/tags', async (req, res) => {
+  try {
+    const tags = await Article.distinct('tags');
+    res.json(tags);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch tags' });
   }
 });
 
