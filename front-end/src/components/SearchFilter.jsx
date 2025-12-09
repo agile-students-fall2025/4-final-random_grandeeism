@@ -160,6 +160,7 @@ export default function SearchFilter({
   // Filter State
   const [searchQuery, setSearchQuery] = useState(preAppliedFilters?.query || initialQuery);
   const [selectedTags, setSelectedTags] = useState(preAppliedFilters?.tags || []);
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState(preAppliedFilters?.timeFilter || "all");
   /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type state (unimplemented) */
   /* TODO: Uncomment when video/audio player implementation is complete */
@@ -172,12 +173,6 @@ export default function SearchFilter({
 
   // Dropdown State
   const [showFilters, setShowFilters] = useState(false);
-  const [showTagDropdown, setShowTagDropdown] = useState(false);
-  const [showTimeDropdown, setShowTimeDropdown] = useState(false);
-  /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type dropdown state (unimplemented) */
-  /* TODO: Uncomment when video/audio player implementation is complete */
-  // const [showMediaDropdown, setShowMediaDropdown] = useState(false);
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showFavoritesDropdown, setShowFavoritesDropdown] = useState(false);
   const [showAnnotationsDropdown, setShowAnnotationsDropdown] = useState(false);
@@ -189,6 +184,7 @@ export default function SearchFilter({
   // Computed: Has Active Filters
   const hasActiveFilters = 
     selectedTags.length > 0 || 
+    tagSearchQuery !== "" ||
     timeFilter !== "all" || 
     /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type filter (unimplemented) */
     /* TODO: Uncomment when video/audio player implementation is complete */
@@ -207,6 +203,10 @@ export default function SearchFilter({
 
   const clearSearch = () => {
     setSearchQuery("");
+  };
+
+  const clearTagSearch = () => {
+    setTagSearchQuery("");
   };
 
   const toggleTag = (tag) => {
@@ -231,6 +231,7 @@ export default function SearchFilter({
 
   const clearAllFilters = () => {
     setSelectedTags([]);
+    setTagSearchQuery("");
     setTimeFilter("all");
     /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type filter (unimplemented) */
     /* TODO: Uncomment when video/audio player implementation is complete */
@@ -291,6 +292,7 @@ export default function SearchFilter({
     onSearch(searchQuery, {
       query: searchQuery,
       tags: selectedTags,
+      tagQuery: tagSearchQuery,
       timeFilter,
       /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Media Type (unimplemented) */
       // mediaType,
@@ -301,7 +303,7 @@ export default function SearchFilter({
       feedFilter
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedTags, timeFilter, /* mediaType, */ sortBy, statusFilter, favoritesFilter, annotationsFilter, feedFilter]);
+  }, [searchQuery, selectedTags, tagSearchQuery, timeFilter, /* mediaType, */ sortBy, statusFilter, favoritesFilter, annotationsFilter, feedFilter]);
 
   return (
     <div className="px-4 py-3 md:px-6">
@@ -323,6 +325,25 @@ export default function SearchFilter({
             </button>
           )}
         </div>
+
+        {/* Tags Input */}
+        {showTagFilter && (
+          <div className="flex-1 min-w-0 flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">
+            <Tag size={18} className="text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              value={tagSearchQuery}
+              onChange={(e) => setTagSearchQuery(e.target.value)}
+              placeholder="Type to search tags..."
+              className="flex-1 min-w-0 bg-card text-foreground text-[14px] outline-none placeholder:text-muted-foreground"
+            />
+            {tagSearchQuery && (
+              <button onClick={clearTagSearch} className="p-1 hover:opacity-70 transition-opacity shrink-0">
+                <X size={14} className="text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        )}
         
         {/* Pin Button (visible when filters are active) */}
         {hasActiveFilters && onSaveSearch && (
@@ -428,6 +449,17 @@ export default function SearchFilter({
               </button>
             </Badge>
           ))}
+          
+          {/* Tag Search Query */}
+          {tagSearchQuery && (
+            <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+              <Tag size={12} />
+              Tag: {tagSearchQuery}
+              <button onClick={clearTagSearch} className="hover:opacity-70">
+                <X size={12} />
+              </button>
+            </Badge>
+          )}
           
           {/* Time Filter */}
           {timeFilter !== "all" && (
@@ -541,56 +573,6 @@ export default function SearchFilter({
       {/* Row 3: Filter Buttons */}
       {showFilters && (
         <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-          {/* Tag Filter */}
-          {showTagFilter && availableTags.length > 0 && (
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowTagDropdown(!showTagDropdown);
-                  setShowTimeDropdown(false);
-                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
-                  setShowSortDropdown(false);
-                  setShowStatusDropdown(false);
-                  setShowFavoritesDropdown(false);
-                  setShowFeedDropdown(false);
-                  setShowAnnotationsDropdown(false);
-                }}
-                className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
-              >
-                <Tag size={14} />
-                Tags
-                {selectedTags.length > 0 && (
-                  <Badge variant="default" className="ml-1 h-5 min-w-5 flex items-center justify-center px-1">
-                    {selectedTags.length}
-                  </Badge>
-                )}
-              </button>
-              
-              {showTagDropdown && (
-                <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-lg shadow-lg p-2 z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
-                  {availableTags.map(tag => (
-                    <button
-                      key={tag}
-                      onClick={() => toggleTag(tag)}
-                      className={`w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-[14px] ${
-                        selectedTags.includes(tag) ? "bg-accent" : ""
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span>{tag}</span>
-                        {selectedTags.includes(tag) && (
-                          <div className="w-4 h-4 bg-primary rounded flex items-center justify-center">
-                            <div className="w-2 h-2 bg-primary-foreground rounded-full" />
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Feed Filter */}
           {showFeedFilter && availableFeeds.length > 0 && (
             <div className="relative">
@@ -598,9 +580,6 @@ export default function SearchFilter({
                 onClick={() => {
                   setShowFeedDropdown(!showFeedDropdown);
                   setShowTagDropdown(false);
-                  setShowTimeDropdown(false);
-                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
-                  setShowSortDropdown(false);
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
                   setShowAnnotationsDropdown(false);
@@ -648,47 +627,6 @@ export default function SearchFilter({
                       </button>
                     );
                   })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Time Filter */}
-          {showTimeFilter && (
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowTimeDropdown(!showTimeDropdown);
-                  setShowTagDropdown(false);
-                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
-                  setShowSortDropdown(false);
-                  setShowStatusDropdown(false);
-                  setShowFavoritesDropdown(false);
-                  setShowFeedDropdown(false);
-                  setShowAnnotationsDropdown(false);
-                }}
-                className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
-              >
-                <Clock size={14} />
-                {timeFilterLabels[timeFilter]}
-              </button>
-              
-              {showTimeDropdown && (
-                <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-lg shadow-lg p-2 z-50 min-w-[180px]">
-                  {Object.keys(timeFilterLabels).map(option => (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        setTimeFilter(option);
-                        setShowTimeDropdown(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-[14px] ${
-                        timeFilter === option ? "bg-accent" : ""
-                      }`}
-                    >
-                      {timeFilterLabels[option]}
-                    </button>
-                  ))}
                 </div>
               )}
             </div>
@@ -753,9 +691,6 @@ export default function SearchFilter({
                 onClick={() => {
                   setShowStatusDropdown(!showStatusDropdown);
                   setShowTagDropdown(false);
-                  setShowTimeDropdown(false);
-                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
-                  setShowSortDropdown(false);
                   setShowFavoritesDropdown(false);
                   setShowFeedDropdown(false);
                   setShowAnnotationsDropdown(false);
@@ -794,9 +729,6 @@ export default function SearchFilter({
                 onClick={() => {
                   setShowFavoritesDropdown(!showFavoritesDropdown);
                   setShowTagDropdown(false);
-                  setShowTimeDropdown(false);
-                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
-                  setShowSortDropdown(false);
                   setShowStatusDropdown(false);
                   setShowFeedDropdown(false);
                   setShowAnnotationsDropdown(false);
@@ -835,9 +767,6 @@ export default function SearchFilter({
                 onClick={() => {
                   setShowAnnotationsDropdown(!showAnnotationsDropdown);
                   setShowTagDropdown(false);
-                  setShowTimeDropdown(false);
-                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
-                  setShowSortDropdown(false);
                   setShowStatusDropdown(false);
                   setShowFavoritesDropdown(false);
                   setShowFeedDropdown(false);
@@ -862,47 +791,6 @@ export default function SearchFilter({
                       }`}
                     >
                       {annotationsFilterLabels[option]}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Sort Options */}
-          {showSortOptions && (
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowSortDropdown(!showSortDropdown);
-                  setShowTagDropdown(false);
-                  setShowTimeDropdown(false);
-                  // setShowMediaDropdown(false); // TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO
-                  setShowStatusDropdown(false);
-                  setShowFavoritesDropdown(false);
-                  setShowFeedDropdown(false);
-                  setShowAnnotationsDropdown(false);
-                }}
-                className="flex items-center gap-2 px-3 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors text-[14px]"
-              >
-                <ArrowUpDown size={14} />
-                {sortLabels[sortBy]}
-              </button>
-              
-              {showSortDropdown && (
-                <div className="absolute top-full mt-1 left-0 bg-card border border-border rounded-lg shadow-lg p-2 z-50 min-w-[160px]">
-                  {Object.keys(sortLabels).map(option => (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        setSortBy(option);
-                        setShowSortDropdown(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded hover:bg-accent transition-colors text-[14px] ${
-                        sortBy === option ? "bg-accent" : ""
-                      }`}
-                    >
-                      {sortLabels[option]}
                     </button>
                   ))}
                 </div>

@@ -5,6 +5,7 @@ export function applyFiltersAndSort(articles = [], filters = {}) {
   const {
     query = "",
     tags = [],
+    tagQuery = "",
     timeFilter = "all",
     mediaType = "all",
     sortBy = "dateAdded",
@@ -63,6 +64,14 @@ export function applyFiltersAndSort(articles = [], filters = {}) {
   // Tags (any match)
   if (Array.isArray(tags) && tags.length > 0) {
     result = result.filter(a => Array.isArray(a.tags) && a.tags.some(t => tags.includes(t)));
+  }
+
+  // Tag query (search in tags only)
+  if (tagQuery && tagQuery.toString().trim() !== '') {
+    const tq = tagQuery.toString().toLowerCase().trim();
+    result = result.filter(a => 
+      Array.isArray(a.tags) && a.tags.some(t => t.toLowerCase().includes(tq))
+    );
   }
 
   // Time filter based on readingTime like "6 min"
