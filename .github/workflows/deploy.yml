@@ -53,7 +53,7 @@ jobs:
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           script: |
-            cd /root/fieldnotes || mkdir -p /root/fieldnotes && cd /root/fieldnotes
+            cd /root/4-final-random_grandeeism || mkdir -p /root/4-final-random_grandeeism && cd /root/4-final-random_grandeeism
             
             # Create docker-compose.yml if it doesn't exist
             if [ ! -f docker-compose.yml ]; then
