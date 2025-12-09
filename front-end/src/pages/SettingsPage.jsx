@@ -75,12 +75,14 @@ const SettingsPage = ({ onNavigate }) => {
     }
   };
   const onAutoArchiveChange = async (checked) => {
+    console.log('🔄 Auto-archive setting changed to:', checked);
     setAutoArchive(checked);
     try {
       // Save to localStorage
       const prev = JSON.parse(localStorage.getItem(USER_PREFS_KEY)) || {};
       const updated = { ...prev, autoArchive: checked };
       localStorage.setItem(USER_PREFS_KEY, JSON.stringify(updated));
+      console.log('💾 Auto-archive preference saved to localStorage:', updated);
       
       // Save to backend
       if (user?._id) {
