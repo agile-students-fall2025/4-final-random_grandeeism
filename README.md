@@ -1,5 +1,6 @@
 # Fieldnotes: The Read Later App
 
+[![CI Pipeline](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/ci.yml/badge.svg)](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/ci.yml)
 [![log github events](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/event-logger.yml/badge.svg)](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/event-logger.yml)
 
 ## Product Vision Statement
