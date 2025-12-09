@@ -7,11 +7,12 @@ import ReaderSettingsModal from '../../components/ReaderSettingsModal.jsx';
 import TagManagerModal from '../../components/TagManagerModal.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { Sheet, SheetContent, SheetHeader, SheetFooter, SheetTitle } from '../../components/ui/sheet.jsx';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip.jsx';
 import { Input } from '../../components/ui/input.jsx';
 import { Textarea } from '../../components/ui/textarea.jsx';
 import { Label } from '../../components/ui/label.jsx';
 import { ScrollArea } from '../../components/ui/scroll-area.jsx';
-import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon, ArrowLeft } from 'lucide-react';
+import { Star, Settings, StickyNote, RotateCcw, Archive, Inbox, PlayCircle, Calendar, Tag as TagIcon, ArrowLeft, Highlighter, Copy } from 'lucide-react';
 import { ensureTagsLoaded, getTagName, getTagMapSnapshot, addSingleTag } from '../../utils/tagsCache.js';
 import { articlesAPI, tagsAPI, highlightsAPI, usersAPI } from '../../services/api.js';
 import { calculateReadingTime } from '../../utils/readingTime.js';
@@ -52,6 +53,7 @@ const TextReader = ({ onNavigate, article, articleId }) => {
   const [highlights, setHighlights] = useState([]);
   const [selection, setSelection] = useState(null);
   const [selectedColor, setSelectedColor] = useState(DEFAULT_HIGHLIGHT_COLOR);
+  const [highlighterActive, setHighlighterActive] = useState(false);
   const [showHighlightsPanel, setShowHighlightsPanel] = useState(false);
   const [tempHighlight, setTempHighlight] = useState(null);
   const [editingNoteId, setEditingNoteId] = useState(null);
@@ -1456,40 +1458,75 @@ const TextReader = ({ onNavigate, article, articleId }) => {
         {/* Selection toolbar */}
         {selection && (
           <div 
-            style={{ position: 'fixed', left: selection.rect.left + window.scrollX, top: selection.rect.top + window.scrollY - 48, zIndex: 60 }}
+            style={{ 
+              position: 'fixed', 
+              left: Math.max(8, Math.min(selection.rect.left, window.innerWidth - 150)), 
+              top: selection.rect.top > 60 ? selection.rect.top - 48 : selection.rect.bottom + 8,
+              zIndex: 60 
+            }}
             ref={selectionToolbarRef}
           >
-            <div className="flex items-center gap-2 bg-card border border-border rounded shadow p-2">
-              <input
-                type="color"
-                value={selectedColor}
-                onChange={(e) => setSelectedColor(e.target.value)}
-                className="w-8 h-8 p-0 border border-border rounded cursor-pointer"
-                aria-label="Pick highlight color"
-              />
-              <input
-                type="text"
-                value={selectedColor}
-                onChange={(e) => setSelectedColor(e.target.value.trim())}
-                className="w-24 px-2 py-1 text-xs border border-border rounded bg-background"
-                placeholder="#fef08a"
-              />
-              <button 
-                onClick={() => applyHighlight(selectedColor)}
-                className="px-2 py-1 text-sm bg-primary text-primary-foreground rounded reader-button hover:bg-primary/90"
-              >
-                Highlight
-              </button>
-              <button 
-                onClick={() => {
-                  setSelection(null);
-                  setTempHighlight(null);
-                  try { window.getSelection().removeAllRanges(); } catch { /* ignore */ }
-                }}
-                className="px-3 py-1 text-sm bg-card border border-border rounded reader-button hover:bg-accent transition-all"
-              >
-                Cancel
-              </button>
+            <div className="flex items-center gap-1 bg-card border border-border rounded-md shadow-lg backdrop-blur-sm p-1">
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="relative w-9 h-9">
+                      <input
+                        type="color"
+                        value={selectedColor}
+                        onChange={(e) => setSelectedColor(e.target.value)}
+                        className="w-full h-full p-0 border border-border rounded-md cursor-pointer"
+                        aria-label="Pick highlight color"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Select color</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => {
+                        setHighlighterActive(true);
+                        applyHighlight(selectedColor);
+                        setTimeout(() => setHighlighterActive(false), 200);
+                      }}
+                      variant={highlighterActive ? "secondary" : "outline"}
+                      size="icon"
+                      className="w-9 h-9 p-0"
+                    >
+                      <Highlighter size={18} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Highlight</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => {
+                        if (selection?.text) {
+                          navigator.clipboard.writeText(selection.text).then(() => {
+                            toast.success('Text copied to clipboard');
+                          }).catch(() => {
+                            toast.error('Failed to copy text');
+                          });
+                        }
+                      }}
+                      variant="outline"
+                      size="icon"
+                      className="w-9 h-9 p-0"
+                    >
+                      <Copy size={18} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Copy</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         )}

@@ -133,6 +133,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update user function (for profile updates)
+  const updateUser = (updates) => {
+    const updatedUser = { ...user, ...updates };
+    setUser(updatedUser);
+    localStorage.setItem('authUser', JSON.stringify(updatedUser));
+  };
+
   const value = {
     user,
     token,
@@ -143,6 +150,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     refreshToken,
     isAuthenticated,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -63,7 +63,7 @@ const HomePage = ({ onNavigate, setPageRefresh }) => {
   // Define fetchData function with useCallback to prevent infinite re-renders
   const fetchData = useCallback(async () => {
     try {
-      console.log('HomePage: fetchData called, loading data...');
+      // console.log('HomePage: fetchData called, loading data...');
       setLoading(true);
       setError(null);
 
@@ -102,14 +102,14 @@ const HomePage = ({ onNavigate, setPageRefresh }) => {
   // Register refresh function with parent component
   useEffect(() => {
     if (setPageRefresh) {
-      console.log('HomePage: Registering refresh function');
+      // console.log('HomePage: Registering refresh function');
       setPageRefresh(fetchData);
     }
     
     // Cleanup: remove refresh function when component unmounts
     return () => {
       if (setPageRefresh) {
-        console.log('HomePage: Cleaning up refresh function');
+        // console.log('HomePage: Cleaning up refresh function');
         setPageRefresh(null);
       }
     };

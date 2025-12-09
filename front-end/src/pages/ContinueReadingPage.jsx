@@ -85,7 +85,7 @@ const ContinueReadingPage = ({ onNavigate, setPageRefresh }) => {
     // Cleanup: remove refresh function when component unmounts
     return () => {
       if (setPageRefresh) {
-        console.log('ContinueReadingPage: Cleaning up refresh function');
+        // console.log('ContinueReadingPage: Cleaning up refresh function');
         setPageRefresh(null);
       }
     };

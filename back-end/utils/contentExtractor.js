@@ -327,9 +327,14 @@ function cleanHTMLContent(html, options = {}) {
   
   // Optionally remove images (for reader settings toggle)
   if (!preserveImages) {
+    // Remove img tags
     cleaned = cleaned.replace(/<img\b[^>]*>/gi, '');
-    cleaned = cleaned.replace(/<figure\b[^>]*>.*?<\/figure>/gi, '');
-    cleaned = cleaned.replace(/<picture\b[^>]*>.*?<\/picture>/gi, '');
+    // Remove picture elements but preserve any text content
+    cleaned = cleaned.replace(/<picture\b[^>]*>/gi, '');
+    cleaned = cleaned.replace(/<\/picture>/gi, '');
+    // For figure elements, remove the tags but keep the content (especially figcaptions)
+    cleaned = cleaned.replace(/<figure\b[^>]*>/gi, '');
+    cleaned = cleaned.replace(/<\/figure>/gi, '');
   }
   
   // Replace divs with their content (keep semantic structure)

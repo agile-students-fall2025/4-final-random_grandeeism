@@ -142,7 +142,11 @@ export default function TagArticlesPage({ onNavigate, tag }) {
   const handleArticleClick = (article) => {
     // Navigate to the appropriate viewer based on media type
     const destination = article.mediaType === 'video' ? 'video-player' : article.mediaType === 'audio' ? 'audio-player' : 'text-reader';
-    onNavigate && onNavigate(destination, { article, returnTo: 'search' });
+    // Return to tag-specific route when possible, preserving the tagName
+    const returnTo = tag
+      ? { page: 'tag-articles', tagName: tag }
+      : { page: 'tags' };
+    onNavigate && onNavigate(destination, { article, returnTo });
   };
 
   const handleToggleFavorite = async (articleId) => {

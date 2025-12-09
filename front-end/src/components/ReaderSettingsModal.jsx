@@ -132,7 +132,7 @@ export default function ReaderSettingsModal({
             </div>
 
             {/* Show Images Toggle */}
-            <div>
+            {/* <div>
               <div className="flex items-center gap-2 mb-4">
                 <Image size={18} />
                 <h3 className="font-medium">Images</h3>
@@ -152,7 +152,7 @@ export default function ReaderSettingsModal({
                   onCheckedChange={onShowImagesChange}
                 />
               </div>
-            </div>
+            </div> */}
 
             {/* Reader Theme */}
             <div>
