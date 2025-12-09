@@ -351,6 +351,18 @@ This project includes full Docker containerization with Continuous Deployment su
 - `docker-compose.yml` - For local development (builds images from source)
 - `docker-compose.prod.yml` - For production deployment (uses pre-built images from Docker Hub)
 
+### Environment Variables
+
+**For Docker deployment:**
+- Create `.env` in the **root directory** (where docker-compose.yml is located)
+- Docker Compose reads this file to pass environment variables to containers
+- See `.env.example` in the root for the template
+
+**For non-Docker local development:**
+- Create `.env` in the **back-end directory** (`back-end/.env`)
+- Node.js loads this when running `npm start` in the back-end folder
+- The front-end doesn't need a separate `.env` (uses Vite proxy in development)
+
 ### What's Included
 
 - ✅ **Docker Containerization**: Separate containers for frontend and backend
