@@ -116,30 +116,7 @@ const AuthPage = ({ onNavigate }) => {
     }
   };
 
-  // Quick login for development (pre-fills demo credentials)
-  const handleQuickLogin = async () => {
-    setEmail('demo@fieldnotes.app');
-    setPassword('password123');
-    setErrorMessage('');
-    setIsLoading(true);
 
-    try {
-      const result = await login({
-        username: 'demo@fieldnotes.app',
-        password: 'password123',
-      });
-
-      if (result.success) {
-        onNavigate?.('home');
-      } else {
-        setErrorMessage('Demo user not found. Please create an account first.');
-      }
-    } catch (error) {
-      setErrorMessage('Demo login failed. Please register a new account.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-card flex items-center justify-center p-4">
@@ -155,16 +132,7 @@ const AuthPage = ({ onNavigate }) => {
             </div>
           )}
 
-          {/* Quick Dev Login Button */}
-          {mode === 'login' && (
-            <button
-              type="button"
-              onClick={handleQuickLogin}
-              className="w-full mb-4 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-            >
-              🚀 Quick Demo Login (dev)
-            </button>
-          )}
+
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="text-center text-primary">
