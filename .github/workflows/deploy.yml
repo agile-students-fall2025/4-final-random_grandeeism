@@ -47,87 +47,124 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:buildcache,mode=max
 
+      # Verify secrets are present (fail fast if missing)
+      - name: Verify deployment secrets
+        run: |
+          if [ -z "${{ secrets.DO_SSH_PRIVATE_KEY }}" ]; then 
+            echo "❌ ERROR: DO_SSH_PRIVATE_KEY secret is missing or empty" >&2
+            exit 1
+          fi
+          if [ -z "${{ secrets.DO_HOST }}" ]; then 
+            echo "❌ ERROR: DO_HOST secret is missing or empty" >&2
+            exit 1
+          fi
+          if [ -z "${{ secrets.DO_USERNAME }}" ]; then 
+            echo "❌ ERROR: DO_USERNAME secret is missing or empty" >&2
+            exit 1
+          fi
+          echo "✅ All deployment secrets are present"
+          echo "📡 Target: ${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }}"
+
+      # Set up SSH using ssh-agent (more reliable than manual key writing)
+      - name: Start ssh-agent and add deployment key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+
+      # Add Digital Ocean host to known_hosts
+      - name: Add DO host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.DO_HOST }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+          echo "✅ Added ${{ secrets.DO_HOST }} to known_hosts"
+
+      # Test SSH connectivity before deployment
+      - name: Test SSH connection
+        run: |
+          echo "🔌 Testing SSH connection to ${{ secrets.DO_HOST }}..."
+          ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
+            "${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }}" \
+            'echo "✅ SSH connection successful"; docker --version' || {
+            echo "❌ SSH connection failed. Retrying with verbose output..."
+            ssh -vvv -o ConnectTimeout=10 \
+              "${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }}" \
+              'echo "SSH OK"' 2>&1 | grep -i "auth\|key\|permission" || true
+            exit 1
+          }
+
       # Deploy to Digital Ocean
       - name: Deploy to Digital Ocean
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.DO_HOST }}
-          username: ${{ secrets.DO_USERNAME }}
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-          script: |
-            cd /root/4-final-random_grandeeism || mkdir -p /root/4-final-random_grandeeism && cd /root/4-final-random_grandeeism
-            
-            # Create docker-compose.yml if it doesn't exist
-            if [ ! -f docker-compose.yml ]; then
-              cat > docker-compose.yml << 'COMPOSE_EOF'
-            version: '3.8'
-            
-            services:
-              backend:
-                image: ${DOCKERHUB_USERNAME}/fieldnotes-backend:latest
-                container_name: fieldnotes-backend
-                restart: unless-stopped
-                ports:
-                  - "7001:7001"
-                environment:
-                  - NODE_ENV=production
-                  - PORT=7001
-                  - MONGODB_URI=${MONGODB_URI}
-                  - JWT_SECRET=${JWT_SECRET}
-                  - USE_MOCK_DB=false
-                networks:
-                  - fieldnotes-network
-                healthcheck:
-                  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7001/health"]
-                  interval: 30s
-                  timeout: 10s
-                  retries: 3
-                  start_period: 40s
-            
-              frontend:
-                image: ${DOCKERHUB_USERNAME}/fieldnotes-frontend:latest
-                container_name: fieldnotes-frontend
-                restart: unless-stopped
-                ports:
-                  - "80:80"
-                depends_on:
-                  - backend
-                networks:
-                  - fieldnotes-network
-                healthcheck:
-                  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
-                  interval: 30s
-                  timeout: 10s
-                  retries: 3
-                  start_period: 20s
-            
-            networks:
-              fieldnotes-network:
-                driver: bridge
-            COMPOSE_EOF
-            fi
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            "${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }}" << 'ENDSSH'
+            set -e
+            echo "🚀 Starting deployment on $(hostname)..."
+            cd /root/4-final-random_grandeeism || { mkdir -p /root/4-final-random_grandeeism && cd /root/4-final-random_grandeeism; }
             
             # Create .env if it doesn't exist
             if [ ! -f .env ]; then
-              echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" > .env
-              echo "NODE_ENV=production" >> .env
-              echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
-              echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-              echo "PORT=7001" >> .env
-              echo "USE_MOCK_DB=false" >> .env
+              cat > .env << 'EOF'
+          DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+          NODE_ENV=production
+          MONGODB_URI=${{ secrets.MONGODB_URI }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          PORT=7001
+          USE_MOCK_DB=false
+          EOF
+              echo "✅ Created .env file"
             fi
             
             # Pull latest images
-            docker-compose pull
+            echo "📥 Pulling latest Docker images..."
+            docker pull "${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:latest"
+            docker pull "${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:latest"
             
-            # Restart services
-            docker-compose up -d --force-recreate
+            # Stop and remove old containers
+            echo "🛑 Stopping old containers..."
+            docker stop fieldnotes-backend fieldnotes-frontend 2>/dev/null || true
+            docker rm fieldnotes-backend fieldnotes-frontend 2>/dev/null || true
             
-            # Wait for services to be healthy
+            # Create network if it doesn't exist
+            docker network inspect fieldnotes-network >/dev/null 2>&1 || \
+              docker network create fieldnotes-network
+            
+            # Start backend
+            echo "🔧 Starting backend..."
+            docker run -d \
+              --name fieldnotes-backend \
+              --network fieldnotes-network \
+              --restart unless-stopped \
+              -p 7001:7001 \
+              -e NODE_ENV=production \
+              -e PORT=7001 \
+              -e "MONGODB_URI=${{ secrets.MONGODB_URI }}" \
+              -e "JWT_SECRET=${{ secrets.JWT_SECRET }}" \
+              -e USE_MOCK_DB=false \
+              "${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:latest"
+            
+            # Start frontend
+            echo "🎨 Starting frontend..."
+            docker run -d \
+              --name fieldnotes-frontend \
+              --network fieldnotes-network \
+              --restart unless-stopped \
+              -p 80:80 \
+              "${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:latest"
+            
+            # Wait for services to start
+            echo "⏳ Waiting for services to start..."
             sleep 15
             
+            # Check container status
+            docker ps --filter "name=fieldnotes" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            
             # Clean up old images
+            echo "🧹 Cleaning up old images..."
             docker image prune -af
+            
+            echo "✅ Deployment completed successfully!"
+          ENDSSH
 
       # Verify deployment
       - name: Verify deployment
