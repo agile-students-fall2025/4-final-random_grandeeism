@@ -94,7 +94,6 @@ Edit `.env` with your configuration. See `.env.example` for all available option
 ```env
 # Server Configuration
 PORT=7001
-NODE_ENV=development
 
 # Database Configuration
 # For development with mock data (no MongoDB required):
@@ -108,7 +107,6 @@ USE_MOCK_DB=true
 # ⚠️ CRITICAL: Generate a secure secret for production!
 # Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 JWT_SECRET=your-super-secret-jwt-key-change-in-production-minimum-32-characters-long
-JWT_EXPIRES_IN=7d
 
 # CORS (Optional)
 FRONTEND_URL=http://localhost:5173
@@ -125,12 +123,9 @@ FRONTEND_URL=http://localhost:5173
 
 See `.env.example` for complete documentation of all environment variables including:
 - `PORT` - Server port (default: 7001)
-- `NODE_ENV` - Environment mode (development/production/test)
 - `MONGODB_URI` - MongoDB Atlas connection string
 - `USE_MOCK_DB` - Use mock data instead of MongoDB (true/false)
 - `JWT_SECRET` - Secret key for signing JWT tokens
-- `JWT_EXPIRES_IN` - Token expiration time (default: 7d)
-- `FRONTEND_URL` - CORS origin for front-end (optional)
 
 ### 4. Run the Server
 
