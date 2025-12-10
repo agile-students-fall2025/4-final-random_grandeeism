@@ -1,31 +1,56 @@
+/**
+ * Express Validation Middleware
+ * 
+ * This file contains all input validation rules for API endpoints using express-validator.
+ * 
+ * Key features:
+ * - Input sanitization (trim, escape) to prevent XSS attacks
+ * - Data type validation and format checking
+ * - Custom error messages for better user experience
+ * - Middleware pattern for easy integration with routes
+ * 
+ * Usage in routes:
+ * router.post('/', validateArticle, handleValidationErrors, routeHandler);
+ */
+
 const { body, validationResult } = require('express-validator');
 
 /**
- * Validation rules for user registration
+ * User Registration Validation
+ * 
+ * Validates new user signup data with security considerations:
+ * - Email: Must be valid format, normalized for consistency
+ * - Username: 3-30 chars, trimmed and escaped for XSS protection
+ * - Password: Minimum 8 chars (hashed later with bcrypt)
+ * - DisplayName: Optional, trimmed, max 100 chars for UI layout
  */
 const validateRegistration = [
   body('email')
     .isEmail()
     .withMessage('Must be a valid email address')
-    .normalizeEmail(),
+    .normalizeEmail(), // Converts to lowercase, removes dots from Gmail
   body('username')
     .isLength({ min: 3, max: 30 })
     .withMessage('Username must be between 3 and 30 characters')
-    .trim()
-    .escape(),
+    .trim() // Remove leading/trailing whitespace
+    .escape(), // Convert HTML entities to prevent XSS
   body('password')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters long'),
+    // Note: Password is not escaped as it will be hashed
   body('displayName')
-    .optional()
+    .optional() // Field is not required
     .isLength({ max: 100 })
     .withMessage('Display name must be 100 characters or less')
     .trim()
 ];
 
 /**
- * Validation rules for user login
- * Note: 'username' field accepts either username or email
+ * User Login Validation
+ * 
+ * Simpler validation for login - just checks required fields.
+ * Note: 'username' field accepts either username OR email for user convenience
+ * Backend will handle checking both username and email fields in database
  */
 const validateLogin = [
   body('username')
@@ -35,10 +60,20 @@ const validateLogin = [
   body('password')
     .notEmpty()
     .withMessage('Password is required')
+  // Note: No password validation here since we're just checking credentials
 ];
 
 /**
- * Validation rules for article creation/update
+ * Article Creation/Update Validation
+ * 
+ * Validates article data for both manual additions and RSS feed imports.
+ * 
+ * Field explanations:
+ * - title: Required, used in UI lists and search (500 char limit for display)
+ * - url: Optional for manual entries, auto-populated for web articles
+ * - content: Optional, extracted content or user-provided text (1MB limit)
+ * - status: Reading workflow states (see status enum below)
+ * - feedId: Links article to RSS feed source if applicable
  */
 const validateArticle = [
   body('title')
@@ -53,8 +88,16 @@ const validateArticle = [
     .withMessage('Must be a valid URL'),
   body('content')
     .optional()
-    .isLength({ max: 1000000 })
+    .isLength({ max: 1000000 }) // 1MB limit for large articles
     .withMessage('Content too large'),
+  /**
+   * Article Status Enum:
+   * - inbox: Newly added, unread
+   * - continue: Started reading, need to finish
+   * - daily: Scheduled for today's reading
+   * - rediscovery: Surfaced by rediscovery algorithm
+   * - archived: Completed reading, stored for reference
+   */
   body('status')
     .optional()
     .isIn(['inbox', 'continue', 'daily', 'rediscovery', 'archived'])

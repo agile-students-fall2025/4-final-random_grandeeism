@@ -7,46 +7,65 @@ const { validateArticle, validateTagAssignment, handleValidationErrors } = requi
 
 /**
  * GET /api/articles
- * Retrieve all articles with optional filtering
+ * Retrieve all articles with comprehensive filtering options
+ * 
+ * Query Parameters:
+ * - status: Filter by reading status (inbox, continue, daily, rediscovery, archived)
+ * - tag: Filter by single tag (accepts tag ID or tag name)
+ * - tags: Filter by multiple tags (comma-separated tag IDs)
+ * - favorite: Filter favorites only (true/false)
+ * - untagged: Show only untagged articles (true/false)
+ * - sort: Sort order ('Date Added (Newest)' or 'Date Added (Oldest)')
  */
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { status, tag, favorite, untagged, tags, sort } = req.query;
-    const userId = req.user.id; // Get from authenticated user
+    const userId = req.user.id; // Authenticated user from JWT middleware
     
+    // Start with base filter - always filter by authenticated user
     const filters = { userId };
 
+    // Add status filter (reading status: inbox, continue, daily, etc.)
     if (status) {
       filters.status = status;
     }
 
+    // Handle single tag filtering with flexible matching
     if (tag) {
-      // Support filtering by tag id or tag name
+      // Support both tag ID and tag name for user convenience
       const tagLower = String(tag).toLowerCase();
       const allTags = await tagsDao.getAll({ userId: req.user.id });
-      const match = allTags.find(t => String(t.id) === String(tag) || String(t.name).toLowerCase() === tagLower);
-      // Convert to string since tags are stored as strings in Article model
+      const match = allTags.find(t => 
+        String(t.id) === String(tag) || 
+        String(t.name).toLowerCase() === tagLower
+      );
+      // Always store as string to match Article model format
       filters.tag = match ? String(match.id) : String(tag);
     }
 
+    // Handle multiple tags filtering (comma-separated IDs)
     if (tags) {
       filters.tags = { $in: tags.split(',') };
     }
 
+    // Filter for articles without any tags
     if (untagged === 'true') {
       filters.untagged = true;
     }
 
+    // Filter for favorited articles only
     if (favorite === 'true') {
       filters.isFavorite = true;
     }
 
+    // Handle sorting options
     const sortOptions = {};
     if (sort === 'Date Added (Newest)') {
-      sortOptions.createdAt = -1;
+      sortOptions.createdAt = -1; // MongoDB descending order
     } else if (sort === 'Date Added (Oldest)') {
-      sortOptions.createdAt = 1;
+      sortOptions.createdAt = 1;  // MongoDB ascending order
     }
+    // Default: no sorting (database natural order)
 
     const articles = await articlesDao.getAll(filters, sortOptions);
 

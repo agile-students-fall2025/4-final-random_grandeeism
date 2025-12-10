@@ -53,27 +53,41 @@ import { invalidateTagCache } from './utils/tagsCache.js';
 // Import data
 // import { mockArticles } from './data/mockArticles'; // Adjust path if needed
 
-// Route mapping constant - single source of truth for page to route mapping
+/**
+ * Route Mapping Configuration
+ * 
+ * Single source of truth for all application routes.
+ * This centralized mapping:
+ * - Prevents route duplication across components
+ * - Makes it easy to change routes in one place
+ * - Enables programmatic navigation with consistent paths
+ * - Supports both static routes (/home) and dynamic routes (/tags/:tagName)
+ * 
+ * Used by:
+ * - Navigation components for menu links
+ * - Programmatic navigation (useNavigate)
+ * - Route guards and authentication checks
+ */
 const ROUTE_MAP = {
-  'landing': '/',
-  'auth': '/auth',
-  'home': '/home',
-  'inbox': '/inbox',
-  'daily-reading': '/daily-reading',
-  'continue-reading': '/continue-reading',
-  'rediscovery': '/rediscovery',
-  'text': '/text',
-  'videos': '/videos',
-  'audio': '/audio',
-  'archive': '/archive',
-  'search': '/search',
-  'tags': '/tags',
-  'tag-articles': '/tags/:tagName',
-  'favorites': '/favorites',
-  'feeds': '/feeds',
-  'feed-articles': '/feed-articles',
-  'settings': '/settings',
-  'statistics': '/statistics',
+  'landing': '/',              // Public landing page
+  'auth': '/auth',             // Login/registration page
+  'home': '/home',             // Main dashboard (authenticated)
+  'inbox': '/inbox',           // Unread articles
+  'daily-reading': '/daily-reading',     // Daily reading queue
+  'continue-reading': '/continue-reading', // Articles in progress
+  'rediscovery': '/rediscovery',         // Rediscovery algorithm results
+  'text': '/text',             // Text articles only
+  'videos': '/videos',         // Video content only
+  'audio': '/audio',           // Audio/podcast content only
+  'archive': '/archive',       // Archived articles
+  'search': '/search',         // Search functionality
+  'tags': '/tags',             // Tag management
+  'tag-articles': '/tags/:tagName',      // Articles filtered by specific tag
+  'favorites': '/favorites',   // Favorited articles
+  'feeds': '/feeds',           // RSS feed management
+  'feed-articles': '/feed-articles',     // Articles from specific feed
+  'settings': '/settings',     // User preferences
+  'statistics': '/statistics', // Reading statistics and analytics
 };
 
 function App() {

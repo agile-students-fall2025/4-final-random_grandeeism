@@ -4,6 +4,12 @@
 [![Deploy to Digital Ocean](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/deploy.yml/badge.svg)](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/deploy.yml)
 [![log github events](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/event-logger.yml/badge.svg)](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/event-logger.yml)
 
+## 🚀 Live Application
+
+**Try Fieldnotes now**: **[http://138.197.27.122](http://138.197.27.122)**
+
+*Deployed on Digital Ocean with Docker containerization and continuous deployment*
+
 ## Product Vision Statement
 
 In the current internet age there is a incomprehensible and immense amount of interesting content to peruse yet theres little time to read or consume in the moment upon encountering something new to read, and its liable to be forgotten. **Fieldnotes** is a mobile web app that can be used to save articles, podcasts, youtube videos to be resurfaced for later (optional offline) reading and annotating.
@@ -387,6 +393,23 @@ The application can be deployed to Digital Ocean Droplets with automated continu
 3. GitHub Actions automatically builds and deploys
 
 **Live Application**: http://138.197.27.122
+
+## Deployment Compliance
+
+This project fully complies with the [deployment instructions](instructions-4-deployment.md) requirements:
+
+### ✅ Core Requirements Met
+- **✅ No credentials in version control** - All sensitive data is stored in `.env` files (excluded from git)
+- **✅ Digital Ocean deployment** - Application deployed at [http://138.197.27.122](http://138.197.27.122)  
+- **✅ Live front-end link** - Prominently featured in this README
+
+### 🏆 Extra Credit Features Implemented
+- **✅ Docker containerization** - Full Docker setup with multi-stage builds and Docker Compose orchestration
+- **✅ Continuous Integration** - GitHub Actions runs tests on every push/PR ([CI Pipeline](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/ci.yml))
+- **✅ Continuous Deployment** - Automated deployment to Digital Ocean ([Deploy Workflow](https://github.com/agile-students-fall2025/4-final-random_grandeeism/actions/workflows/deploy.yml))
+
+### 📋 Environment Variables
+All required `.env` files have been submitted to administrators via the team messenger channel as instructed.
 
 ## Want to contribute?
 

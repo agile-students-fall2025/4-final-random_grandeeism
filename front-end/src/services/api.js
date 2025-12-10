@@ -21,42 +21,65 @@ export const clearAuthToken = () => {
 
 /**
  * Generic API request handler with automatic JWT token injection
+ * 
+ * This function handles all HTTP requests to the backend API and provides:
+ * - Automatic JWT token attachment for authenticated requests
+ * - Consistent error handling and parsing
+ * - Support for different content types
+ * - Validation error processing from express-validator
  */
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = getAuthToken();
 
+  // Build request configuration with automatic token injection
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      // Conditionally add Authorization header if token exists
+      // Uses spread operator to avoid adding undefined properties
       ...(token && { 'Authorization': `Bearer ${token}` }),
+      // Allow custom headers to override defaults
       ...options.headers,
     },
+    // Spread any additional fetch options (method, body, etc.)
     ...options,
   };
 
   try {
     const response = await fetch(url, config);
 
+    // Handle HTTP error responses (4xx, 5xx status codes)
     if (!response.ok) {
       const contentType = response.headers.get('content-type');
+      
+      // Try to parse JSON error response if available
       if (contentType && contentType.includes('application/json')) {
         const errorData = await response.json();
         
-        // Handle validation errors (array format from express-validator)
+        /**
+         * Handle express-validator errors
+         * 
+         * express-validator returns errors in this format:
+         * { errors: [{ msg: "Error message", path: "fieldName" }] }
+         * We combine all error messages into a single user-friendly string
+         */
         if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
-          const errorMessages = errorData.errors.map(err => err.msg || err.message).join('. ');
+          const errorMessages = errorData.errors
+            .map(err => err.msg || err.message)
+            .join('. ');
           throw new Error(errorMessages);
         }
         
-        // Handle single error message
+        // Handle single error message format: { error: "Error message" }
         if (errorData.error) {
           throw new Error(errorData.error);
         }
         
-        // Fallback to status message
+        // Fallback for unexpected JSON error format
         throw new Error(`HTTP error! status: ${response.status}`);
       } else {
+        // Non-JSON error response (e.g., HTML error page)
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     }

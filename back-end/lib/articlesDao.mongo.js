@@ -9,43 +9,76 @@
 const { Article } = require('./models');
 
 /**
- * Helper to convert MongoDB ObjectId to string format for consistency with mock DAO
+ * MongoDB Document Transformation Helper
+ * 
+ * Converts MongoDB documents to a consistent format that matches mock DAO.
+ * This ensures frontend code works identically with both mock and real data.
+ * 
+ * Transformations:
+ * 1. _id (ObjectId) → id (string): Frontend expects string IDs
+ * 2. Remove __v: Mongoose version field not needed by frontend
+ * 3. Convert ObjectId references to strings: Maintains consistency across DAOs
+ * 
+ * Why this is important:
+ * - Frontend code can switch between mock and MongoDB without changes
+ * - String IDs are easier to work with in React components
+ * - JWT tokens contain string user IDs, so we need consistency
+ * - API responses have predictable format regardless of backend
  */
 const transformToStringId = (doc) => {
   if (!doc) return null;
+  
+  // Handle both Mongoose documents and plain objects
   const obj = doc.toJSON ? doc.toJSON() : doc;
+  
+  // Transform MongoDB _id to string id
   if (obj._id) {
     obj.id = obj._id.toString();
-    delete obj._id;
-    delete obj.__v;
+    delete obj._id;     // Remove MongoDB-specific field
+    delete obj.__v;     // Remove Mongoose version field
   }
-  // Convert userId ObjectId to string for consistency with JWT
+  
+  // Convert userId ObjectId to string for consistency with JWT payload
+  // JWT tokens contain string user IDs, so all user references must match
   if (obj.userId && typeof obj.userId === 'object') {
     obj.userId = obj.userId.toString();
   }
+  
   // Convert feedId ObjectId to string if present
+  // Maintains consistency when articles are linked to RSS feeds
   if (obj.feedId && typeof obj.feedId === 'object') {
     obj.feedId = obj.feedId.toString();
   }
+  
   return obj;
 };
 
 const articlesDao = {
   /**
-   * Get all articles with optional filtering
-   * @param {Object} filters - Query filters
-   * @param {string} filters.status - Filter by status (inbox, daily, continue, rediscovery, archived)
-   * @param {string} filters.tag - Filter by tag
-   * @param {boolean} filters.isFavorite - Filter by favorite status
-   * @param {boolean} filters.untagged - Filter for articles without tags
-   * @param {string} filters.userId - User ID (required for MongoDB)
-   * @returns {Promise<Array>} Array of articles
+   * Get All Articles with Advanced Filtering
+   * 
+   * Supports complex filtering scenarios for the reading workflow.
+   * All queries are automatically scoped to the authenticated user.
+   * 
+   * @param {Object} filters - Query filters object
+   * @param {string} filters.status - Reading status filter (see status enum in validation)
+   * @param {string} filters.tag - Single tag filter (by tag ID)
+   * @param {Array<string>} filters.tags - Multiple tag filter (array of tag IDs)
+   * @param {boolean} filters.isFavorite - Show only favorited articles
+   * @param {boolean} filters.untagged - Show only articles without tags
+   * @param {string} filters.userId - User ID (REQUIRED - enforces data isolation)
+   * @param {Object} sortOptions - MongoDB sort object (e.g., { createdAt: -1 })
+   * @returns {Promise<Array>} Array of filtered articles with string IDs
+   * 
+   * Security note: userId filter is mandatory to prevent data leaks between users
    */
   async getAll(filters = {}) {
+    // Security check - prevent accessing other users' data
     if (!filters.userId) {
       throw new Error('userId is required for MongoDB operations');
     }
 
+    // Start with user-scoped query - ALWAYS filter by authenticated user
     let query = { userId: filters.userId };
 
     // Status filter
