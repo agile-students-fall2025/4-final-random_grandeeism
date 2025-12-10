@@ -30,6 +30,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./back-end
+          file: ./back-end/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:latest,${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:buildcache
@@ -40,6 +41,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./front-end
+          file: ./front-end/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:latest,${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:buildcache
