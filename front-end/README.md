@@ -90,8 +90,6 @@ The following requirements outline what must be, must not be, and may be done du
 - You **must not** use the front-end frameworks [Material UI](https://material-ui.com/) or [Bootstrap](https://react-bootstrap.github.io/).
 - You **must not** hard-code any data in your front-end code that will eventually be provided by your application's back-end or other external source.
 
-## Dev Team Guidelines
-
 ## Folder Organization
 
 The front-end project follows a structured organization to maintain code clarity and scalability:
@@ -136,7 +134,42 @@ Shared components used across multiple pages:
 
 ### `/src/contexts` - React Context Providers
 
-Contains React Context definitions for state management across components.
+Contains React Context definitions for state management across components. These contexts allow sharing state and logic across the application without prop drilling.
+
+- **AuthContext** - Manages user authentication state and provides methods for login, logout, and token management.
+- **ThemeContext** - Handles theme switching (light/dark mode) across the application.
+
+### `/src/constants` - Application Constants
+
+Contains constant values used throughout the application to maintain consistency and avoid hardcoding.
+
+- **routes.js** - Defines all application routes in a single place.
+- **colors.js** - Centralized color palette for consistent styling.
+- **status.js** - Predefined status values for articles (e.g., inbox, archived).
+
+### `/src/hooks` - Custom React Hooks
+
+Reusable custom hooks that encapsulate logic and can be shared across components.
+
+- **useAuth** - Provides authentication-related utilities.
+- **useFetch** - Simplifies data fetching with built-in error handling.
+- **useTheme** - Manages theme switching logic.
+
+### `/src/services` - API Services
+
+Contains functions for interacting with the back-end API. Each service corresponds to a specific feature or resource.
+
+- **authService.js** - Handles authentication-related API calls (e.g., login, register).
+- **articleService.js** - Manages API calls for articles (e.g., create, update, delete).
+- **tagService.js** - Provides methods for managing tags (e.g., add, remove, fetch).
+
+### `/src/utils` - Utility Functions
+
+Helper functions used across the application to avoid code duplication.
+
+- **formatDate.js** - Formats dates into a user-friendly format.
+- **debounce.js** - Implements a debounce function for optimizing performance.
+- **validateInput.js** - Provides input validation utilities.
 
 ### `/src/assets` - Static Assets
 
@@ -149,7 +182,3 @@ Application-wide CSS and styling configurations.
 ### `/public` - Public Static Files
 
 Files served directly without processing (favicon, robots.txt, etc.).
-# front-end
-# front-end
-# front-end
-# front-end

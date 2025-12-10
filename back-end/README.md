@@ -970,24 +970,10 @@ Test suites breakdown:
 - ✅ Test suite (260 tests, comprehensive coverage)
 - ✅ Database integration (MongoDB Atlas + mock DAOs)
 
-## Sprint Accomplishments
 
-All sprint goals have been successfully completed:
+## Complete Environment Variables Summary
 
-1. ✅ Created all API routes with mock data
-2. ✅ Integrated front-end with back-end
-3. ✅ Wrote comprehensive unit tests (260 tests passing)
-4. ✅ Ensured full front-end ↔ back-end communication
-5. ✅ Implemented JWT authentication & authorization
-6. ✅ Added MongoDB Atlas integration with dual DAO pattern
-7. ✅ Implemented RSS feed extraction service
-8. ✅ Added comprehensive error handling and validation
-
-**Status:** All core features implemented and tested. Ready for production deployment.
-
-## Environment Variables Summary
-
-All environment variables are documented in `.env.example`. Here's a quick reference:
+All environment variables (including those that are optional) are documented in `.env.example`. Please still refer to the .env.example for a basic requirement in the .env file. Here's a quick reference of all variables:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
