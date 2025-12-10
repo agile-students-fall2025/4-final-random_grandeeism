@@ -76,7 +76,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
 /**
  * POST /api/feeds
- * Create a new feed
+ * Create a new feed and automatically extract articles
  */
 router.post('/', authenticateToken, validateFeed, handleValidationErrors, async (req, res) => {
   try {
@@ -95,10 +95,37 @@ router.post('/', authenticateToken, validateFeed, handleValidationErrors, async 
 
     const newFeed = await feedsDao.create(feedData);
 
+    // Automatically extract articles from the new feed
+    let extractionResult = null;
+    try {
+      console.log(`🔄 Auto-extracting articles from new feed: ${newFeed.id}`);
+      extractionResult = await rssService.extractFromFeed(newFeed.id, userId);
+      console.log(`✅ Extracted ${extractionResult.count || 0} articles from feed: ${newFeed.name}`);
+      
+      // Update feed name with the actual feed title from RSS if available
+      if (extractionResult.success && extractionResult.feedTitle && extractionResult.feedTitle !== newFeed.name) {
+        console.log(`📝 Updating feed name from "${newFeed.name}" to "${extractionResult.feedTitle}"`);
+        const updatedFeed = await feedsDao.update(newFeed.id, { name: extractionResult.feedTitle }, userId);
+        if (updatedFeed) {
+          newFeed.name = extractionResult.feedTitle;
+        }
+      }
+    } catch (extractError) {
+      console.error('Error extracting articles from new feed:', extractError);
+      extractionResult = { 
+        success: false, 
+        message: 'Feed created but article extraction failed', 
+        error: extractError.message 
+      };
+    }
+
     res.status(201).json({
       success: true,
       data: newFeed,
-      message: 'Feed created successfully'
+      extraction: extractionResult,
+      message: extractionResult?.success 
+        ? `Feed created successfully with ${extractionResult.count || 0} articles extracted`
+        : 'Feed created successfully but article extraction failed'
     });
   } catch (error) {
     res.status(500).json({

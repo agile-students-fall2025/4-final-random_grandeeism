@@ -17,6 +17,7 @@ export default function FeedsPage({ onNavigate }) {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isCreateFeedModalOpen, setIsCreateFeedModalOpen] = useState(false);
   const [newFeedName, setNewFeedName] = useState("");
+  const [newFeedUrl, setNewFeedUrl] = useState("");
   const [articles, setArticles] = useState([]);
   const [feeds, setFeeds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -207,18 +208,18 @@ export default function FeedsPage({ onNavigate }) {
   };
 
   const handleCreateFeed = async () => {
-    const trimmedFeed = newFeedName.trim();
-    if (trimmedFeed && !feeds.some(f => f.name === trimmedFeed)) {
+    const trimmedUrl = newFeedUrl.trim();
+    const trimmedName = newFeedName.trim();
+    
+    if (trimmedUrl) {
       try {
-        // Create a new feed
+        // Create a new feed with actual RSS URL
         const newFeedData = {
-          name: trimmedFeed,
-          url: `https://example.com/${trimmedFeed.toLowerCase().replace(/\s+/g, '-')}/feed/`,
+          name: trimmedName || trimmedUrl, // Use provided name or URL as fallback
+          url: trimmedUrl,
           feedType: 'rss',
-          favicon: 'https://example.com/favicon.ico',
           category: 'Uncategorized',
-          description: `Feed for ${trimmedFeed}`,
-          website: 'https://example.com',
+          description: `RSS feed from ${trimmedUrl}`,
           refreshFrequency: 'daily'
         };
         
@@ -228,8 +229,10 @@ export default function FeedsPage({ onNavigate }) {
           // Add the new feed to local state
           setFeeds([...feeds, response.data]);
           setNewFeedName("");
+          setNewFeedUrl("");
           setIsCreateFeedModalOpen(false);
-          console.log(`Successfully created feed: ${trimmedFeed}`);
+          console.log(`Successfully created feed: ${response.data.name}`);
+          console.log('Extraction result:', response.extraction);
         } else {
           throw new Error('Failed to create feed');
         }
@@ -338,27 +341,32 @@ export default function FeedsPage({ onNavigate }) {
                   <DialogHeader>
                     <DialogTitle>Add New Feed</DialogTitle>
                     <DialogDescription>
-                      Subscribe to a new RSS feed.
+                      Subscribe to a new RSS feed by entering the feed URL.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="feed-name">Feed Name</Label>
+                      <Label htmlFor="feed-url">Feed URL *</Label>
+                      <Input
+                        id="feed-url"
+                        type="url"
+                        value={newFeedUrl}
+                        onChange={(e) => setNewFeedUrl(e.target.value)}
+                        placeholder="https://example.com/feed"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="feed-name">Feed Name (optional)</Label>
                       <Input
                         id="feed-name"
                         type="text"
                         value={newFeedName}
                         onChange={(e) => setNewFeedName(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        placeholder="Enter feed name..."
-                        autoFocus
+                        placeholder="Leave empty to use feed's title"
                       />
                     </div>
-                    {newFeedName.trim() && feeds.some(f => f.name === newFeedName.trim()) && (
-                      <p className="text-sm text-destructive">
-                        A feed with this name already exists.
-                      </p>
-                    )}
                   </div>
                   <DialogFooter>
                     <DialogClose asChild>
@@ -366,7 +374,7 @@ export default function FeedsPage({ onNavigate }) {
                     </DialogClose>
                     <Button 
                       onClick={handleCreateFeed}
-                      disabled={!newFeedName.trim() || feeds.some(f => f.name === newFeedName.trim())}
+                      disabled={!newFeedUrl.trim()}
                     >
                       Add Feed
                     </Button>

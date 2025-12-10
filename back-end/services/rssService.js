@@ -131,8 +131,10 @@ class RSSService {
         success: true,
         feedId: feed.id,
         feedName: feed.name,
+        feedTitle: rssFeed.title || feed.name, // Include actual feed title from RSS
         newArticles: newArticles.length,
         totalArticles: existingArticles.length + newArticles.length,
+        count: newArticles.length, // Add count for convenience
         articles: newArticles
       };
 
