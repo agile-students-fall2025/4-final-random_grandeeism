@@ -2,6 +2,14 @@
 
 Express.js REST API for the Fieldnotes read-it-later application with JWT authentication and MongoDB Atlas integration.
 
+## Team Members
+
+- [Zeba Shafi](https://github.com/Zeba-Shafi)
+- [Sheik Anas Ally Ozeer](https://github.com/anas-ozeer)
+- [Saad Sifar](https://github.com/one-loop)
+- [Shaurya Srivastava](https://github.com/shauryasr04)
+- [Jeffrey Chen](https://github.com/shauryasr04)
+
 ## 📚 Documentation & Guidelines
 
 For detailed project documentation, see the `guidelines/` folder:
