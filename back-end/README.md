@@ -125,12 +125,9 @@ FRONTEND_URL=http://localhost:5173
 
 See `.env.example` for complete documentation of all environment variables including:
 - `PORT` - Server port (default: 7001)
-- `NODE_ENV` - Environment mode (development/production/test)
 - `MONGODB_URI` - MongoDB Atlas connection string
 - `USE_MOCK_DB` - Use mock data instead of MongoDB (true/false)
 - `JWT_SECRET` - Secret key for signing JWT tokens
-- `JWT_EXPIRES_IN` - Token expiration time (default: 7d)
-- `FRONTEND_URL` - CORS origin for front-end (optional)
 
 ### 4. Run the Server
 
