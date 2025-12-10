@@ -17,31 +17,50 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(!!token);
 
-  // Initialize auth state from localStorage on mount
+  /**
+   * Authentication Initialization
+   * 
+   * On app startup, this effect:
+   * 1. Checks localStorage for existing auth token and user data
+   * 2. Verifies the token with the backend (prevents using expired tokens)
+   * 3. Either restores the authenticated state or clears invalid data
+   * 4. Sets loading to false to indicate auth state is ready
+   * 
+   * This ensures users stay logged in across browser sessions
+   * while maintaining security by validating stored tokens.
+   */
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('authToken');
       const storedUser = localStorage.getItem('authUser');
 
+      // Both token and user data must exist to attempt restoration
       if (storedToken && storedUser) {
         try {
-          // Verify token is still valid
+          // Verify token hasn't expired or been invalidated
           const response = await authAPI.verify(storedToken);
           if (response.success) {
+            // Token is valid - restore authenticated state
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
+            setAuthToken(storedToken); // Set token for future API calls
           } else {
-            // Token invalid, clear storage
+            // Token is invalid - clean up stored auth data
             clearAuthToken();
             localStorage.removeItem('authUser');
           }
         } catch (err) {
+          // Network error or token verification failed
           console.error('Token verification failed:', err);
           clearAuthToken();
           localStorage.removeItem('authUser');
+          // Note: We don't show error to user as this is a background process
         }
       }
-      setLoading(false); // Ensure loading is set to false
+      
+      // Critical: Always set loading to false, regardless of auth outcome
+      // This allows the app to render the appropriate login/main interface
+      setLoading(false);
     };
 
     initAuth();

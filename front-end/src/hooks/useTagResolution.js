@@ -36,18 +36,33 @@ export const useTagResolution = () => {
     fetchTags();
   }, [fetchTags]);
 
-  // Create tag mapping from ID to name
+  /**
+   * Tag ID to Name Mapping
+   * 
+   * Creates an optimized lookup table for converting tag IDs to names.
+   * Uses useMemo to prevent recalculating on every render.
+   * 
+   * Example mapping: { "tag123": "JavaScript", "tag456": "React" }
+   */
   const tagMapping = useMemo(() => {
     const mapping = {};
     tags.forEach(tag => {
       mapping[tag.id] = tag.name;
     });
     return mapping;
-  }, [tags]);
+  }, [tags]); // Only recalculate when tags array changes
 
-  // Function to resolve a single tag ID to name
+  /**
+   * Resolve Tag ID to Display Name
+   * 
+   * Converts a tag ID to its human-readable name for display purposes.
+   * Falls back to the original ID if no matching tag is found.
+   * 
+   * @param {string} tagId - The tag ID to resolve
+   * @returns {string} The tag name or original ID if not found
+   */
   const resolveTagId = useCallback((tagId) => {
-    return tagMapping[tagId] || tagId;
+    return tagMapping[tagId] || tagId; // Fallback to ID if name not found
   }, [tagMapping]);
 
   // Function to resolve tag name to ID

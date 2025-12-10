@@ -19,39 +19,55 @@ const { Readability } = require('@mozilla/readability');
  */
 async function extractContent(url) {
   try {
-    // Special handling for YouTube videos - don't try to extract content
+    /**
+     * YouTube Video Handling
+     * 
+     * YouTube videos need special treatment because:
+     * 1. They don't have extractable text content like articles
+     * 2. YouTube blocks most scraping attempts
+     * 3. We can use their oEmbed API to get basic metadata
+     * 4. We store the video ID for embedding/playback
+     */
     const { isYouTubeUrl, extractYouTubeVideoId } = require('./youtubeUtils');
     if (isYouTubeUrl(url)) {
       const videoId = extractYouTubeVideoId(url);
       
-      // Try to fetch video title from YouTube oEmbed API (no API key needed)
-      let title = 'YouTube Video';
+      // Attempt to get video title using YouTube's oEmbed API
+      // This is a public API that doesn't require authentication
+      let title = 'YouTube Video'; // Fallback title
       try {
         const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-        const response = await axios.get(oembedUrl, { timeout: 5000 });
+        const response = await axios.get(oembedUrl, { 
+          timeout: 5000,
+          headers: {
+            'User-Agent': 'Fieldnotes Content Extractor'
+          }
+        });
         if (response.data && response.data.title) {
           title = response.data.title;
         }
       } catch (oembedError) {
+        // oEmbed failure is non-critical - we'll use the fallback title
         console.warn('Failed to fetch YouTube title from oEmbed:', oembedError.message);
       }
       
-      // For YouTube videos, return minimal metadata
+      // Return structured data for YouTube videos
+      // Note: content and textContent are empty since videos don't have readable text
       return {
         success: true,
         data: {
           title: title,
-          content: '',
-          textContent: '',
+          content: '', // No HTML content for videos
+          textContent: '', // No plain text content for videos
           excerpt: 'YouTube video content',
-          author: null,
+          author: null, // Could be extracted from oEmbed if needed
           url,
           source: 'YouTube',
-          wordCount: 0,
-          readingTime: 0,
-          publishedDate: null,
-          mediaType: 'video',
-          videoId: videoId
+          wordCount: 0, // Videos don't have word count
+          readingTime: 0, // Videos don't have reading time
+          publishedDate: null, // Could be extracted with YouTube API
+          mediaType: 'video', // Important: marks this as video content
+          videoId: videoId // Stored for embedding in the video player
         },
       };
     }
