@@ -55,7 +55,6 @@ export default function NavigationSidebar({
     // Direct page matches (no view needed)
     if (currentPage === 'home' && item.page === 'home') return true;
     if (currentPage === 'statistics' && item.page === 'statistics') return true;
-    if (currentPage === 'feeds' && item.page === 'feeds') return true;
     if (currentPage === 'videos' && item.page === 'videos') return true;
     if (currentPage === 'podcasts' && item.page === 'podcasts') return true;
     if (currentPage === 'text' && item.page === 'text') return true;
@@ -159,13 +158,6 @@ export default function NavigationSidebar({
       page: "articles", 
       view: "Favorites", 
       action: () => onNavigate('articles', 'Favorites') 
-    },
-    { 
-      name: "Feeds", 
-      icon: Rss, 
-      page: "feeds", 
-      view: null, 
-      action: () => onNavigate('feeds') 
     },
     /* TEMPORARILY COMMENTED OUT FOR STAKEHOLDER DEMO - Videos/Audio/Text pages (unimplemented) */
     /* TODO: Uncomment when video/audio player implementation is complete */
