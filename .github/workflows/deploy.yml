@@ -25,6 +25,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # Check if backend build cache exists
+      - name: Check backend cache availability
+        id: backend-cache
+        run: |
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:buildcache"
+          if docker manifest inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Backend build cache found"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No backend build cache (first build)"
+          fi
+
       # Build and push backend image
       - name: Build and push backend
         uses: docker/build-push-action@v5
@@ -33,8 +46,21 @@ jobs:
           file: ./back-end/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:latest,${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:buildcache
+          cache-from: ${{ steps.backend-cache.outputs.exists == 'true' && format('type=registry,ref={0}/fieldnotes-backend:buildcache', secrets.DOCKERHUB_USERNAME) || '' }}
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:buildcache,mode=max
+
+      # Check if frontend build cache exists
+      - name: Check frontend cache availability
+        id: frontend-cache
+        run: |
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:buildcache"
+          if docker manifest inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Frontend build cache found"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No frontend build cache (first build)"
+          fi
 
       # Build and push frontend image
       - name: Build and push frontend
@@ -44,94 +70,82 @@ jobs:
           file: ./front-end/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:latest,${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:buildcache
+          cache-from: ${{ steps.frontend-cache.outputs.exists == 'true' && format('type=registry,ref={0}/fieldnotes-frontend:buildcache', secrets.DOCKERHUB_USERNAME) || '' }}
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:buildcache,mode=max
+
+      # Set up SSH for deployment
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       # Deploy to Digital Ocean
       - name: Deploy to Digital Ocean
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.DO_HOST }}
-          username: ${{ secrets.DO_USERNAME }}
-          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-          script: |
-            cd /root/4-final-random_grandeeism || mkdir -p /root/4-final-random_grandeeism && cd /root/4-final-random_grandeeism
-            
-            # Create docker-compose.yml if it doesn't exist
-            if [ ! -f docker-compose.yml ]; then
-              cat > docker-compose.yml << 'COMPOSE_EOF'
-            version: '3.8'
-            
-            services:
-              backend:
-                image: ${DOCKERHUB_USERNAME}/fieldnotes-backend:latest
-                container_name: fieldnotes-backend
-                restart: unless-stopped
-                ports:
-                  - "7001:7001"
-                environment:
-                  - NODE_ENV=production
-                  - PORT=7001
-                  - MONGODB_URI=${MONGODB_URI}
-                  - JWT_SECRET=${JWT_SECRET}
-                  - USE_MOCK_DB=false
-                networks:
-                  - fieldnotes-network
-                healthcheck:
-                  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7001/health"]
-                  interval: 30s
-                  timeout: 10s
-                  retries: 3
-                  start_period: 40s
-            
-              frontend:
-                image: ${DOCKERHUB_USERNAME}/fieldnotes-frontend:latest
-                container_name: fieldnotes-frontend
-                restart: unless-stopped
-                ports:
-                  - "80:80"
-                depends_on:
-                  - backend
-                networks:
-                  - fieldnotes-network
-                healthcheck:
-                  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
-                  interval: 30s
-                  timeout: 10s
-                  retries: 3
-                  start_period: 20s
-            
-            networks:
-              fieldnotes-network:
-                driver: bridge
-            COMPOSE_EOF
-            fi
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }} << 'ENDSSH'
+            set -e
+            cd /root/4-final-random_grandeeism || { mkdir -p /root/4-final-random_grandeeism && cd /root/4-final-random_grandeeism; }
             
             # Create .env if it doesn't exist
             if [ ! -f .env ]; then
-              echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" > .env
-              echo "NODE_ENV=production" >> .env
-              echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
-              echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-              echo "PORT=7001" >> .env
-              echo "USE_MOCK_DB=false" >> .env
+              cat > .env << 'EOF'
+          DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+          NODE_ENV=production
+          MONGODB_URI=${{ secrets.MONGODB_URI }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          PORT=7001
+          USE_MOCK_DB=false
+          EOF
             fi
             
             # Pull latest images
-            docker-compose pull
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:latest
             
-            # Restart services
-            docker-compose up -d --force-recreate
+            # Stop and remove old containers
+            docker stop fieldnotes-backend fieldnotes-frontend 2>/dev/null || true
+            docker rm fieldnotes-backend fieldnotes-frontend 2>/dev/null || true
             
-            # Wait for services to be healthy
-            sleep 15
+            # Create network if it doesn't exist
+            docker network inspect fieldnotes-network >/dev/null 2>&1 || docker network create fieldnotes-network
+            
+            # Start backend
+            docker run -d \
+              --name fieldnotes-backend \
+              --network fieldnotes-network \
+              --restart unless-stopped \
+              -p 7001:7001 \
+              -e NODE_ENV=production \
+              -e PORT=7001 \
+              -e MONGODB_URI="${{ secrets.MONGODB_URI }}" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e USE_MOCK_DB=false \
+              ${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-backend:latest
+            
+            # Start frontend
+            docker run -d \
+              --name fieldnotes-frontend \
+              --network fieldnotes-network \
+              --restart unless-stopped \
+              -p 80:80 \
+              ${{ secrets.DOCKERHUB_USERNAME }}/fieldnotes-frontend:latest
+            
+            # Wait for services to start
+            sleep 10
             
             # Clean up old images
             docker image prune -af
+            
+            echo "✅ Deployment completed"
+          ENDSSH
 
       # Verify deployment
       - name: Verify deployment
         run: |
-          sleep 10
+          sleep 15
           curl -f http://${{ secrets.DO_HOST }}/health || exit 1
-          echo "✅ Deployment successful!"
+          echo "✅ Deployment verified successfully!"
+
